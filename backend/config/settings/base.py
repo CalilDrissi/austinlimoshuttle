@@ -42,6 +42,7 @@ DJANGO_APPS = [
 ]
 
 THIRD_PARTY_APPS = [
+    "corsheaders",
     "rest_framework",
     "drf_spectacular",
     "drf_spectacular_sidecar",
@@ -65,6 +66,9 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # Must precede CommonMiddleware so preflight requests are answered
+    # before any redirect logic runs.
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -249,6 +253,21 @@ SPECTACULAR_SETTINGS = {
         {"url": "https://api.austinlimoshuttle.com", "description": "Production"},
     ],
 }
+
+# --------------------------------------------------------------------------
+# Cross-origin requests
+# --------------------------------------------------------------------------
+# The frontend runs on its own origin and calls this API from the browser during
+# checkout. Origins are listed explicitly and never wildcarded: credentials are
+# allowed, and a wildcard with credentials is both refused by browsers and
+# unsafe -- it would let any site issue authenticated requests as a signed-in
+# customer.
+
+CORS_ALLOWED_ORIGINS = env.list(
+    "DJANGO_CORS_ALLOWED_ORIGINS",
+    default=["http://localhost:3000", "http://127.0.0.1:3000"],
+)
+CORS_ALLOW_CREDENTIALS = True
 
 # --------------------------------------------------------------------------
 # Business rules

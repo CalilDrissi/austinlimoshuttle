@@ -21,9 +21,16 @@ htmlcov/
 staticfiles/
 media/
 
-# --- Node (frontend, later) ---
+# --- Node (frontend) ---
 node_modules/
 .next/
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+
+# The scraped template mirror is the client's supplied material, not ours.
+luxride-nextjs.vercel.appx/
 
 # --- OS ---
 .DS_Store

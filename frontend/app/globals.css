@@ -1,0 +1,13 @@
+/*
+ * Project overrides.
+ *
+ * `public/styles/luxride.css` is a vendored artefact and stays untouched, so
+ * the template can be replaced or licensed-and-swapped without unpicking our
+ * changes. Anything we need to adjust goes here instead.
+ */
+
+:root {
+  --brand: #0d5c46;
+}
+
+/* Nothing yet — the template CSS supplies the design. */

@@ -8,6 +8,11 @@ Django>=5.2,<5.3
 djangorestframework>=3.15,<4.0
 django-environ>=0.11,<1.0
 
+# The Next.js frontend calls this API from the browser during checkout, so the
+# responses need CORS headers. Server-rendered pages do not (Node talks to
+# Django directly), which is why this is easy to miss until the booking funnel.
+django-cors-headers>=4.4,<5.0
+
 # OpenAPI schema and Swagger UI for the Next.js frontend. The sidecar package
 # ships the UI's JS/CSS locally so the docs page works under our
 # Content-Security-Policy, which forbids external scripts.
