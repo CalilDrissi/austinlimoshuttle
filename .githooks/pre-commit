@@ -30,7 +30,7 @@ for file in $STAGED; do
   case "$file" in */tests/*|*test_*) continue;; esac
 
   for pattern in "${PATTERNS[@]}"; do
-    if git show ":$file" 2>/dev/null | grep -nEq "$pattern"; then
+    if git show ":$file" 2>/dev/null | grep -nEq -- "$pattern"; then
       echo "BLOCKED: $file appears to contain a credential (/$pattern/)" >&2
       FOUND=1
     fi
