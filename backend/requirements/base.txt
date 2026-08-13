@@ -1,0 +1,27 @@
+# Runtime dependencies.
+#
+# HARD CONSTRAINT: every package here must install from a pre-built wheel.
+# The target host (InMotion shared cPanel) has no C compiler and no system
+# development headers. See requirements/README for the rejected alternatives.
+
+Django>=5.2,<5.3
+djangorestframework>=3.15,<4.0
+django-environ>=0.11,<1.0
+
+# MySQL/MariaDB driver. Pure Python by design -- mysqlclient needs a compiler
+# and libmysqlclient headers, neither available on shared hosting.
+PyMySQL>=1.1,<2.0
+
+# Images: ships manylinux wheels, no compilation.
+Pillow>=10.4,<12.0
+
+# Stripe SDK. Pure Python; card data never reaches our servers -- the
+# browser talks to Stripe Elements directly and we only ever see tokens.
+stripe>=11.0,<14.0
+
+# HTTP client for the Google Distance Matrix lookup. Pure Python.
+requests>=2.32,<3.0
+
+# PDF: pure Python (ReportLab). WeasyPrint is rejected -- it requires cairo and
+# pango system libraries that cannot be installed on cPanel.
+xhtml2pdf>=0.2.16,<0.3

@@ -1,0 +1,43 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block title %}Overview{% endblock %}
+
+{% block content %}
+<h1>Overview</h1>
+<p class="lede">What needs attention right now.</p>
+
+<div class="grid">
+  <div class="stat"><div class="n">{{ today_count }}</div><div class="l">Pickups today</div></div>
+  <div class="stat"><div class="n">{{ week_count }}</div><div class="l">Next 7 days</div></div>
+  <div class="stat {% if unassigned %}alert{% endif %}"><div class="n">{{ unassigned }}</div><div class="l">No driver assigned</div></div>
+  <div class="stat {% if pending %}warn{% endif %}"><div class="n">{{ pending }}</div><div class="l">Awaiting payment</div></div>
+  <div class="stat {% if unread_enquiries %}warn{% endif %}"><div class="n">{{ unread_enquiries }}</div><div class="l">Unread enquiries</div></div>
+  <div class="stat"><div class="n">${{ recent_revenue|default:0|floatformat:0|intcomma }}</div><div class="l">Booked, last 7 days</div></div>
+</div>
+
+<div class="panel">
+  <h2>Next pickups</h2>
+  {% if next_pickups %}
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Pickup</th><th>Reference</th><th>Customer</th><th>Route</th><th>Vehicle</th><th>Driver</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for booking in next_pickups %}
+        <tr>
+          <td class="num">{{ booking.pickup_at|date:"D j M, H:i" }}</td>
+          <td><a href="{% url 'dashboard:booking_detail' booking.reference %}">{{ booking.reference }}</a></td>
+          <td>{{ booking.customer_name }}</td>
+          <td class="muted">{{ booking.pickup_address|truncatechars:30 }} → {{ booking.dropoff_address|truncatechars:30|default:"—" }}</td>
+          <td>{{ booking.vehicle_name_snapshot }}</td>
+          <td>{% if booking.driver %}{{ booking.driver.full_name }}{% else %}<span class="soon">unassigned</span>{% endif %}</td>
+          <td><span class="tag {{ booking.status }}">{{ booking.get_status_display }}</span></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <div class="empty">No upcoming bookings.</div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8">
+<style>
+  @page { size: a4 portrait; margin: 2cm; }
+  body { font-family: Helvetica, Arial, sans-serif; font-size: 10.5pt; color: #15181c; }
+  h1 { font-size: 17pt; margin: 0 0 2pt; }
+  .brand { color: #0f6b4f; font-weight: bold; font-size: 12pt; margin-bottom: 16pt; }
+  .ref { font-size: 12pt; font-weight: bold; }
+  table { width: 100%; border-collapse: collapse; margin: 10pt 0; }
+  td { padding: 4pt 0; vertical-align: top; }
+  td.k { color: #5b636d; width: 4.5cm; }
+  .totals td { border-top: 0.5pt solid #e2e7ec; }
+  .total-row td { font-weight: bold; border-top: 1pt solid #15181c; }
+  .right { text-align: right; }
+  .foot { margin-top: 22pt; padding-top: 8pt; border-top: 0.5pt solid #e2e7ec;
+          color: #5b636d; font-size: 9pt; }
+</style>
+</head>
+<body>
+  <div class="brand">Austin Limo Shuttle</div>
+  <h1>Booking confirmation</h1>
+  <div class="ref">{{ booking.reference }}</div>
+
+  <table>
+    <tr><td class="k">Pickup</td><td>{{ booking.pickup_at|date:"l j F Y, H:i" }}</td></tr>
+    <tr><td class="k">From</td><td>{{ booking.pickup_address }}</td></tr>
+    {% if booking.dropoff_address %}<tr><td class="k">To</td><td>{{ booking.dropoff_address }}</td></tr>{% endif %}
+    {% if booking.distance_miles %}<tr><td class="k">Distance</td><td>{{ booking.distance_miles }} miles</td></tr>{% endif %}
+    {% if booking.hours %}<tr><td class="k">Duration</td><td>{{ booking.hours }} hours</td></tr>{% endif %}
+    <tr><td class="k">Vehicle</td><td>{{ booking.vehicle_name_snapshot }}</td></tr>
+    <tr><td class="k">Passengers</td><td>{{ booking.passenger_count }}</td></tr>
+    {% if booking.flight_number %}<tr><td class="k">Flight</td><td>{{ booking.flight_number }}</td></tr>{% endif %}
+    {% if booking.pickup_sign %}<tr><td class="k">Placard name</td><td>{{ booking.pickup_sign }}</td></tr>{% endif %}
+    <tr><td class="k">Booked by</td><td>{{ booking.customer_name }}</td></tr>
+  </table>
+
+  <table class="totals">
+    {% for line in booking.price_lines.all %}
+      <tr><td>{{ line.label }}</td><td class="right">${{ line.amount }}</td></tr>
+    {% endfor %}
+    <tr class="total-row"><td>Total paid</td>
+        <td class="right">${{ booking.total }} {{ booking.currency }}</td></tr>
+  </table>
+
+  <div class="foot">
+    Please have this reference to hand: {{ booking.reference }}.<br>
+    Austin Limo Shuttle
+  </div>
+</body>
+</html>

@@ -1,0 +1,7 @@
+{% autoescape off %}SMTP is working.
+
+This test was sent at {{ sent_at|date:"j F Y, H:i" }}.
+If you are reading it, the mail settings are correct.
+
+Austin Limo Shuttle
+{% endautoescape %}

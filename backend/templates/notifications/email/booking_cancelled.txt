@@ -1,0 +1,15 @@
+{% autoescape off %}Your booking is cancelled
+
+Booking {{ booking.reference }} for {{ booking.pickup_at|date:"l j F Y, H:i" }} has been cancelled.
+{% if refund_amount %}
+A refund of ${{ refund_amount }} has been issued. It usually reaches your
+statement within five to ten working days.
+{% elif booking.cancellation_fee %}
+A cancellation fee of ${{ booking.cancellation_fee }} applied.
+{% endif %}{% if booking.cancellation_reason %}
+Reason: {{ booking.cancellation_reason }}
+{% endif %}
+If this is unexpected, reply to this email and we'll look into it.
+
+Austin Limo Shuttle
+{% endautoescape %}

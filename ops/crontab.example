@@ -1,0 +1,48 @@
+# cPanel cron jobs for austinlimoshuttle.com
+# ---------------------------------------------------------------------------
+# Added AFTER the Python app is created in cPanel, not before -- the virtualenv
+# path below only exists once "Setup Python App" has run.
+#
+# In cPanel: Advanced -> Cron Jobs -> Add New Cron Job. Paste one command per
+# job and pick the schedule from the dropdowns (the times below are for
+# reference).
+#
+# Find the exact interpreter path in cPanel's Python App screen; it prints a
+# line like:
+#     source /home/austi118/virtualenv/backend/3.12/bin/activate
+# The interpreter is that path with `activate` replaced by `python`.
+#
+# Every command is safe to run more often than scheduled and safe to re-run
+# after a failure: reminders deduplicate on EmailLog, cleanup is idempotent.
+# ---------------------------------------------------------------------------
+
+PY=/home/austi118/virtualenv/backend/3.12/bin/python
+APP=/home/austi118/backend
+DJANGO_SETTINGS_MODULE=config.settings.prod
+
+# Pickup reminders -- hourly.
+# The command only mails bookings inside the 24h window that have not already
+# been reminded, so running hourly simply catches each booking as it enters the
+# window. Running daily would mean a booking made 20 hours ahead never gets one.
+0 * * * * cd $APP && $PY manage.py send_pickup_reminders >> ~/logs/cron-reminders.log 2>&1
+
+# Housekeeping -- weekly, Sunday 03:15.
+# Prunes webhook ids and email logs, and closes abandoned unpaid bookings.
+# Never deletes a booking, a payment or a customer.
+15 3 * * 0 cd $APP && $PY manage.py cleanup_stale_data >> ~/logs/cron-cleanup.log 2>&1
+
+# ---------------------------------------------------------------------------
+# Before enabling either job, run each once by hand with --dry-run:
+#
+#   cd /home/austi118/backend
+#   /home/austi118/virtualenv/backend/3.12/bin/python manage.py \
+#       send_pickup_reminders --dry-run
+#   /home/austi118/virtualenv/backend/3.12/bin/python manage.py \
+#       cleanup_stale_data --dry-run
+#
+# Both report exactly what they would do and change nothing.
+#
+# Note: cPanel emails cron output to the account owner by default. The
+# redirections above send it to log files instead; clear the "Email" field on
+# the Cron Jobs screen, or you will get an email every hour.
+# ---------------------------------------------------------------------------

@@ -1,0 +1,26 @@
+{% extends "notifications/email/_base.html" %}
+{% block body %}
+<h1 style="font-size:20px;margin:0 0 6px">Your booking is cancelled</h1>
+<p style="margin:0 0 20px;color:#5b636d">
+  Booking {{ booking.reference }} for {{ booking.pickup_at|date:"l j F Y, H:i" }} has been cancelled.
+</p>
+
+{% if refund_amount %}
+  <div style="background:#e8f4ef;border-radius:8px;padding:16px;margin:0 0 20px">
+    A refund of <strong>${{ refund_amount }}</strong> has been issued. It usually
+    reaches your statement within five to ten working days.
+  </div>
+{% elif booking.cancellation_fee %}
+  <p style="margin:0 0 20px;color:#5b636d">
+    A cancellation fee of ${{ booking.cancellation_fee }} applied.
+  </p>
+{% endif %}
+
+{% if booking.cancellation_reason %}
+  <p style="margin:0 0 20px;color:#5b636d">Reason: {{ booking.cancellation_reason }}</p>
+{% endif %}
+
+<p style="margin:0;color:#5b636d;font-size:14px">
+  If this is unexpected, reply to this email and we'll look into it.
+</p>
+{% endblock %}

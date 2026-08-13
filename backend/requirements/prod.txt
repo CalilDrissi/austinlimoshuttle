@@ -1,0 +1,5 @@
+# Production install for InMotion shared hosting.
+# Deliberately identical to base -- no extra runtime dependencies, so the
+# deployment rehearsal in Phase 7 tests exactly what ships.
+
+-r base.txt

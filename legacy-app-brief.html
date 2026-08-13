@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Legacy Application Brief — austinlimoshuttle.com</title>
+<style>
+  :root{
+    --ink:#16191d; --muted:#5b636d; --line:#e0e5ea; --bg:#fff; --panel:#f6f8fa;
+    --accent:#1f4e8c; --accent-bg:#eaf1fa;
+    --live:#1e6b41; --live-bg:#e8f4ed;
+    --dead:#8a3a34; --dead-bg:#fbeceb;
+    --warn:#8a6320; --warn-bg:#fbf4e5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.62 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:48px 24px 96px}
+  header{border-bottom:3px solid var(--ink);padding-bottom:20px;margin-bottom:32px}
+  h1{font-size:31px;line-height:1.22;margin:0 0 8px;letter-spacing:-.022em}
+  .sub{color:var(--muted);font-size:15px;margin:0}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 26px;color:var(--muted);font-size:13.5px;margin-top:14px}
+  h2{font-size:23px;margin:52px 0 8px;letter-spacing:-.015em;padding-bottom:8px;border-bottom:2px solid var(--line)}
+  h3{font-size:18px;margin:32px 0 10px;letter-spacing:-.01em}
+  h4{font-size:15px;margin:22px 0 6px;color:var(--accent)}
+  p{margin:0 0 13px}
+  .lede{font-size:16.5px;background:var(--accent-bg);border-left:4px solid var(--accent);
+        padding:18px 20px;border-radius:0 6px 6px 0;margin:0 0 10px}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--panel);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.045em;color:var(--muted)}
+  td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:14px 0}
+  .scroll table{margin:0}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;
+       background:var(--panel);padding:1px 5px;border-radius:4px;border:1px solid var(--line);white-space:nowrap}
+  td code{background:none;border:none;padding:0}
+  pre{background:#1d2126;color:#e4e8ec;padding:14px 16px;border-radius:6px;overflow-x:auto;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.8px;line-height:1.55;margin:12px 0}
+  pre code{background:none;border:none;padding:0;color:inherit;white-space:pre}
+  .pill{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+        padding:2px 7px;border-radius:3px;white-space:nowrap}
+  .pill.live{background:var(--live-bg);color:var(--live)}
+  .pill.dead{background:var(--dead-bg);color:var(--dead)}
+  .pill.warn{background:var(--warn-bg);color:var(--warn)}
+  .note{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
+        border-radius:0 6px 6px 0;padding:15px 18px;margin:18px 0;font-size:14.8px}
+  .note strong:first-child{display:block;margin-bottom:4px}
+  .flow{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px 20px;margin:16px 0;font-size:14.5px}
+  ol,ul{margin:0 0 13px;padding-left:23px}
+  li{margin-bottom:6px}
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px 22px;margin:22px 0}
+  .toc ul{margin:0;padding-left:18px;columns:2;column-gap:32px}
+  .toc li{margin-bottom:4px;font-size:14.5px;break-inside:avoid}
+  .toc a{color:var(--accent);text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+  footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  @media print{
+    body{font-size:10.5pt} .wrap{padding:0;max-width:none}
+    .note,.flow,table{break-inside:avoid} h2,h3{break-after:avoid} pre{white-space:pre-wrap}
+    .toc{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Legacy Application Brief</h1>
+  <p class="sub">austinlimoshuttle.com — file-by-file inventory and database schema analysis</p>
+  <div class="meta">
+    <span><strong>Date:</strong> 12 August 2026</span>
+    <span><strong>Codebase:</strong> 89 PHP files analysed · 47,712 lines</span>
+    <span><strong>Database:</strong> 18 tables · 1.7 MB</span>
+    <span><strong>Purpose:</strong> reference for the Django rebuild</span>
+  </div>
+</header>
+
+<p class="lede">
+  This is a functional map of the existing application, produced before any rebuild work begins. It records
+  what each file does, which database tables it touches, whether it is actually reachable in production,
+  and what every table and column is for. Where the old system's behaviour is ambiguous or its data is
+  malformed, that is stated rather than smoothed over — those are the places a rewrite goes wrong.
+</p>
+
+<div class="toc">
+  <strong>Contents</strong>
+  <ul>
+    <li><a href="#arch">1. How the application works</a></li>
+    <li><a href="#entry">2. Entry points &amp; shared includes</a></li>
+    <li><a href="#public">3. Public pages</a></li>
+    <li><a href="#funnel">4. The booking funnel</a></li>
+    <li><a href="#account">5. Customer account</a></li>
+    <li><a href="#admin">6. Admin panel</a></li>
+    <li><a href="#vendor">7. Vendored libraries</a></li>
+    <li><a href="#dead">8. Dead files</a></li>
+    <li><a href="#schema">9. Database schema</a></li>
+    <li><a href="#quality">10. Data quality &amp; migration notes</a></li>
+  </ul>
+</div>
+
+<h2 id="arch">1. How the application works</h2>
+
+<p>
+  There is no framework. The application is hand-written PHP running on <strong>PHP 5.4</strong>, using the
+  <code>mysql_*</code> extension that was removed from PHP in version 7.0. Presentation, business logic and
+  database access are interleaved in the same files — pricing arithmetic happens midway through HTML markup,
+  reading directly from <code>$_SESSION</code>.
+</p>
+
+<h4>Request lifecycle</h4>
+<div class="flow">
+  <ol style="margin-bottom:0">
+    <li><code>.htaccess</code> rewrites every request to <code>index.php</code>.</li>
+    <li><code>index.php</code> forces the <code>www.</code> host, starts the session, and loads <code>includes/functionClassFront.php</code>.</li>
+    <li>The <code>seo</code> class parses the URL path and looks up the trailing segment in the
+        <code>limousin_cms</code> table's <code>url_title</code> column.</li>
+    <li>That row's <code>template</code> column names a PHP file, which is <code>include_once</code>'d.</li>
+    <li>If no row matches, the request is redirected to <code>404.php</code>.</li>
+  </ol>
+</div>
+
+<div class="note">
+  <strong>Routing lives in the database, not the code</strong>
+  Which PHP file serves a URL is a row in <code>limousin_cms</code>. A file can therefore be live despite
+  having zero references anywhere in the codebase — <code>stripe-not-savecard-payment.php</code> is exactly
+  that case, reached at <code>/card-payment</code>. Any audit based on grepping for filenames will
+  misclassify these. Every "live" or "dead" label in this document was checked against both the routing
+  table and inbound code references.
+</div>
+
+<h4>State management</h4>
+<p>
+  The booking funnel carries its state in <code>$_SESSION</code> across six page loads — pickup location,
+  destination, distance, duration, chosen vehicle and computed fare. Nothing is persisted until payment
+  succeeds, so an abandoned booking leaves no trace. There is no cart or draft-booking record.
+</p>
+
+<h4>Inherited scaffolding</h4>
+<p>
+  The application was clearly built by adapting a generic PHP CMS template. Evidence: an unused
+  <code>limousin_country</code> table with all 240 ISO countries, a <code>limousin_paging</code> settings
+  table, and eight admin modules querying tables that do not exist in this database (see
+  <a href="#admin">§6</a>). Column naming carries the same fingerprint — <code>limousin_castomer</code>
+  (sic) for testimonials, <code>pro_id</code> and <code>shipping</code> on a limousine booking.
+</p>
+
+<h2 id="entry">2. Entry points &amp; shared includes</h2>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>File</th><th>Lines</th><th>Tables</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>index.php</code></td><td class="num">64</td><td><code>CMS_MASTER</code></td>
+      <td>Front controller. Canonical-host redirect, session start, URL→template resolution. Every request passes through here.</td></tr>
+    <tr><td><code>execute_function.php</code></td><td class="num">1,229</td><td><code>ADMIN_MASTER, MEMBER, ORDER</code></td>
+      <td>The application's AJAX/POST endpoint — referenced by 17 files. Handles login, registration, contact submission, booking mutations and mail dispatch. Includes phpMailer six separate times. This is the de-facto controller layer and the single most tangled file in the codebase.</td></tr>
+    <tr><td><code>includes/connectionClass.php</code></td><td class="num">102</td><td>—</td>
+      <td>Opens the MySQL connection and defines all 17 table-name constants plus URL constants (<code>DOMAIN_NAME</code>, <code>IMAGES_URL</code>). Contains hardcoded database credentials.</td></tr>
+    <tr><td><code>includes/functionClass.php</code></td><td class="num">644</td><td><code>MEMBER</code></td>
+      <td>The <code>User</code> class — generic query helpers (<code>runSql</code>, <code>MultipleSelectValue</code>), <code>realStrip()</code> escaping wrapper, session/auth checks, file upload handling. Used by the admin side.</td></tr>
+    <tr><td><code>includes/functionClassFront.php</code></td><td class="num">168</td><td><code>CMS_MASTER, MEMBER, ORDER</code></td>
+      <td>The <code>seo</code> class — <code>pageLink()</code>, <code>pageName()</code>, <code>pageContent()</code>. Implements the database-driven routing described above. Also holds <code>calculate_price_about_distance()</code>, the fare algorithm.</td></tr>
+    <tr><td><code>includes/frontBookingForm.php</code></td><td class="num">304</td><td>—</td>
+      <td>The booking widget (pickup, destination, date, passengers) embedded on the home and service pages. Entry point to the funnel.</td></tr>
+    <tr><td><code>includes/frontHeader.php</code> · <code>frontTopHeader.php</code> · <code>frontMenu.php</code> · <code>frontFooter.php</code> · <code>frontRight.php</code> · <code>frontTopHeaderJs.php</code></td><td class="num">258</td><td><code>CMS_MASTER</code></td>
+      <td>Layout partials. Menu is built by querying <code>limousin_cms</code> for rows with <code>for_menu='Y'</code>.</td></tr>
+    <tr><td><code>includes/adminHeader.php</code> · <code>adminMenu.php</code> · <code>adminFooter.php</code></td><td class="num">92</td><td><code>CMS_MASTER</code></td>
+      <td>Admin layout partials and navigation.</td></tr>
+    <tr><td><code>includes/myAccountLeftMenu.php</code> · <code>myMessageMenu.php</code></td><td class="num">137</td><td>—</td>
+      <td>Customer dashboard navigation.</td></tr>
+    <tr><td><code>includes/resize.php</code> · <code>imageresize.php</code></td><td class="num">206</td><td>—</td>
+      <td>GD-based image thumbnailing for uploads.</td></tr>
+    <tr><td><code>404.php</code></td><td class="num">53</td><td>—</td><td>Not-found page.</td></tr>
+    <tr><td><code>logout.php</code></td><td class="num">8</td><td>—</td><td>Destroys the session, redirects home.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="public">3. Public pages</h2>
+
+<p>All are reached through the CMS routing table. The <code>url_title</code> column supplies the public URL.</p>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>File</th><th>URL</th><th>Lines</th><th>Tables</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>home.php</code></td><td><code>/</code></td><td class="num">193</td><td><code>BANNER, CARLIST, CMS_MASTER</code></td>
+      <td>Homepage — rotating banners, fleet teaser, embedded booking form.</td></tr>
+    <tr><td><code>services.php</code></td><td>4 slugs</td><td class="num">77</td><td><code>BANNER, CMS_MASTER</code></td>
+      <td>One template serving four SEO landing pages: airport car service, weddings, executive transport, graduations. Body copy comes from the CMS row.</td></tr>
+    <tr><td><code>content_page.php</code></td><td>3 slugs</td><td class="num">60</td><td><code>BANNER</code></td>
+      <td>Generic CMS page renderer — about-us, privacy-policy, terms-conditions.</td></tr>
+    <tr><td><code>fleet.php</code></td><td><code>/fleet</code></td><td class="num">134</td><td><code>BANNER, CARLIST</code></td>
+      <td>Vehicle listing with photos, capacity and per-vehicle rates.</td></tr>
+    <tr><td><code>contact.php</code></td><td><code>/contact-us</code></td><td class="num">149</td><td><code>BANNER</code></td>
+      <td>Contact form. Writes to <code>limousin_contact_us</code> via <code>execute_function.php</code>. No CAPTCHA — 923 stored submissions, spam volume unverified.</td></tr>
+    <tr><td><code>corporate_account.php</code></td><td>routed</td><td class="num">282</td><td><code>BANNER</code></td>
+      <td>Corporate account application form → <code>limousin_corporate_account</code>. Only 3 submissions in nine years.</td></tr>
+    <tr><td><code>demo_captcha.php</code> · <code>demo_captcha2.php</code></td><td>—</td><td class="num">56</td><td>—</td>
+      <td>GD-rendered CAPTCHA image generators, referenced by form pages. Present but not wired into the contact form.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="funnel">4. The booking funnel</h2>
+
+<p>Six steps, all state in <code>$_SESSION</code>, nothing persisted until payment succeeds.</p>
+
+<div class="flow">
+  <strong>pickup_details</strong> → <strong>show_booking_price</strong> → <strong>car_selection</strong> →
+  <strong>choose_continue</strong> → <strong>login / registration</strong> → <strong>payment</strong> →
+  <strong>complete-payment</strong> → <strong>thankyou</strong>
+</div>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>Step</th><th>File</th><th>Lines</th><th>Tables</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td class="num">1</td><td><code>pickup_details.php</code> <span class="pill live">live</span></td><td class="num">813</td>
+      <td><code>BUSY_DATE, CARLIST, MEMBER, SPECIAL_TIME_RATES</code></td>
+      <td>Collects pickup/destination/date/time. Calls the Google Distance Matrix API for miles and duration. Checks the requested date against blackout dates and the late-night surcharge window.</td></tr>
+    <tr><td class="num">2</td><td><code>show_booking_price.php</code> <span class="pill live">live</span></td><td class="num">296</td><td><code>CARLIST</code></td>
+      <td>Renders the quote for each vehicle using the banded distance formula.</td></tr>
+    <tr><td class="num">3</td><td><code>car_selection.php</code> <span class="pill live">live</span></td><td class="num">321</td>
+      <td><code>BUSY_DATE, CARLIST, SPECIAL_TIME_RATES</code></td>
+      <td>Vehicle picker. <strong>Contains the live fare calculation inline in the template</strong> — surcharge application, meet-and-greet fee, minimum-fare floor. The single most important file to port correctly.</td></tr>
+    <tr><td class="num">4</td><td><code>choose_continue.php</code> <span class="pill live">live</span></td><td class="num">233</td><td><code>CARLIST</code></td>
+      <td>Confirms the selection and moves to authentication.</td></tr>
+    <tr><td class="num">5</td><td><code>registration.php</code> <span class="pill live">live</span></td><td class="num">481</td><td><code>BANNER</code></td>
+      <td>Account creation / login gate before payment. Writes to <code>limousin_member</code> through <code>execute_function.php</code>.</td></tr>
+    <tr><td class="num">6</td><td><code>payment.php</code> <span class="pill live">live</span></td><td class="num">1,141</td>
+      <td><code>BUSY_DATE, CARLIST, MEMBER, ORDER, ORDER_DETAILS, SPECIAL_TIME_RATES</code></td>
+      <td>Primary payment page — collects card details, recomputes the fare server-side, creates the order. Loads both the Stripe library and the PayPal class.</td></tr>
+    <tr><td class="num">6b</td><td><code>stripe-not-savecard-payment.php</code> <span class="pill live">live</span></td><td class="num">962</td>
+      <td><code>BUSY_DATE, CARLIST, MEMBER, ORDER, ORDER_DETAILS, SPECIAL_TIME_RATES</code></td>
+      <td>Alternative payment page served at <code>/card-payment</code> — the "don't save my card" variant. Near-duplicate of <code>payment.php</code>. Live only via the routing table.</td></tr>
+    <tr><td class="num">7</td><td><code>complete-payment.php</code> <span class="pill live">live</span></td><td class="num">464</td>
+      <td><code>ADMIN_MASTER, CARLIST, MEMBER, ORDER</code></td>
+      <td>Post-charge handler — finalises the order, emails customer and admin via phpMailer.</td></tr>
+    <tr><td class="num">8</td><td><code>thankyou.php</code> <span class="pill live">live</span></td><td class="num">78</td><td><code>ADMIN_MASTER, MEMBER, ORDER</code></td>
+      <td>Confirmation page.</td></tr>
+    <tr><td>—</td><td><code>send_pdf_and_continue.php</code> <span class="pill live">live</span></td><td class="num">133</td><td>—</td>
+      <td>Generates the booking confirmation PDF (TCPDF/FPDF) and emails it.</td></tr>
+    <tr><td>—</td><td><code>renew_booking.php</code> <span class="pill live">live</span></td><td class="num">392</td><td><code>CARLIST, ORDER</code></td>
+      <td>Rebooks a past trip by copying an existing order into a new funnel session.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note">
+  <strong>Two live payment pages, near-identical</strong>
+  <code>payment.php</code> (1,141 lines) and <code>stripe-not-savecard-payment.php</code> (962 lines) are both
+  reachable and both create orders. They duplicate the fare recalculation and the Stripe charge call. Any
+  rebuild must confirm which one real traffic uses — or, more likely, replace both with one flow. Server
+  access logs will settle it.
+</div>
+
+<h2 id="account">5. Customer account</h2>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>File</th><th>Lines</th><th>Tables</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>dashboard.php</code> <span class="pill live">live</span></td><td class="num">469</td><td><code>BANNER, MEMBER, ORDER</code></td>
+      <td>Customer home — upcoming and past bookings.</td></tr>
+    <tr><td><code>booking_details.php</code> <span class="pill live">live</span></td><td class="num">448</td><td><code>BANNER, MEMBER, ORDER</code></td>
+      <td>Single booking view — itinerary, vehicle, driver assignment, price.</td></tr>
+    <tr><td><code>edit_booking_details.php</code> <span class="pill live">live</span></td><td class="num">397</td><td><code>ORDER</code></td>
+      <td>Customer-side booking amendment.</td></tr>
+    <tr><td><code>edit_profile.php</code> <span class="pill live">live</span></td><td class="num">272</td><td><code>MEMBER</code></td>
+      <td>Profile and billing address editing.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="admin">6. Admin panel</h2>
+
+<p>
+  32 PHP files in <code>admin/</code>. Authentication is a session check against the single
+  <code>limousin_admin</code> row. Of these, <strong>18 are functional</strong> and
+  <strong>8 query tables that do not exist in this database</strong>.
+</p>
+
+<h3>Functional modules</h3>
+<div class="scroll">
+<table>
+  <thead><tr><th>File</th><th>Lines</th><th>Tables</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>index.php</code></td><td class="num">214</td><td>—</td><td>Admin login screen.</td></tr>
+    <tr><td><code>order.php</code></td><td class="num">614</td><td><code>MEMBER, ORDER, ORDER_DETAILS</code></td><td>Booking list — the operational core. Filter, search, status.</td></tr>
+    <tr><td><code>orderDetails.php</code></td><td class="num">442</td><td><code>ADMIN_MASTER, CARLIST, ORDER, ORDER_DETAILS</code></td><td>Single booking detail; driver assignment, amendment, cancellation.</td></tr>
+    <tr><td><code>update-status.php</code></td><td class="num">285</td><td>—</td><td>Booking status transitions (pending → done → cancelled).</td></tr>
+    <tr><td><code>car_list.php</code></td><td class="num">542</td><td><code>CARLIST</code></td><td><strong>Fleet and pricing management</strong> — all six rate fields per vehicle. The commercial control panel.</td></tr>
+    <tr><td><code>busy-dates.php</code></td><td class="num">384</td><td><code>BUSY_DATE</code></td><td>Blackout dates and per-date surcharges.</td></tr>
+    <tr><td><code>special-time.php</code></td><td class="num">245</td><td><code>SPECIAL_TIME_RATES</code></td><td>Late-night / early-morning surcharge percentage.</td></tr>
+    <tr><td><code>user.php</code> · <code>userDetails.php</code></td><td class="num">407</td><td><code>MEMBER</code></td><td>Customer list and detail view.</td></tr>
+    <tr><td><code>contactUs.php</code> · <code>viewMessage.php</code> · <code>replyMessage.php</code></td><td class="num">577</td><td><code>CONTACT_US</code></td><td>Contact-form inbox, read and reply.</td></tr>
+    <tr><td><code>page.php</code> · <code>page_list.php</code> · <code>edit_service.php</code> · <code>service.php</code> · <code>global.php</code></td><td class="num">2,781</td><td><code>CMS_MASTER</code></td><td>CMS page management — content, meta tags, slugs, menu placement. Five overlapping modules doing broadly the same job.</td></tr>
+    <tr><td><code>banner.php</code> · <code>page_banner.php</code></td><td class="num">812</td><td><code>BANNER, CMS_MASTER</code></td><td>Homepage and per-page banner management.</td></tr>
+    <tr><td><code>followUs.php</code></td><td class="num">286</td><td><code>SOCIAL_MEDIA</code></td><td>Social media links (single row).</td></tr>
+    <tr><td><code>my_account.php</code></td><td class="num">250</td><td><code>ADMIN_MASTER</code></td><td>Admin's own credentials.</td></tr>
+    <tr><td><code>logout.php</code></td><td class="num">7</td><td>—</td><td>Ends the admin session.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Non-functional modules <span class="pill warn">broken</span></h3>
+<p>
+  These eight query undefined table constants — <code>BLOG</code>, <code>FAQ</code>, <code>NEWS</code>,
+  <code>NEWSLETTER</code>, <code>CLASSIFIEDS</code>, <code>SINGLE_EVENTS</code>,
+  <code>UPLOAD_RESUMR</code> (sic) and <code>MEMBERS</code> (plural; the real constant is
+  <code>MEMBER</code>). None are defined in <code>connectionClass.php</code> and none of the tables exist.
+  On PHP 5 an undefined constant degrades to a bare string, so these produce queries against
+  non-existent tables. They are template leftovers, not features.
+</p>
+<div class="scroll">
+<table>
+  <thead><tr><th>File</th><th>Lines</th><th>Queries missing table</th></tr></thead>
+  <tbody>
+    <tr><td><code>blog.php</code></td><td class="num">1,150</td><td><code>BLOG</code>, <code>MEMBERS</code></td></tr>
+    <tr><td><code>edit_blog.php</code></td><td class="num">417</td><td><code>BLOG</code></td></tr>
+    <tr><td><code>classifieds.php</code></td><td class="num">670</td><td><code>CLASSIFIEDS</code>, <code>MEMBERS</code></td></tr>
+    <tr><td><code>newsletter.php</code></td><td class="num">401</td><td><code>NEWSLETTER</code></td></tr>
+    <tr><td><code>news.php</code></td><td class="num">377</td><td><code>NEWS</code></td></tr>
+    <tr><td><code>single_events.php</code></td><td class="num">423</td><td><code>SINGLE_EVENTS</code></td></tr>
+    <tr><td><code>faq.php</code></td><td class="num">362</td><td><code>FAQ</code></td></tr>
+    <tr><td><code>careers.php</code></td><td class="num">294</td><td><code>UPLOAD_RESUMR</code></td></tr>
+    <tr><td><code>addUser.php</code></td><td class="num">351</td><td><code>MEMBERS</code></td></tr>
+  </tbody>
+</table>
+</div>
+<p style="color:var(--muted);font-size:14.5px">
+  That is roughly 4,400 lines of admin code — about a third of the panel — which has never worked in this
+  installation. None of it needs porting.
+</p>
+
+<h2 id="vendor">7. Vendored libraries</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th>Library</th><th>Location</th><th>Version</th><th>Used for</th></tr></thead>
+  <tbody>
+    <tr><td>Stripe PHP</td><td><code>lib/Stripe/</code></td><td>1.13.0 (c. 2014)</td><td>Card charges via the legacy <code>Stripe_Charge::create</code> API. No SCA / 3-D Secure support.</td></tr>
+    <tr><td>PayPal Pro</td><td><code>includes/paypal.class.php</code>, <code>paypal/</code></td><td>—</td><td>6,685 lines, loaded by every payment page. Whether any live traffic uses it is unconfirmed.</td></tr>
+    <tr><td>phpMailer</td><td><code>phpMailer/</code></td><td>—</td><td>SMTP mail via <code>mail.austinlimoshuttle.com:587</code> (SSL). Entry point <code>test_smtp_basic.php</code>.</td></tr>
+    <tr><td>TCPDF / FPDF</td><td><code>vendor/</code> (Composer)</td><td>6.10 / 1.8</td><td>Booking confirmation PDFs. The only two Composer dependencies.</td></tr>
+    <tr><td>Google Maps</td><td>inline JS + PHP</td><td>—</td><td>Distance Matrix API for mileage and duration (14 files); Maps JS for address autocomplete (4 files).</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="dead">8. Dead files</h2>
+<p>
+  Ten root-level PHP files are neither routed by the CMS nor referenced by any other file. Version control
+  here was performed by copying a file and prefixing the date.
+</p>
+<div class="scroll">
+<table>
+  <thead><tr><th>File</th><th>Lines</th><th>Note</th></tr></thead>
+  <tbody>
+    <tr><td><code>7-8-17payment.php</code></td><td class="num">933</td><td>Dated copy of the payment page.</td></tr>
+    <tr><td><code>07-08-17stripe-not-savecard-payment.php</code></td><td class="num">892</td><td>Dated copy.</td></tr>
+    <tr><td><code>7-8-17stripe-savecard-payment.php</code></td><td class="num">842</td><td>Dated copy.</td></tr>
+    <tr><td><code>stripe-savecard-payment.php</code></td><td class="num">860</td><td>Superseded save-card variant.</td></tr>
+    <tr><td><code>stripe-payment.php</code></td><td class="num">439</td><td>Superseded.</td></tr>
+    <tr><td><code>7-8-17car_selection.php</code> · <code>7-8-17pickup_details.php</code> · <code>7-8-17show_booking_price.php</code> · <code>7-8-17choose_continue.php</code></td><td class="num">1,417</td><td>Dated funnel copies.</td></tr>
+    <tr><td><code>direct-payment.php</code> <span class="pill dead">security risk</span></td><td class="num">652</td>
+      <td>Unreferenced and unrouted, but still publicly executable — and carries an unauthenticated SQL injection against the orders table. See the separate security report.</td></tr>
+  </tbody>
+</table>
+</div>
+<p>
+  Not counted above: <code>admin/07-08-17car_list.php</code>, and the stale site copies in
+  <code>OLDSITE/</code>, <code>beta/</code>, <code>backupsite20.03.2017/</code> and
+  <code>austinlimoshuttle/</code> — roughly 224 MB of duplicated application, all of it still served by
+  the web server.
+</p>
+
+<h2 id="schema">9. Database schema</h2>
+
+<p>
+  Database <code>austi118_austinlimo</code> — 18 tables, 1.7 MB, <strong>every table MyISAM,
+  every table latin1</strong>. There are no foreign keys, and no indexes beyond each table's primary key.
+</p>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>Table</th><th>Rows</th><th>Purpose</th><th>Keep?</th></tr></thead>
+  <tbody>
+    <tr><td><code>limousin_order</code></td><td class="num">2,217</td><td>Bookings — the core business record</td><td>Yes</td></tr>
+    <tr><td><code>limousin_orderdetails</code></td><td class="num">2,488</td><td>Payment record per booking (misleadingly named)</td><td>Restructure</td></tr>
+    <tr><td><code>limousin_member</code></td><td class="num">1,251</td><td>Customer accounts</td><td>Yes</td></tr>
+    <tr><td><code>limousin_contact_us</code></td><td class="num">923</td><td>Contact form submissions</td><td>Yes</td></tr>
+    <tr><td><code>limousin_country</code></td><td class="num">240</td><td>ISO country reference list</td><td>Drop — template leftover</td></tr>
+    <tr><td><code>limousin_cms</code></td><td class="num">36</td><td>Pages, SEO metadata <em>and</em> the routing table</td><td>Yes</td></tr>
+    <tr><td><code>limousin_gallery</code></td><td class="num">14</td><td>Image gallery / partner logos</td><td>Yes</td></tr>
+    <tr><td><code>limousin_busy_date</code></td><td class="num">11</td><td>Blackout dates and date surcharges</td><td>Yes</td></tr>
+    <tr><td><code>limousin_service_inquiry</code></td><td class="num">8</td><td>Service enquiry form (barely used)</td><td>Merge into contact</td></tr>
+    <tr><td><code>limousin_banner</code></td><td class="num">7</td><td>Homepage and page banners</td><td>Yes</td></tr>
+    <tr><td><code>limousin_car_list</code></td><td class="num">7</td><td>Fleet and the full rate card</td><td>Yes</td></tr>
+    <tr><td><code>limousin_castomer</code></td><td class="num">3</td><td>Customer testimonials (sic)</td><td>Yes, rename</td></tr>
+    <tr><td><code>limousin_corporate_account</code></td><td class="num">3</td><td>Corporate account applications</td><td>Yes</td></tr>
+    <tr><td><code>limousin_paging</code></td><td class="num">2</td><td>Pagination page-size settings</td><td>Drop — config, not data</td></tr>
+    <tr><td><code>limousin_admin</code></td><td class="num">1</td><td>The single admin account</td><td>Replace with Django auth</td></tr>
+    <tr><td><code>limousin_uploads</code></td><td class="num">1</td><td>Generic file uploads</td><td>Review</td></tr>
+    <tr><td><code>limousin_social_media</code></td><td class="num">1</td><td>Social links (single row)</td><td>Drop — make settings</td></tr>
+    <tr><td><code>limousin_special_time_rate</code></td><td class="num">1</td><td>Late-night surcharge percentage</td><td>Yes</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>limousin_order — bookings</h3>
+<p>2,217 rows. One row per booking. Denormalised: vehicle name and member name are copied in as text alongside their IDs.</p>
+<div class="scroll">
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Purpose &amp; notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>int PK</td><td>Booking ID.</td></tr>
+    <tr><td><code>pickup_location</code> / <code>destination</code></td><td>varchar(255)</td><td>Free-text addresses as returned by Google autocomplete. No coordinates stored.</td></tr>
+    <tr><td><code>pickup_date</code></td><td>varchar(400)</td><td><strong>A formatted English string</strong>, e.g. <code>Sat, 03 Oct 2026, 10:15 PM</code>. Not sortable or comparable in SQL. Must be parsed on migration (<code>%a, %d %b %Y, %I:%M %p</code>).</td></tr>
+    <tr><td><code>duration</code> / <code>distance</code></td><td>varchar</td><td>From the Distance Matrix API — hours and miles, stored as text.</td></tr>
+    <tr><td><code>type_vehicle</code> / <code>car_id</code> / <code>car_name</code></td><td>varchar</td><td>Vehicle reference, duplicated three ways. <code>car_id</code> is the real link to <code>limousin_car_list</code>.</td></tr>
+    <tr><td><code>price</code></td><td>decimal(15,2)</td><td>Final fare charged. The only properly typed column in the table.</td></tr>
+    <tr><td><code>flight_number</code> / <code>pickup_sign</code></td><td>varchar</td><td>Airport meet-and-greet details — flight number and the name for the placard.</td></tr>
+    <tr><td><code>member_id</code> / <code>member_name</code></td><td>varchar(255)</td><td>Customer link. All 2,217 values are numeric with none blank, so it converts cleanly to a real foreign key.</td></tr>
+    <tr><td><code>driver_name</code> / <code>driver_phone</code></td><td>varchar</td><td>Assigned driver, entered free-text. There is no drivers table.</td></tr>
+    <tr><td><code>name_on_card</code> / <code>card_number</code> / <code>expiration_date</code></td><td>varchar</td><td><span class="pill dead">do not migrate</span> Plaintext cardholder data. See the security report. These columns must not exist in the new schema.</td></tr>
+    <tr><td><code>cancel_cas</code> / <code>cancel_message</code> / <code>cancel_coss</code></td><td>varchar / text</td><td>Cancellation reason, note and cost. Naming is corrupted ("cas", "coss").</td></tr>
+    <tr><td><code>orderNum</code> / <code>reference_number</code></td><td>varchar</td><td>Customer-facing booking reference(s).</td></tr>
+    <tr><td><code>order_date</code></td><td>timestamp</td><td>When booked. Reliable — use this, not <code>date</code>.</td></tr>
+    <tr><td><code>date</code></td><td>varchar(255)</td><td>Redundant string date.</td></tr>
+    <tr><td><code>item_name</code></td><td>varchar</td><td>Line description for the payment gateway.</td></tr>
+    <tr><td><code>additional_comments</code></td><td>text</td><td>Customer notes.</td></tr>
+    <tr><td><code>status</code></td><td>enum</td><td>Observed: <code>D</code> completed (2,056), <code>C</code> cancelled (149), <code>P</code> pending (9, all 2026), <code>DL</code> deleted (3). The schema default <code>N</code> is unused.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>limousin_orderdetails — payment records</h3>
+<p>
+  2,488 rows against 2,217 orders. Despite the name this is not a line-items table — a limousine booking has
+  one item. It is the payment record, and it duplicates the cardholder data already in
+  <code>limousin_order</code>.
+</p>
+<div class="scroll">
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Purpose &amp; notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>int PK</td><td>—</td></tr>
+    <tr><td><code>order_id</code></td><td>int</td><td>Link to <code>limousin_order.id</code>. No enforced constraint.</td></tr>
+    <tr><td><code>pro_id</code></td><td>int</td><td>"Product" ID — the vehicle. E-commerce template vocabulary.</td></tr>
+    <tr><td><code>qnt</code> / <code>shipping</code></td><td>varchar</td><td>Quantity and shipping. Meaningless for a limousine booking; template residue.</td></tr>
+    <tr><td><code>vat</code></td><td>varchar</td><td>Tax amount, stored as text.</td></tr>
+    <tr><td><code>name</code> / <code>name_of_card</code> / <code>card_number</code> / <code>expiration_dates</code></td><td>varchar</td><td><span class="pill dead">do not migrate</span> Duplicate plaintext cardholder data.</td></tr>
+    <tr><td><code>securitycode</code></td><td>varchar</td><td><span class="pill dead">prohibited</span> Card verification codes (CVV) retained after authorisation — 68 populated values. PCI-DSS forbids storing this in any form. This column must be destroyed, not migrated.</td></tr>
+    <tr><td><code>date</code></td><td>timestamp</td><td>Payment timestamp.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>limousin_member — customers</h3>
+<p>1,251 rows.</p>
+<div class="scroll">
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Purpose &amp; notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>int PK</td><td>Referenced by <code>limousin_order.member_id</code>.</td></tr>
+    <tr><td><code>pfix</code> / <code>fname</code> / <code>lname</code></td><td>varchar</td><td>Title, first and last name.</td></tr>
+    <tr><td><code>bill_address</code> / <code>bill_street_name</code> / <code>bill_city</code> / <code>bill_zip</code> / <code>bill_country</code></td><td>varchar</td><td>Billing address, split across five loosely-used fields.</td></tr>
+    <tr><td><code>email</code> / <code>user_email</code></td><td>varchar</td><td>Two email columns; which is the login identity needs confirming against <code>execute_function.php</code>.</td></tr>
+    <tr><td><code>password</code></td><td>varchar(255)</td><td><span class="pill dead">do not migrate</span> Plaintext. Cannot be converted to a hash — the new system must force a reset for every account.</td></tr>
+    <tr><td><code>phone</code></td><td>varchar</td><td>Contact number.</td></tr>
+    <tr><td><code>plan_name</code> / <code>plan_ammount</code> / <code>payment_type</code> / <code>payment_date</code> / <code>payment_status</code></td><td>varchar / enum</td><td>Subscription-plan fields (sic "ammount") from the source template. No subscription product exists — verify empty, then drop.</td></tr>
+    <tr><td><code>hundred</code></td><td>varchar(10)</td><td>Purpose unknown. Requires investigation before migration.</td></tr>
+    <tr><td><code>terms</code></td><td>enum</td><td>Terms acceptance flag.</td></tr>
+    <tr><td><code>post_date</code> / <code>date</code></td><td>varchar / timestamp</td><td>Registration date, stored twice. <code>date</code> is the reliable one.</td></tr>
+    <tr><td><code>status</code></td><td>enum</td><td>Account active flag.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>limousin_car_list — fleet &amp; rate card</h3>
+<p>7 rows, 4 active. This table <em>is</em> the pricing engine's configuration.</p>
+<div class="scroll">
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Purpose &amp; notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>car_name</code></td><td>varchar</td><td>e.g. Business Class, Business SUV.</td></tr>
+    <tr><td><code>product_price_hr</code></td><td>decimal</td><td>Hourly rate for time-based hire (e.g. $85, $125).</td></tr>
+    <tr><td><code>product_price_mile</code></td><td>decimal</td><td>Rate for the first band (0–6 miles).</td></tr>
+    <tr><td><code>product_price_mile_above</code></td><td>decimal</td><td>Rate for 6–50 miles.</td></tr>
+    <tr><td><code>product_price_fifty_hundred</code></td><td>decimal</td><td>Rate for 50–100 miles.</td></tr>
+    <tr><td><code>product_price_above_hundred</code></td><td>decimal</td><td>Rate beyond 100 miles.</td></tr>
+    <tr><td><code>product_price_mg</code></td><td>decimal</td><td>Meet-and-greet supplement.</td></tr>
+    <tr><td><code>product_price_min</code></td><td>decimal</td><td>Minimum fare floor (e.g. $95, $105).</td></tr>
+    <tr><td><code>p_quantity</code> / <code>l_quantity</code></td><td>varchar</td><td>Passenger and luggage capacity.</td></tr>
+    <tr><td><code>car_note</code> / <code>car_featured</code> / <code>description</code></td><td>text</td><td>Marketing copy, e.g. "Free cancellation up until 1 hour before pickup".</td></tr>
+    <tr><td><code>dfile</code></td><td>varchar</td><td>Vehicle photo filename.</td></tr>
+    <tr><td><code>order_id</code> / <code>status</code></td><td>int / enum</td><td>Display order and active flag.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h4>The fare algorithm</h4>
+<p>
+  From <code>calculate_price_about_distance()</code> in <code>includes/functionClassFront.php</code>, with
+  the surcharge and floor applied in <code>car_selection.php</code>. Bands are cumulative:
+</p>
+<pre><code>fare = (min(distance, 6)          × product_price_mile)
+     + (band 6→50 miles           × product_price_mile_above)
+     + (band 50→100 miles         × product_price_fifty_hundred)
+     + (miles beyond 100          × product_price_above_hundred)
+
+if late-night or blackout date:  fare += fare × (increase_amount / 100)
+if meet-and-greet requested:     fare += product_price_mg
+if fare &lt; product_price_min:     fare  = product_price_min
+
+hourly bookings instead:         fare  = duration × product_price_hr</code></pre>
+<p>
+  Band boundaries (6 / 50 / 100) are PHP constants — <code>ADJUST_DISTANCE</code>,
+  <code>ADJUST_DISTANCE_SIX_TO_FIFTY</code>, <code>ADJUST_DISTANCE_ABOVE_HUNDRED</code> — not database
+  values. In the rebuild they should become editable configuration.
+</p>
+
+<h3>limousin_cms — pages, SEO and routing</h3>
+<p>36 rows. Serves three jobs at once: page content, SEO metadata, and the URL routing table.</p>
+<div class="scroll">
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Purpose &amp; notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>url_title</code></td><td>text</td><td>The URL slug matched by the router. Several rows hold malformed values (<code>wwwaustinlimoshuttlecom</code>, <code>httpswwwaustinlimoshuttlecom</code>) — a full URL with punctuation stripped, used for the homepage and services page.</td></tr>
+    <tr><td><code>template</code></td><td>varchar(400)</td><td>The PHP file to include. <strong>Eight rows point at files that do not exist</strong> (<code>login.php</code>, <code>lead_driver.php</code>, <code>confirm_driver_details.php</code>, <code>cancel_transaction.php</code>, <code>contributor.php</code>, <code>edit_dashboard.php</code>, <code>login-or-register.php</code>, <code>add_driver_details.php</code>) — those routes are broken.</td></tr>
+    <tr><td><code>name</code> / <code>desc</code></td><td>varchar / text</td><td>Page heading and body HTML (WYSIWYG output with inline styles).</td></tr>
+    <tr><td><code>page_title</code> / <code>meta_title</code> / <code>meta_keyword</code> / <code>meta_description</code></td><td>varchar / text</td><td>SEO metadata. <strong>3 of 36 rows contain mojibake</strong> — see §10.</td></tr>
+    <tr><td><code>for_menu</code></td><td>enum(Y,S,N,I,D,C)</td><td>Placement flag. Observed: <code>Y</code> main menu, <code>N</code> hidden, <code>D</code> funnel step, <code>C</code> customer-account page. <code>S</code> and <code>I</code> unused.</td></tr>
+    <tr><td><code>page_under</code> / <code>order_id</code> / <code>link_as</code> / <code>related_link</code></td><td>varchar / int</td><td>Menu hierarchy, ordering and link behaviour.</td></tr>
+    <tr><td><code>is_category</code> / <code>status</code> / <code>dfile</code> / <code>page_name</code></td><td>enum / varchar</td><td>Category flag, published flag, hero image, unused legacy name field.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Supporting tables</h3>
+<div class="scroll">
+<table>
+  <thead><tr><th>Table</th><th>Key columns</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>limousin_busy_date</code></td><td><code>busey_date</code> (sic), <code>increase_amount</code>, <code>date_heading</code></td>
+      <td>11 blackout/premium dates with a percentage uplift — holidays, big Austin events (SXSW, ACL).</td></tr>
+    <tr><td><code>limousin_special_time_rate</code></td><td><code>title</code>, <code>increase_amount</code></td>
+      <td>Single row: +20% for pickups 12am–6am or 9pm–11:59pm. The window is described in prose in <code>title</code>, not encoded as data — the actual hours are hardcoded in PHP.</td></tr>
+    <tr><td><code>limousin_contact_us</code></td><td><code>name</code>, <code>email</code>, <code>phone</code>, <code>subject</code>, <code>message</code>, <code>clint_ip</code> (sic)</td>
+      <td>923 contact-form submissions with sender IP.</td></tr>
+    <tr><td><code>limousin_service_inquiry</code></td><td>same shape as contact_us</td><td>8 rows. A near-duplicate table; fold into contact submissions.</td></tr>
+    <tr><td><code>limousin_corporate_account</code></td><td><code>company_name</code>, <code>name</code>, <code>email</code>, <code>phone</code>, <code>alt_phone</code>, <code>message</code></td>
+      <td>3 corporate account applications. No link to <code>limousin_member</code> — corporate accounts were never wired into billing.</td></tr>
+    <tr><td><code>limousin_banner</code></td><td><code>banner_title</code>, <code>dfile</code>, <code>banner_for</code>, <code>page_under</code></td>
+      <td>7 banners. <code>banner_for</code> is <code>H</code> (home) or <code>P</code> (page).</td></tr>
+    <tr><td><code>limousin_gallery</code></td><td><code>name</code>, <code>dfile</code>, <code>partrers</code> (sic), <code>featured</code></td>
+      <td>14 images doing double duty as gallery photos and partner logos.</td></tr>
+    <tr><td><code>limousin_castomer</code></td><td><code>customer_name</code>, <code>description</code>, <code>rating</code></td>
+      <td>3 testimonials. Table name is a misspelling of "customer" and is unrelated to <code>limousin_member</code>.</td></tr>
+    <tr><td><code>limousin_admin</code></td><td><code>username</code>, <code>password</code>, <code>email</code>, <code>admin_login_IP</code>, <code>vat</code></td>
+      <td>One admin account, plaintext password. The <code>vat</code> column here is the site-wide tax rate — business configuration stored on the user record.</td></tr>
+    <tr><td><code>limousin_social_media</code></td><td><code>facebook</code>, <code>twitter</code>, <code>linkedin</code></td><td>Single row of social URLs.</td></tr>
+    <tr><td><code>limousin_uploads</code></td><td><code>name</code>, <code>dfile</code>, <code>publication</code></td><td>1 row. Generic uploads; near-unused.</td></tr>
+    <tr><td><code>limousin_paging</code></td><td><code>value</code>, <code>name</code></td><td>2 rows of pagination page-size config.</td></tr>
+    <tr><td><code>limousin_country</code></td><td><code>iso</code>, <code>name</code>, <code>iso3</code>, <code>numcode</code></td><td>240 ISO countries. Unused by the booking flow — this is an Austin-area service.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="quality">10. Data quality &amp; migration notes</h2>
+
+<h4>Structural</h4>
+<ul>
+  <li><strong>No foreign keys and no secondary indexes.</strong> Every one of the 18 tables carries exactly one index — its primary key. All joins are unindexed scans. At 2,217 orders that is invisible; it is still worth knowing that nothing in the current schema enforces referential integrity.</li>
+  <li><strong>MyISAM throughout</strong>, so there are no transactions. A payment that succeeded at Stripe but failed mid-write leaves partial data with no rollback. Django on InnoDB fixes this by default.</li>
+  <li><strong>Dates stored as formatted strings.</strong> <code>pickup_date</code> holds values like <code>Sat, 03 Oct 2026, 10:15 PM</code>. These cannot be sorted or ranged in SQL and must be parsed on import. Expect failures on any row where an admin typed the date by hand.</li>
+  <li><strong>Denormalisation by copy.</strong> Vehicle name, member name and price are duplicated onto the order. This is defensible as a historical snapshot — a booking should retain the fare and vehicle name as they were — so preserve the values, but model them explicitly rather than by accident.</li>
+</ul>
+
+<h4>Encoding</h4>
+<p>
+  Every table is latin1, but the content is UTF-8 that was written through a latin1 connection.
+  <strong>3 of the 36 CMS rows contain double-encoded text</strong> — apostrophes appear as
+  <code>â€™</code>, dashes as <code>â€"</code>. A straight <code>latin1 → utf8mb4</code> conversion
+  preserves the corruption permanently. The import needs a repair pass that decodes the mis-encoding
+  first, verified page by page, and the same check applied to customer names and addresses before
+  assuming they are clean.
+</p>
+
+<h4>Must not be migrated</h4>
+<ul>
+  <li><code>limousin_order.card_number</code>, <code>expiration_date</code>, <code>name_on_card</code></li>
+  <li><code>limousin_orderdetails.card_number</code>, <code>expiration_dates</code>, <code>name_of_card</code>, <code>securitycode</code></li>
+  <li><code>limousin_member.password</code> — plaintext and unconvertible; every account needs a forced reset</li>
+</ul>
+<p>
+  In the new system card data should never reach the server at all — Stripe's hosted card fields keep it
+  out of scope entirely, which removes this class of problem structurally rather than by policy.
+</p>
+
+<h4>Open questions to resolve before building</h4>
+<ol>
+  <li>Which payment page does live traffic actually use — <code>payment.php</code> or <code>/card-payment</code>? The access logs will answer this.</li>
+  <li>Is PayPal live, or is the 6,685-line class vestigial? No PayPal transactions are identifiable in the order data.</li>
+  <li>What is <code>limousin_member.hundred</code>?</li>
+  <li>Are the <code>plan_*</code> subscription columns entirely empty? If so they drop out.</li>
+  <li>Which of <code>email</code> / <code>user_email</code> is the login identity?</li>
+  <li>The eight CMS rows pointing at missing templates — were those features removed deliberately, or is the driver-assignment flow (<code>lead_driver</code>, <code>confirm_driver_details</code>, <code>add_driver_details</code>) something the client still wants?</li>
+</ol>
+
+<footer>
+  Prepared 12 August 2026 from a read-only copy of the production application and a sanitised database
+  replica. No production file or record was modified. Cardholder data and passwords were redacted from the
+  local copy before analysis; row counts and structure are unaffected.
+  Companion document: <em>Security Issue Report</em>.
+</footer>
+
+</div>
+</body>
+</html>

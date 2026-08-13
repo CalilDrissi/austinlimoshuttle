@@ -1,0 +1,39 @@
+"""Public API routes consumed by the Next.js frontend."""
+
+from django.urls import path
+
+from . import payment_views, views
+
+app_name = "api"
+
+urlpatterns = [
+    # Content
+    path("pages/", views.page_list, name="pages"),
+    path("pages/<slug:slug>/", views.page_detail, name="page_detail"),
+    path("vehicles/", views.vehicle_list, name="vehicles"),
+    path("availability/", views.availability, name="availability"),
+
+    # Quoting and booking
+    path("quotes/", views.create_quote, name="quotes"),
+    path("bookings/", views.create_booking, name="create_booking"),
+
+    # Customer account
+    path("account/bookings/", views.my_bookings, name="my_bookings"),
+    path("account/bookings/<str:reference>/", views.my_booking_detail,
+         name="my_booking_detail"),
+
+    # Auth
+    path("auth/login/", views.auth_login, name="login"),
+    path("auth/logout/", views.auth_logout, name="logout"),
+    path("auth/register/", views.auth_register, name="register"),
+    path("auth/password-reset/", views.auth_password_reset, name="password_reset"),
+    path("auth/me/", views.auth_me, name="me"),
+
+    # Payments
+    path("payments/config/", payment_views.payment_config, name="payment_config"),
+    path("payments/intent/", payment_views.create_intent, name="payment_intent"),
+    path("payments/webhook/", payment_views.webhook, name="payment_webhook"),
+
+    # Enquiries
+    path("enquiries/", views.create_enquiry, name="enquiries"),
+]

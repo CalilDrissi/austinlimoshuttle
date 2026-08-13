@@ -1,0 +1,112 @@
+{% load humanize %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Dashboard{% endblock %} — Austin Limo Shuttle</title>
+<style>
+  :root{
+    --ink:#15181c; --muted:#5b636d; --line:#e2e7ec; --bg:#f4f6f8; --panel:#fff;
+    --accent:#0f6b4f; --accent-bg:#e8f4ef;
+    --warn:#8a6320; --warn-bg:#fbf4e5;
+    --danger:#8a3a34; --danger-bg:#fbeceb;
+    --info:#1f4e8c; --info-bg:#eaf1fa;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+       -webkit-font-smoothing:antialiased}
+  a{color:var(--accent)}
+  header.top{background:var(--ink);color:#fff;padding:0 20px;position:sticky;top:0;z-index:10}
+  .top-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:24px;height:52px}
+  .brand{font-weight:700;letter-spacing:-.01em;white-space:nowrap}
+  nav.main{display:flex;gap:4px;flex:1;overflow-x:auto}
+  nav.main a{color:#c9d2da;text-decoration:none;padding:7px 12px;border-radius:6px;
+             font-size:14px;white-space:nowrap}
+  nav.main a:hover{background:#2a3038;color:#fff}
+  nav.main a.active{background:var(--accent);color:#fff}
+  .who{font-size:13px;color:#9aa5b0;white-space:nowrap}
+  .who a{color:#c9d2da}
+  main{max-width:1280px;margin:0 auto;padding:24px 20px 64px}
+  h1{font-size:23px;margin:0 0 4px;letter-spacing:-.015em}
+  .lede{color:var(--muted);margin:0 0 20px;font-size:14px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+         padding:18px 20px;margin-bottom:18px}
+  .panel h2{font-size:16px;margin:0 0 12px}
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:20px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .stat .n{font-size:26px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .stat .l{font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+  .stat.alert .n{color:var(--danger)}
+  .stat.warn .n{color:var(--warn)}
+  table{width:100%;border-collapse:collapse;font-size:14px;background:var(--panel)}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{background:#fafbfc;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;
+     color:var(--muted);font-weight:600;position:sticky;top:52px}
+  tbody tr:hover{background:#fbfcfd}
+  .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+  .num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;
+       text-transform:uppercase;padding:2px 8px;border-radius:20px;white-space:nowrap}
+  .tag.pending{background:var(--warn-bg);color:var(--warn)}
+  .tag.confirmed{background:var(--info-bg);color:var(--info)}
+  .tag.completed{background:var(--accent-bg);color:var(--accent)}
+  .tag.cancelled{background:var(--danger-bg);color:var(--danger)}
+  .tag.role{background:#eef1f4;color:var(--muted);text-transform:none;letter-spacing:0}
+  form.inline{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:0}
+  input[type=text],input[type=date],select,textarea{
+    font:inherit;padding:6px 9px;border:1px solid #cdd5dd;border-radius:6px;background:#fff}
+  textarea{width:100%;min-height:90px}
+  button,.btn{font:inherit;font-weight:600;padding:6px 13px;border-radius:6px;border:1px solid transparent;
+              background:var(--accent);color:#fff;cursor:pointer;text-decoration:none;display:inline-block}
+  button.secondary,.btn.secondary{background:#fff;color:var(--ink);border-color:#cdd5dd}
+  button:hover{filter:brightness(1.06)}
+  .messages{list-style:none;padding:0;margin:0 0 16px}
+  .messages li{padding:10px 14px;border-radius:8px;margin-bottom:8px;font-size:14px}
+  .messages li.success{background:var(--accent-bg);color:var(--accent)}
+  .messages li.error{background:var(--danger-bg);color:var(--danger)}
+  .messages li.info{background:var(--info-bg);color:var(--info)}
+  .empty{padding:34px;text-align:center;color:var(--muted);background:var(--panel);
+         border:1px dashed var(--line);border-radius:10px}
+  .muted{color:var(--muted)}
+  .soon{color:var(--danger);font-weight:600}
+  dl.kv{display:grid;grid-template-columns:170px 1fr;gap:7px 16px;margin:0;font-size:14px}
+  dl.kv dt{color:var(--muted)}
+  dl.kv dd{margin:0}
+  @media (max-width:760px){
+    dl.kv{grid-template-columns:1fr}
+    th{position:static}
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <span class="brand">Austin Limo Shuttle</span>
+    <nav class="main">
+      <a href="{% url 'dashboard:home' %}" {% if request.resolver_match.url_name == 'home' %}class="active"{% endif %}>Overview</a>
+      <a href="{% url 'dashboard:dispatch' %}" {% if request.resolver_match.url_name == 'dispatch' %}class="active"{% endif %}>Dispatch</a>
+      <a href="{% url 'dashboard:bookings' %}" {% if request.resolver_match.url_name == 'bookings' %}class="active"{% endif %}>Bookings</a>
+      <a href="{% url 'dashboard:enquiries' %}" {% if request.resolver_match.url_name == 'enquiries' %}class="active"{% endif %}>Enquiries</a>
+      {% if is_manager %}<a href="{% url 'dashboard:payment_settings' %}" {% if request.resolver_match.url_name == 'payment_settings' %}class="active"{% endif %}>Payments</a>
+      <a href="{% url 'dashboard:email_settings' %}" {% if request.resolver_match.url_name == 'email_settings' %}class="active"{% endif %}>Email</a>{% endif %}
+      <a href="/admin/">Admin</a>
+    </nav>
+    <span class="who">
+      {{ request.user.get_full_name|default:request.user.email }}
+      {% for role in roles %}<span class="tag role">{{ role }}</span>{% endfor %}
+      · <a href="/admin/logout/">Sign out</a>
+    </span>
+  </div>
+</header>
+
+<main>
+  {% if messages %}
+    <ul class="messages">
+      {% for message in messages %}<li class="{{ message.tags }}">{{ message }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

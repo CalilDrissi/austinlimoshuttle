@@ -1,0 +1,101 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Email settings{% endblock %}
+
+{% block content %}
+<h1>Email settings</h1>
+<p class="lede">SMTP credentials for outgoing mail. Changes take effect on the next message.</p>
+
+{% if settings_obj.is_enabled %}
+  <div class="panel" style="border-left:4px solid var(--accent)">
+    <strong style="color:var(--accent)">Email is on.</strong>
+    Confirmations, driver notifications and cancellations will be sent.
+  </div>
+{% else %}
+  <div class="panel" style="border-left:4px solid var(--warn)">
+    <strong style="color:var(--warn)">Email is switched off.</strong>
+    Bookings still work; customers receive nothing.
+  </div>
+{% endif %}
+
+<div class="panel">
+  <h2>Current configuration</h2>
+  <dl class="kv">
+    <dt>Host</dt><dd>{% if settings_obj.host %}<code>{{ settings_obj.host }}:{{ settings_obj.port }}</code>{% else %}<span class="muted">not set</span>{% endif %}</dd>
+    <dt>Security</dt><dd>{{ settings_obj.get_security_display }}</dd>
+    <dt>Username</dt><dd>{{ settings_obj.username|default:"—" }}</dd>
+    <dt>Password</dt><dd>{% if settings_obj.has_password %}<code>{{ settings_obj.password_masked }}</code> <span class="muted">(encrypted)</span>{% else %}<span class="muted">not set</span>{% endif %}</dd>
+    <dt>From</dt><dd>{{ settings_obj.sender|default:"—" }}</dd>
+    <dt>Ops alerts to</dt><dd>{{ settings_obj.ops_notification_email|default:"—" }}</dd>
+    <dt>Last test</dt>
+    <dd>
+      {% if settings_obj.last_test_at %}
+        {{ settings_obj.last_test_at|date:"j M Y, H:i" }} —
+        {% if settings_obj.last_test_ok %}<span class="tag completed">Succeeded</span>
+        {% else %}<span class="tag cancelled">Failed</span>{% endif %}
+        {% if settings_obj.last_test_error %}<div class="muted" style="margin-top:4px">{{ settings_obj.last_test_error }}</div>{% endif %}
+      {% else %}<span class="muted">never tested</span>{% endif %}
+    </dd>
+  </dl>
+</div>
+
+<div class="panel">
+  <h2>Send a test message</h2>
+  <p class="muted">
+    Deliverability cannot be checked any other way — do this before a real customer
+    depends on it.
+  </p>
+  <form class="inline" method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="test">
+    <input type="text" name="test_email" placeholder="{{ request.user.email }}" size="34">
+    <button type="submit" class="secondary">Send test</button>
+  </form>
+</div>
+
+<div class="panel">
+  <h2>Update</h2>
+  <form method="post" autocomplete="off">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <ul class="messages">{% for e in form.non_field_errors %}<li class="error">{{ e }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% for field in form %}
+      <div style="margin-bottom:16px">
+        <label for="{{ field.id_for_label }}" style="display:block;font-weight:600;margin-bottom:4px">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<div class="muted" style="font-size:13px;margin-top:3px">{{ field.help_text }}</div>{% endif %}
+        {% for e in field.errors %}<div style="color:var(--danger);font-size:13.5px;margin-top:3px">{{ e }}</div>{% endfor %}
+      </div>
+    {% endfor %}
+    <button type="submit">Save settings</button>
+  </form>
+</div>
+
+<div class="panel">
+  <h2>Recent messages {% if failures %}<span class="tag cancelled">{{ failures }} failed</span>{% endif %}</h2>
+  {% if recent %}
+    <div class="scroll">
+      <table>
+        <thead><tr><th>When</th><th>Type</th><th>To</th><th>Subject</th><th>Result</th></tr></thead>
+        <tbody>
+        {% for log in recent %}
+          <tr>
+            <td class="num">{{ log.sent_at|date:"j M, H:i" }}</td>
+            <td>{{ log.get_kind_display }}</td>
+            <td>{{ log.to_email }}</td>
+            <td class="muted">{{ log.subject|truncatechars:44 }}</td>
+            <td>
+              {% if log.succeeded %}<span class="tag completed">Sent</span>
+              {% else %}<span class="tag cancelled">Failed</span>{% endif %}
+              {% if log.error %}<div class="muted" style="font-size:12.5px">{{ log.error|truncatechars:60 }}</div>{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted" style="margin:0">Nothing sent yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

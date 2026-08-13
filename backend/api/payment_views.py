@@ -1,0 +1,166 @@
+"""
+Payment endpoints.
+
+The checkout sequence:
+
+  1. POST /api/payments/intent/   -> client secret + publishable key
+  2. The browser confirms the card with Stripe Elements. Card details go
+     directly from the customer to Stripe; they never touch this server.
+  3. Stripe calls /api/payments/webhook/ -> the booking is confirmed.
+
+Step 3 is authoritative. The browser's return from checkout is a hint, not
+proof: it can be forged, and it can simply not arrive when a customer closes
+the tab. The legacy system confirmed orders on the browser's say-so.
+"""
+
+from __future__ import annotations
+
+import logging
+
+from django.db import transaction
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
+
+from bookings.models import Booking
+from payments import gateway
+from payments.models import Payment, PaymentSettings, WebhookEvent
+
+logger = logging.getLogger(__name__)
+
+HANDLED_EVENTS = {
+    "payment_intent.succeeded",
+    "payment_intent.payment_failed",
+    "payment_intent.canceled",
+    "payment_intent.processing",
+    "charge.refunded",
+}
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def payment_config(request):
+    """What the browser needs to render Stripe Elements."""
+    config = PaymentSettings.load()
+    return Response({
+        "enabled": config.is_configured,
+        "publishable_key": gateway.publishable_key(),
+        "mode": config.mode if config.is_enabled else None,
+    })
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@throttle_classes([AnonRateThrottle])
+def create_intent(request):
+    """
+    Start payment for a booking.
+
+    The amount is read from the booking, which the pricing engine computed.
+    Nothing in the request body influences it.
+    """
+    reference = (request.data.get("reference") or "").strip()
+    if not reference:
+        return Response({"detail": "A booking reference is required."},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    booking = Booking.objects.filter(reference=reference).first()
+    if booking is None:
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    # A signed-in customer may only pay for their own booking. Guest bookings
+    # have no owner, so the reference itself is the capability -- which is why
+    # references are 8 random characters from an unambiguous alphabet.
+    if booking.customer_id and request.user.is_authenticated \
+            and booking.customer_id != request.user.id:
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if booking.status == Booking.Status.CANCELLED:
+        return Response({"detail": "This booking was cancelled."},
+                        status=status.HTTP_409_CONFLICT)
+    if booking.payments.filter(status=Payment.Status.SUCCEEDED).exists():
+        return Response({"detail": "This booking is already paid."},
+                        status=status.HTTP_409_CONFLICT)
+
+    try:
+        payment = gateway.create_payment_intent(booking)
+        client_secret = gateway.client_secret_for(payment)
+    except gateway.PaymentConfigurationError as exc:
+        # An operator problem, not the customer's. Log loudly, stay vague.
+        logger.error("Payment configuration problem: %s", exc)
+        return Response(
+            {"detail": "Card payments are unavailable right now. Please contact us."},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+    except gateway.PaymentGatewayError as exc:
+        return Response({"detail": str(exc)},
+                        status=status.HTTP_502_BAD_GATEWAY)
+
+    return Response({
+        "client_secret": client_secret,
+        "publishable_key": gateway.publishable_key(),
+        "amount": f"{booking.total:.2f}",
+        "currency": booking.currency,
+        "reference": booking.reference,
+    })
+
+
+@csrf_exempt
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def webhook(request):
+    """
+    Stripe webhook. Signature-verified, idempotent.
+
+    CSRF exemption is correct here and safe: this endpoint authenticates by
+    HMAC signature over the raw body, which is stronger than a CSRF token and
+    is the only thing it trusts.
+    """
+    payload = request.body
+    signature = request.META.get("HTTP_STRIPE_SIGNATURE", "")
+
+    try:
+        event = gateway.verify_webhook(payload, signature)
+    except gateway.PaymentConfigurationError as exc:
+        logger.error("Webhook received but not verifiable: %s", exc)
+        # 503 so Stripe retries once the secret is configured, rather than
+        # discarding the event.
+        return Response({"detail": "Webhook not configured."},
+                        status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    except gateway.PaymentGatewayError as exc:
+        return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+    event_id = event["id"]
+    event_type = event["type"]
+
+    # Replay protection. Stripe retries until it gets a 2xx and may deliver the
+    # same event more than once regardless.
+    with transaction.atomic():
+        _, created = WebhookEvent.objects.get_or_create(
+            event_id=event_id,
+            defaults={"event_type": event_type,
+                      "payload_summary": str(event["data"]["object"].get("id", ""))[:255]},
+        )
+        if not created:
+            logger.info("Ignoring duplicate webhook %s (%s)", event_id, event_type)
+            return Response({"status": "duplicate ignored"})
+
+        if event_type not in HANDLED_EVENTS:
+            # 200 so Stripe stops retrying an event we deliberately ignore.
+            return Response({"status": "ignored"})
+
+        obj = event["data"]["object"]
+        try:
+            if event_type == "charge.refunded":
+                gateway.record_refund_from_charge(obj)
+            else:
+                gateway.apply_intent_to_payment(obj)
+        except Exception:
+            # Roll back the dedupe row so Stripe's retry gets a real attempt.
+            logger.exception("Failed to process webhook %s (%s)", event_id, event_type)
+            raise
+
+    return Response({"status": "ok"})

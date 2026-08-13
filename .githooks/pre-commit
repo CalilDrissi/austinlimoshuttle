@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Refuse to commit credentials.
+#
+# This project exists because a previous one shipped a live Stripe key and a
+# database password inside its web root. The .gitignore covers the files we know
+# about; this catches a secret pasted into one we track.
+#
+# Enable once per clone:  git config core.hooksPath .githooks
+
+set -uo pipefail
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$STAGED" ] && exit 0
+
+# Patterns that are secrets wherever they appear. Deliberately narrow -- a noisy
+# hook gets bypassed with --no-verify and then protects nothing.
+PATTERNS=(
+  'sk_live_[A-Za-z0-9]{20,}'
+  'sk_test_[A-Za-z0-9]{20,}'
+  'rk_live_[A-Za-z0-9]{20,}'
+  'whsec_[A-Za-z0-9]{20,}'
+  'AIzaSy[A-Za-z0-9_-]{30,}'
+  '-----BEGIN [A-Z ]*PRIVATE KEY-----'
+)
+
+FOUND=0
+for file in $STAGED; do
+  [ -f "$file" ] || continue
+  # Test files legitimately contain example-shaped keys.
+  case "$file" in */tests/*|*test_*) continue;; esac
+
+  for pattern in "${PATTERNS[@]}"; do
+    if git show ":$file" 2>/dev/null | grep -nEq "$pattern"; then
+      echo "BLOCKED: $file appears to contain a credential (/$pattern/)" >&2
+      FOUND=1
+    fi
+  done
+done
+
+if [ "$FOUND" -ne 0 ]; then
+  cat >&2 <<'MSG'
+
+Commit refused. Move the value into .env (which is ignored) and read it via
+django-environ, or store it through the dashboard settings pages where it is
+encrypted at rest.
+
+If this is a false positive, re-run with --no-verify.
+MSG
+  exit 1
+fi
+exit 0

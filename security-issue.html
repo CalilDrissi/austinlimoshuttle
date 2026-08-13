@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Security Issue Report — austinlimoshuttle.com</title>
+<style>
+  :root{
+    --ink:#1a1d21; --muted:#5c6570; --line:#dde2e8; --bg:#ffffff; --panel:#f7f9fb;
+    --crit:#b3261e; --crit-bg:#fdecea; --high:#b35309; --high-bg:#fdf1e3;
+    --med:#8a6d00; --med-bg:#fbf5e0; --ok:#1e6b41; --ok-bg:#e9f5ee;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:900px;margin:0 auto;padding:48px 24px 96px}
+  header{border-bottom:3px solid var(--ink);padding-bottom:20px;margin-bottom:36px}
+  h1{font-size:30px;line-height:1.25;margin:0 0 8px;letter-spacing:-.02em}
+  .sub{color:var(--muted);font-size:15px;margin:0}
+  h2{font-size:21px;margin:44px 0 14px;letter-spacing:-.01em;padding-top:8px}
+  h3{font-size:17px;margin:0 0 6px}
+  p{margin:0 0 14px}
+  .lede{font-size:17px;background:var(--panel);border-left:4px solid var(--crit);
+        padding:18px 20px;border-radius:0 6px 6px 0;margin-bottom:8px}
+  .meta{display:flex;flex-wrap:wrap;gap:10px 28px;color:var(--muted);font-size:14px;margin-top:14px}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:15px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--panel);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .finding{border:1px solid var(--line);border-radius:8px;padding:20px 22px;margin:18px 0;background:#fff}
+  .finding.c{border-left:5px solid var(--crit)}
+  .finding.h{border-left:5px solid var(--high)}
+  .finding.m{border-left:5px solid var(--med)}
+  .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.07em;
+       text-transform:uppercase;padding:3px 9px;border-radius:4px;margin-bottom:10px}
+  .tag.c{background:var(--crit-bg);color:var(--crit)}
+  .tag.h{background:var(--high-bg);color:var(--high)}
+  .tag.m{background:var(--med-bg);color:var(--med)}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;
+       background:var(--panel);padding:2px 6px;border-radius:4px;border:1px solid var(--line)}
+  pre{background:#1e2227;color:#e6e9ed;padding:14px 16px;border-radius:6px;overflow-x:auto;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.55;margin:12px 0}
+  pre code{background:none;border:none;padding:0;color:inherit;font-size:inherit}
+  ol,ul{margin:0 0 14px;padding-left:24px}
+  li{margin-bottom:7px}
+  .note{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px 20px;margin:24px 0;font-size:15px}
+  .note strong{display:block;margin-bottom:6px}
+  .act{background:var(--crit-bg);border:1px solid #f3c9c4;border-radius:8px;padding:20px 22px;margin:24px 0}
+  .act h3{color:var(--crit);margin-bottom:10px}
+  footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:13.5px}
+  @media print{
+    body{font-size:11.5pt} .wrap{padding:0;max-width:none}
+    .finding,.note,.act{break-inside:avoid} pre{white-space:pre-wrap}
+    h2{break-after:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Security Issue Report</h1>
+  <p class="sub">austinlimoshuttle.com — legacy PHP booking application</p>
+  <div class="meta">
+    <span><strong>Date:</strong> 12 August 2026</span>
+    <span><strong>Host:</strong> InMotion shared hosting</span>
+    <span><strong>Scope:</strong> read-only assessment</span>
+  </div>
+</header>
+
+<p class="lede">
+  The live booking site is storing <strong>thousands of unencrypted payment card numbers</strong> and
+  <strong>customer passwords in plaintext</strong>, and exposes at least one publicly reachable,
+  unauthenticated SQL injection that reads the very table holding that card data. A full copy of the
+  application source is downloadable from the public web root without a password.
+  We recommend the client treat this as a <strong>probable data breach</strong> rather than a theoretical
+  risk, and contact their payment processor and legal counsel promptly.
+</p>
+
+<h2>Summary of findings</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th>#</th><th>Finding</th><th>Severity</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td class="num">1</td><td>Full payment card numbers stored unencrypted</td><td>Critical</td><td>Active &amp; ongoing</td></tr>
+    <tr><td class="num">1b</td><td>Card security codes (CVV) retained after authorisation</td><td>Critical</td><td>Prohibited outright</td></tr>
+    <tr><td class="num">2</td><td>Unauthenticated SQL injection on a public URL</td><td>Critical</td><td>Exploitable now</td></tr>
+    <tr><td class="num">3</td><td>Application source archives publicly downloadable</td><td>Critical</td><td>Confirmed live</td></tr>
+    <tr><td class="num">4</td><td>Customer and admin passwords stored in plaintext</td><td>Critical</td><td>Active</td></tr>
+    <tr><td class="num">5</td><td>Live Stripe secret key hardcoded in source</td><td>High</td><td>Active</td></tr>
+    <tr><td class="num">6</td><td>PHP 5.4 — unsupported for ~11 years</td><td>High</td><td>Active</td></tr>
+    <tr><td class="num">7</td><td>SQL injection across 15 further files (26 sites)</td><td>High</td><td>Active</td></tr>
+    <tr><td class="num">8</td><td>Stripe SDK v1.13.0 (c. 2014), legacy Charges API</td><td>Medium</td><td>Active</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="act">
+  <h3>Recommended actions, in order</h3>
+  <ol>
+    <li><strong>Rotate the Stripe live secret key</strong> in the Stripe dashboard. Treat the current key as compromised.</li>
+    <li><strong>Remove the two archive files</strong> from the web root — move them outside <code>public_html</code>, do not merely rename them.</li>
+    <li><strong>Take <code>direct-payment.php</code> offline</strong> — it is unreferenced by the rest of the application but still publicly reachable and injectable.</li>
+    <li><strong>Contact the payment processor / acquiring bank.</strong> PCI-DSS incident response obligations are triggered by cardholder data exposure and are time-sensitive.</li>
+    <li><strong>Stop writing card numbers to the database</strong>, then purge the stored historical card data once the processor has advised on evidence preservation.</li>
+    <li><strong>Force a password reset for all customer accounts</strong> and notify affected users, since plaintext passwords are frequently reused elsewhere.</li>
+    <li><strong>Change the database password</strong> and remove credentials from source control.</li>
+  </ol>
+</div>
+
+<h2>Detailed findings</h2>
+
+<div class="finding c">
+  <span class="tag c">Critical &nbsp;·&nbsp; 1</span>
+  <h3>Full payment card numbers stored unencrypted</h3>
+  <p>
+    The <code>limousin_order</code> and <code>limousin_orderdetails</code> tables both contain
+    <code>card_number</code>, <code>expiration_date</code> and cardholder-name columns populated with
+    full, unmasked card numbers. Nothing is encrypted, tokenised or truncated.
+  </p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Table</th><th>Rows</th><th>Full card numbers</th><th>Expiry dates</th><th>Masked</th></tr></thead>
+    <tbody>
+      <tr><td><code>limousin_order</code></td><td class="num">2,217</td><td class="num">1,839</td><td class="num">1,885</td><td class="num">0</td></tr>
+      <tr><td><code>limousin_orderdetails</code></td><td class="num">2,488</td><td class="num">1,577</td><td class="num">1,608</td><td class="num">0</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>
+    Value lengths match genuine card brands — 1,249 at sixteen digits (Visa / Mastercard) and 592 at
+    fifteen digits (American Express). Cardholder names are present on 1,799 orders.
+  </p>
+  <p><strong>This is ongoing, not historical.</strong> Card capture continues to the present day:</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Year</th><th>2026 (part)</th><th>2025</th><th>2024</th><th>2023</th><th>2022</th></tr></thead>
+    <tbody><tr><td>Cards stored</td><td class="num">85</td><td class="num">129</td><td class="num">184</td><td class="num">240</td><td class="num">312</td></tr></tbody>
+  </table>
+  </div>
+  <p>
+    Card number, expiry and cardholder name together are sufficient to attempt card-not-present fraud.
+  </p>
+  <p>
+    <strong>Card security codes are also retained.</strong> The <code>limousin_orderdetails</code> table
+    carries a <code>securitycode</code> column holding 68 three- and four-digit values. PCI-DSS
+    Requirement 3.2 prohibits storing the card verification code after authorisation under any
+    circumstances — unlike the card number, there is no permitted form in which it may be kept, encrypted
+    or otherwise. Card number, expiry, cardholder name and CVV together constitute everything needed to
+    transact on those cards.
+  </p>
+  <p>
+    Storing a primary account number in unreadable form is required by PCI-DSS Requirement 3; storing it
+    in plaintext is a direct violation and is generally grounds for fines and increased processing costs.
+  </p>
+</div>
+
+<div class="finding c">
+  <span class="tag c">Critical &nbsp;·&nbsp; 2</span>
+  <h3>Unauthenticated SQL injection on a public URL</h3>
+  <p>
+    <code>direct-payment.php</code> executes a query built by string concatenation from a URL parameter,
+    <em>before</em> any authentication or session check:
+  </p>
+<pre><code>// direct-payment.php, lines 11-14
+if(isset($_GET['orderID']) &amp;&amp; $_GET['orderID']!='')
+{
+    $shipBill=$obj-&gt;runSql("SELECT * FROM ".ORDER." WHERE `id` = ".$_GET['orderID']);
+}</code></pre>
+  <p>
+    The parameter is neither escaped nor cast to an integer. The targeted table is
+    <code>limousin_order</code> — the same table holding the card data in Finding 1. Any visitor can reach
+    this file directly; the login requirement further down the file executes too late to matter.
+  </p>
+  <p>
+    <em>No exploitation was attempted against the production system.</em> The finding rests on reading the
+    source, which is unambiguous.
+  </p>
+</div>
+
+<div class="finding c">
+  <span class="tag c">Critical &nbsp;·&nbsp; 3</span>
+  <h3>Application source archives publicly downloadable</h3>
+  <p>Two archive files sit inside the public web root and are served to anonymous visitors:</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>File</th><th>Size</th><th>Response</th></tr></thead>
+    <tbody>
+      <tr><td><code>/admin.zip</code></td><td class="num">180 MB</td><td>HTTP 206 — downloadable</td></tr>
+      <tr><td><code>/backup_download.zip</code></td><td class="num">23 MB</td><td>HTTP 206 — downloadable</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>
+    Only a 1 KB range request was made to confirm accessibility; the contents were not retrieved. A
+    security filter on the server rejects unusual request signatures, but an ordinary browser
+    user-agent passes straight through, so this offers no meaningful protection.
+  </p>
+  <p>
+    If either archive contains a copy of the application configuration or a database backup — which their
+    names and origin suggest is likely — then the database credentials, the Stripe secret key and the
+    stored card data may already be in public circulation.
+  </p>
+</div>
+
+<div class="finding c">
+  <span class="tag c">Critical &nbsp;·&nbsp; 4</span>
+  <h3>Customer and admin passwords stored in plaintext</h3>
+  <p>
+    All 1,251 rows in <code>limousin_member</code>, and the single <code>limousin_admin</code> account,
+    store passwords as plaintext. This was determined by shape analysis without reading any values:
+    stored lengths vary between 8 and 15 characters and contain non-hexadecimal characters, which is
+    inconsistent with every common hash format.
+  </p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Format</th><th>Expected length</th><th>Rows matching</th></tr></thead>
+    <tbody>
+      <tr><td>MD5</td><td class="num">32 hex</td><td class="num">0</td></tr>
+      <tr><td>SHA-1</td><td class="num">40 hex</td><td class="num">0</td></tr>
+      <tr><td>bcrypt</td><td><code>$2y$…</code></td><td class="num">0</td></tr>
+      <tr><td>Plaintext</td><td>variable</td><td class="num">1,251</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>
+    Because password reuse across sites is common, this exposure extends beyond this application to
+    customers' email and banking accounts. That is what makes notification a duty rather than a courtesy.
+  </p>
+</div>
+
+<div class="finding h">
+  <span class="tag h">High &nbsp;·&nbsp; 5</span>
+  <h3>Live Stripe secret key hardcoded in source</h3>
+  <p>
+    The payment code calls <code>setApiKey("sk_live_…")</code> with a live secret key written directly
+    into a PHP file in the web root. A Stripe secret key authorises charges and refunds against the real
+    account. It should be held in an environment variable outside the document root and rotated whenever
+    exposure is suspected — which, given Finding 3, it should be here.
+  </p>
+</div>
+
+<div class="finding h">
+  <span class="tag h">High &nbsp;·&nbsp; 6</span>
+  <h3>PHP 5.4 — unsupported for approximately eleven years</h3>
+  <p>
+    The cPanel handler pins the site to <code>ea-php54</code>. PHP 5.4 reached end of life in September
+    2015 and has received no security patches since. The application relies on the <code>mysql_*</code>
+    extension, which was removed outright in PHP 7.0 — so the site cannot move to a supported PHP version
+    without code changes. An unpatched interpreter is processing live card payments.
+  </p>
+</div>
+
+<div class="finding h">
+  <span class="tag h">High &nbsp;·&nbsp; 7</span>
+  <h3>SQL injection across a further 15 files</h3>
+  <p>
+    The same concatenation pattern appears at 26 further locations across 15 files, all within the
+    administration panel, including
+    <code>admin/car_list.php</code>, <code>admin/banner.php</code>, <code>admin/service.php</code>,
+    <code>admin/blog.php</code>, <code>admin/viewMessage.php</code> and <code>admin/orderDetails.php</code>.
+  </p>
+  <p>
+    An escaping helper, <code>realStrip()</code>, does exist in the codebase, but it is applied to roughly
+    <strong>15%</strong> of the 2,145 places where request data is read. Protection is manual and
+    inconsistent rather than systematic. These files sit behind an admin login, which lowers their
+    severity relative to Finding 2 but does not remove it.
+  </p>
+</div>
+
+<div class="finding m">
+  <span class="tag m">Medium &nbsp;·&nbsp; 8</span>
+  <h3>Obsolete Stripe SDK and dead code in the web root</h3>
+  <p>
+    The bundled Stripe library is version 1.13.0 (circa 2014), using the legacy
+    <code>Stripe_Charge::create</code> Charges API. Modern Stripe integrations use Payment Intents, which
+    handle Strong Customer Authentication and 3-D Secure — neither of which this integration supports.
+  </p>
+  <p>
+    The web root also holds numerous abandoned duplicates of live files, versioned by filename
+    (<code>7-8-17payment.php</code>, <code>07-08-17stripe-not-savecard-payment.php</code> and similar),
+    plus stale copies of the whole site in <code>OLDSITE/</code>, <code>beta/</code> and
+    <code>backupsite20.03.2017/</code>. Every one of these remains publicly executable, and several
+    contain the same injection flaws as the live files. Dead code that the server still runs is not dead.
+  </p>
+</div>
+
+<h2>How this was assessed</h2>
+<div class="note">
+  <strong>Read-only, non-disruptive</strong>
+  <p style="margin:0">
+    The assessment used read-only shell access over SSH. No file on the production server was created,
+    modified or deleted. The source archive and database dump were streamed directly to a local machine
+    rather than written to the host, and the database export ran without table locks so that live
+    bookings were never blocked. No exploitation of any vulnerability was attempted, and no cardholder
+    data or password value was read or recorded.
+  </p>
+</div>
+<div class="note">
+  <strong>Handling of the extracted copy</strong>
+  <p style="margin:0">
+    The local analysis copy has been sanitised: all card numbers were reduced to their last four digits,
+    all expiry dates cleared, and all passwords replaced with a placeholder. Record counts were preserved
+    intact so that migration planning can continue. If a formal breach investigation follows, note that
+    the production database itself remains unaltered and is the authoritative evidence.
+  </p>
+</div>
+<div class="note">
+  <strong>Limits of this report</strong>
+  <p style="margin:0">
+    This is an engineering assessment carried out while scoping a platform migration, not a formal PCI-DSS
+    audit, penetration test or legal opinion. It reports what the source code and database schema plainly
+    show. Determining breach notification obligations, regulatory exposure and remediation deadlines
+    requires the client's payment processor, a Qualified Security Assessor and legal counsel. The absence
+    of a finding here is not evidence that no further issues exist — no authenticated testing, traffic
+    analysis or server log review was performed.
+  </p>
+</div>
+
+<footer>
+  Prepared 12 August 2026 as part of a platform migration assessment for austinlimoshuttle.com.
+  Contains confidential findings about a live production system — distribute only to the client and their advisers.
+</footer>
+
+</div>
+</body>
+</html>

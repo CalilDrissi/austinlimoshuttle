@@ -1,0 +1,29 @@
+# --- Secrets & credentials (never commit) ---
+.env
+backend/.env
+.secrets/
+
+# --- Legacy audit artefacts ---
+# The legacy source and DB dump are the client's production code and data.
+legacy/
+dumps/
+*.sql
+*.sql.gz
+*.tar.gz
+
+# --- Python ---
+backend/.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+staticfiles/
+media/
+
+# --- Node (frontend, later) ---
+node_modules/
+.next/
+
+# --- OS ---
+.DS_Store

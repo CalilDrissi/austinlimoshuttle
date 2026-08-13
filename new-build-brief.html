@@ -1,0 +1,936 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build Brief — Django + Next.js Rebuild</title>
+<style>
+  :root{
+    --ink:#15181c; --muted:#59626c; --line:#e1e6ea; --bg:#fff; --panel:#f6f8fa;
+    --accent:#0f6b4f; --accent-bg:#e8f4ef; --accent-line:#bfe0d3;
+    --blue:#1f4e8c; --blue-bg:#eaf1fa;
+    --warn:#8a6320; --warn-bg:#fbf4e5;
+    --dead:#8a3a34; --dead-bg:#fbeceb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.62 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1020px;margin:0 auto;padding:48px 24px 96px}
+  header{border-bottom:3px solid var(--ink);padding-bottom:20px;margin-bottom:30px}
+  h1{font-size:32px;line-height:1.2;margin:0 0 8px;letter-spacing:-.022em}
+  .sub{color:var(--muted);font-size:15px;margin:0}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 26px;color:var(--muted);font-size:13.5px;margin-top:14px}
+  h2{font-size:23px;margin:52px 0 8px;letter-spacing:-.015em;padding-bottom:8px;border-bottom:2px solid var(--line)}
+  h3{font-size:18.5px;margin:30px 0 10px;letter-spacing:-.01em}
+  h4{font-size:15px;margin:22px 0 6px;color:var(--accent)}
+  p{margin:0 0 13px}
+  .lede{font-size:16.5px;background:var(--accent-bg);border-left:4px solid var(--accent);
+        padding:18px 20px;border-radius:0 6px 6px 0;margin:0 0 10px}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--panel);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.045em;color:var(--muted)}
+  td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:14px 0}
+  .scroll table{margin:0}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;
+       background:var(--panel);padding:1px 5px;border-radius:4px;border:1px solid var(--line);white-space:nowrap}
+  td code{background:none;border:none;padding:0}
+  pre{background:#1d2126;color:#e4e8ec;padding:14px 16px;border-radius:6px;overflow-x:auto;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.8px;line-height:1.55;margin:12px 0}
+  pre code{background:none;border:none;padding:0;color:inherit;white-space:pre}
+  .pill{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+        padding:2px 7px;border-radius:3px;white-space:nowrap}
+  .pill.new{background:var(--accent-bg);color:var(--accent)}
+  .pill.warn{background:var(--warn-bg);color:var(--warn)}
+  .pill.drop{background:var(--dead-bg);color:var(--dead)}
+  .pill.pk{background:#eee;color:#444}
+  .note{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
+        border-radius:0 6px 6px 0;padding:15px 18px;margin:18px 0;font-size:14.8px}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-bg);border-color:#eddfba}
+  .note strong:first-child{display:block;margin-bottom:4px}
+  ol,ul{margin:0 0 13px;padding-left:23px}
+  li{margin-bottom:6px}
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px 22px;margin:22px 0}
+  .toc ul{margin:0;padding-left:18px;columns:2;column-gap:32px}
+  .toc li{margin-bottom:4px;font-size:14.5px;break-inside:avoid}
+  .toc a{color:var(--accent);text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+  .erd{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;margin:18px 0}
+  .erd svg{width:100%;height:auto;display:block}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:0 28px}
+  @media (max-width:720px){.cols{grid-template-columns:1fr}.toc ul{columns:1}}
+  footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  @media print{
+    body{font-size:10.5pt}.wrap{padding:0;max-width:none}
+    .note,table,.erd{break-inside:avoid} h2,h3{break-after:avoid} pre{white-space:pre-wrap} .toc{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Build Brief — Django + Next.js Rebuild</h1>
+  <p class="sub">austinlimoshuttle.com — target architecture, data model and delivery plan</p>
+  <div class="meta">
+    <span><strong>Date:</strong> 12 August 2026</span>
+    <span><strong>Backend:</strong> Django + Django templates (admin)</span>
+    <span><strong>Frontend:</strong> Next.js</span>
+    <span><strong>Replaces:</strong> 47,712 lines of PHP 5.4</span>
+  </div>
+</header>
+
+<p class="lede">
+  This specifies the system that replaces the legacy PHP application. Django owns the data, the business
+  rules and the staff-facing dashboard, rendered with Django templates. Next.js owns the public site and
+  the booking funnel. The rebuild is also the remediation — every critical finding in the security report
+  is resolved structurally here rather than patched, most importantly by ensuring card data never reaches
+  our servers at all.
+</p>
+
+<div class="toc">
+  <strong>Contents</strong>
+  <ul>
+    <li><a href="#goals">1. Goals &amp; scope</a></li>
+    <li><a href="#arch">2. Architecture</a></li>
+    <li><a href="#stack">3. Stack &amp; rationale</a></li>
+    <li><a href="#layout">4. Project layout</a></li>
+    <li><a href="#apps">5. Django applications</a></li>
+    <li><a href="#pricing">6. The pricing engine</a></li>
+    <li><a href="#admin">7. Admin dashboard</a></li>
+    <li><a href="#frontend">8. Next.js frontend</a></li>
+    <li><a href="#api">9. API contract</a></li>
+    <li><a href="#auth">10. Authentication</a></li>
+    <li><a href="#payments">11. Payments &amp; PCI scope</a></li>
+    <li><a href="#comms">12. Email, PDF &amp; notifications</a></li>
+    <li><a href="#schema">13. Database schema</a></li>
+    <li><a href="#relations">14. Relations reference</a></li>
+    <li><a href="#migration">15. Data migration</a></li>
+    <li><a href="#seo">16. SEO &amp; URL preservation</a></li>
+    <li><a href="#deploy">17. Deployment</a></li>
+    <li><a href="#security">18. Security requirements</a></li>
+    <li><a href="#testing">19. Testing</a></li>
+    <li><a href="#phases">20. Delivery phases</a></li>
+  </ul>
+</div>
+
+<h2 id="goals">1. Goals &amp; scope</h2>
+
+<h4>What the new system must do</h4>
+<ul>
+  <li>Take airport, wedding, executive and event bookings for a 4-vehicle Austin fleet, quoting fares from a banded distance model with time and date surcharges.</li>
+  <li>Charge cards through Stripe without cardholder data touching our infrastructure.</li>
+  <li>Give customers accounts with booking history, amendment and rebooking.</li>
+  <li>Give staff a dashboard for bookings, fleet, pricing, customers, content and enquiries.</li>
+  <li>Preserve organic search rankings on the existing service-page URLs.</li>
+  <li>Migrate 2,217 bookings, 1,251 customers, 923 enquiries and 36 content pages.</li>
+</ul>
+
+<h4>Explicitly out of scope</h4>
+<div class="scroll">
+<table>
+  <thead><tr><th>Excluded</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>Blog / WordPress</td><td>Dropped per client decision. See <a href="#seo">§16</a> for the redirect handling this requires.</td></tr>
+    <tr><td>Classifieds, news, careers, FAQ, newsletter, events modules</td><td>Never functional in the legacy system — they query tables that don't exist. Nothing to migrate.</td></tr>
+    <tr><td>Corporate billing / invoicing</td><td>Legacy captured 3 applications in 9 years and never wired them to billing. Kept as an enquiry form only.</td></tr>
+    <tr><td>PayPal</td><td>No identifiable PayPal transactions in 2,217 orders. Confirm with the client, then drop.</td></tr>
+    <tr><td>Multi-currency / international</td><td>USD only; the 240-row country table is template residue.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note warn">
+  <strong>Decisions still needed before build starts</strong>
+  Driver assignment: the legacy CMS references <code>lead_driver</code>, <code>confirm_driver_details</code>
+  and <code>add_driver_details</code> templates that no longer exist, and driver names are typed free-text
+  onto bookings. This brief specifies a proper <code>Driver</code> table on the assumption that dispatch
+  matters. If the client wants a driver-facing portal, that is additional scope not costed here.
+</div>
+
+<h2 id="arch">2. Architecture</h2>
+
+<pre><code>                         ┌────────────────────────────┐
+      Public visitors ──▶│  Next.js  (Node, SSR/ISR)  │  www.austinlimoshuttle.com
+                         │  marketing + booking funnel│
+                         └──────────────┬─────────────┘
+                                        │  HTTPS / JSON
+                                        ▼
+                         ┌────────────────────────────┐
+      Staff ────────────▶│  Django  (Python/WSGI)     │  admin.austinlimoshuttle.com
+      (Django templates) │  REST API + admin dashboard│  api.austinlimoshuttle.com
+                         └──────────────┬─────────────┘
+                                        │
+                    ┌───────────────────┼───────────────────┐
+                    ▼                   ▼                   ▼
+              ┌───────────┐      ┌─────────────┐     ┌─────────────┐
+              │  MySQL    │      │   Stripe    │     │ Google Maps │
+              │  (InnoDB) │      │   Elements  │     │  Distance   │
+              └───────────┘      │  + Intents  │     │   Matrix    │
+                                 └─────────────┘     └─────────────┘</code></pre>
+
+<h4>Request flows</h4>
+<ol>
+  <li><strong>Marketing page</strong> — Next.js renders on the server, fetching page content from Django's API, cached with ISR. Search engines get fully-rendered HTML.</li>
+  <li><strong>Booking funnel</strong> — the browser posts pickup/destination to Django, which calls the Distance Matrix API server-side (keeping the API key off the client), computes fares for every active vehicle, and returns a quote. The quote is signed and short-lived so the client cannot tamper with the price.</li>
+  <li><strong>Payment</strong> — Django creates a Stripe PaymentIntent and returns its client secret. Stripe Elements collects the card in an iframe served by Stripe; the card number never reaches our servers or our database. On <code>succeeded</code>, Stripe's webhook confirms the booking server-side.</li>
+  <li><strong>Staff</strong> — Django serves the dashboard directly as HTML via Django templates. No API round-trip, no separate frontend build.</li>
+</ol>
+
+<div class="note">
+  <strong>Why the fare is computed server-side, always</strong>
+  In the legacy system the fare is calculated inside the page template and re-derived on the payment page.
+  A client-supplied price is a price a customer can edit. In the new system the browser never sends an
+  amount — it sends a quote token, and Django recomputes and verifies the total before creating the
+  PaymentIntent.
+</div>
+
+<h2 id="stack">3. Stack &amp; rationale</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th>Layer</th><th>Choice</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>Backend</td><td>Django 5.x, Python 3.12</td><td>The domain is 18 tables of CRUD with one intricate algorithm. Django's ORM, migrations, auth and admin remove most of the boilerplate outright.</td></tr>
+    <tr><td>API</td><td>Django REST Framework</td><td>Serializers, validation and auth that the Next.js app consumes. Mature and boring, which is what a payment path needs.</td></tr>
+    <tr><td>Admin</td><td>Django admin + custom template views</td><td>Generates ~80% of the staff dashboard from model definitions. Bookings and dispatch get purpose-built views on top.</td></tr>
+    <tr><td>Frontend</td><td>Next.js 15 (App Router), TypeScript</td><td>Server rendering for the SEO-critical service pages; a real component model for the six-step funnel.</td></tr>
+    <tr><td>Styling</td><td>Tailwind CSS</td><td>No stylesheet inheritance from a nine-year-old theme.</td></tr>
+    <tr><td>Database</td><td>MySQL 8 (InnoDB, utf8mb4)</td><td>Available on the existing cPanel host. InnoDB brings transactions and foreign keys, neither of which the MyISAM legacy schema had.</td></tr>
+    <tr><td>Payments</td><td>Stripe Elements + Payment Intents</td><td>Removes us from PCI scope and adds the 3-D Secure / SCA support the legacy Charges integration never had.</td></tr>
+    <tr><td>Email</td><td>Django email + SMTP</td><td>Reuses the existing <code>mail.austinlimoshuttle.com</code> mailbox. Swappable for a transactional provider if deliverability proves poor.</td></tr>
+    <tr><td>PDF</td><td>WeasyPrint</td><td>Confirmation PDFs from the same HTML templates as the emails, rather than TCPDF's imperative drawing API.</td></tr>
+    <tr><td>Background jobs</td><td>Django management commands via cron</td><td>Shared hosting has cron but no reliable long-running worker. Celery is unnecessary at this volume (~250 bookings/year).</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="layout">4. Project layout</h2>
+<pre><code>austinlimo/
+├── backend/                    # Django project
+│   ├── config/                 # settings/, urls.py, wsgi.py
+│   │   └── settings/           # base.py, dev.py, prod.py
+│   ├── accounts/               # custom user, addresses, corporate
+│   ├── fleet/                  # vehicles, distance bands
+│   ├── pricing/                # surcharges, blackout dates, quote engine
+│   ├── bookings/               # bookings, drivers, price lines, status audit
+│   ├── payments/               # Stripe intents, webhooks, refunds
+│   ├── content/                # CMS pages, banners, testimonials, settings
+│   ├── enquiries/              # contact + corporate enquiries
+│   ├── dashboard/              # staff views + Django templates
+│   │   └── templates/dashboard/
+│   ├── api/                    # DRF routers, serializers, permissions
+│   └── legacy_import/          # one-shot migration commands
+├── frontend/                   # Next.js app
+│   ├── app/                    # App Router routes
+│   ├── components/
+│   ├── lib/                    # API client, fare formatting, types
+│   └── public/
+└── ops/                        # deploy scripts, cron, env templates</code></pre>
+
+<h2 id="apps">5. Django applications</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th>App</th><th>Models</th><th>Responsibility</th></tr></thead>
+  <tbody>
+    <tr><td><code>accounts</code></td><td>User, BillingAddress, CorporateAccount</td><td>Custom email-login user, billing addresses, corporate applications. Replaces <code>limousin_member</code> and <code>limousin_admin</code>.</td></tr>
+    <tr><td><code>fleet</code></td><td>Vehicle, DistanceBand</td><td>Vehicles and their rate cards. Distance bands become rows instead of four fixed columns.</td></tr>
+    <tr><td><code>pricing</code></td><td>TimeSurcharge, BlackoutDate, PricingSettings</td><td>Surcharge rules and the quote engine. Surcharge windows become real time fields, not prose.</td></tr>
+    <tr><td><code>bookings</code></td><td>Booking, BookingPriceLine, Driver, BookingStatusChange</td><td>The core record, its fare breakdown, driver assignment and a status audit trail.</td></tr>
+    <tr><td><code>payments</code></td><td>Payment, Refund</td><td>Stripe references only — intent ID, brand, last four. No card data.</td></tr>
+    <tr><td><code>content</code></td><td>Page, Banner, Testimonial, GalleryImage, SiteSettings</td><td>CMS pages with SEO metadata, banners, testimonials, site-wide settings.</td></tr>
+    <tr><td><code>enquiries</code></td><td>ContactMessage</td><td>Contact and service enquiries, merged into one model with a <code>nature</code> field.</td></tr>
+    <tr><td><code>dashboard</code></td><td>—</td><td>Staff-facing template views that go beyond model CRUD: dispatch board, revenue summary, booking detail.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="pricing">6. The pricing engine</h2>
+<p>
+  The single piece of genuinely irreplaceable business logic. In the legacy system it lives inside an HTML
+  template and reads <code>$_SESSION</code> directly; here it is a pure function in
+  <code>pricing/engine.py</code> with no request or session dependency, which is what makes it testable
+  against the historical orders.
+</p>
+
+<pre><code>def quote(vehicle, *, distance_miles=None, hours=None, pickup_at,
+          meet_and_greet=False) -> Quote:
+    """Pure. No DB writes, no request state. Returns lines + total."""
+
+    lines = []
+
+    if hours is not None:                       # hourly hire
+        lines.append(Line(BASE, f"{hours}h × {vehicle.hourly_rate}",
+                          hours * vehicle.hourly_rate))
+    else:                                       # distance transfer, cumulative bands
+        remaining = distance_miles
+        for band in vehicle.bands.order_by("from_miles"):
+            miles = band.miles_within(distance_miles)
+            if miles:
+                lines.append(Line(BAND, band.label, miles * band.rate_per_mile))
+
+    subtotal = sum(l.amount for l in lines)
+
+    for rule in applicable_surcharges(pickup_at):   # time window + blackout date
+        lines.append(Line(SURCHARGE, rule.name, subtotal * rule.percentage / 100))
+
+    if meet_and_greet and vehicle.meet_greet_fee:
+        lines.append(Line(MEET_GREET, "Meet &amp; greet", vehicle.meet_greet_fee))
+
+    total = sum(l.amount for l in lines)
+
+    if total &lt; vehicle.minimum_fare:            # floor, applied last
+        lines.append(Line(MINIMUM, "Minimum fare adjustment",
+                          vehicle.minimum_fare - total))
+        total = vehicle.minimum_fare
+
+    return Quote(lines=lines, total=total)</code></pre>
+
+<h4>Improvements over the legacy behaviour</h4>
+<ul>
+  <li><strong>Bands are data.</strong> The 6 / 50 / 100-mile boundaries are PHP constants today. They become <code>DistanceBand</code> rows, editable per vehicle without a deployment.</li>
+  <li><strong>Surcharge windows are data.</strong> Legacy stores "12 am to 6 am … 9 pm to 11.59 pm" as an English sentence in a <code>title</code> column while the real hours sit hardcoded in PHP — so the admin screen lies about what the system does. Here <code>start_time</code> and <code>end_time</code> are the rule.</li>
+  <li><strong>The breakdown is persisted.</strong> Every booking stores its price lines, so staff can answer "why was I charged this?" years later. Legacy stores only the final number.</li>
+  <li><strong>Ordering is explicit.</strong> Surcharge before meet-and-greet, minimum fare last. In the legacy template this ordering is implicit in statement sequence and differs subtly between the two payment pages.</li>
+</ul>
+
+<div class="note">
+  <strong>Verification method</strong>
+  Replay all 2,217 historical bookings through the new engine using their stored distance, duration,
+  vehicle and pickup time, and compare against the recorded <code>price</code>. Discrepancies are either
+  legacy bugs or rate-card changes over nine years — both need explaining before launch. This is the single
+  most valuable test in the project, and the sanitised database replica already supports it.
+</div>
+
+<h2 id="admin">7. Admin dashboard</h2>
+<p>
+  Django templates, served by Django, at <code>admin.austinlimoshuttle.com</code>. Django's generated admin
+  covers the CRUD; purpose-built views cover the daily operational work. Legacy had 32 admin files of which
+  8 never worked and 5 overlapped on CMS editing — this consolidates to 12 screens.
+</p>
+<div class="scroll">
+<table>
+  <thead><tr><th>Screen</th><th>Type</th><th>Replaces</th><th>Function</th></tr></thead>
+  <tbody>
+    <tr><td>Dispatch board</td><td>Custom</td><td>—</td><td>Today and tomorrow's pickups in time order, driver assignment, status changes inline. The screen staff live in.</td></tr>
+    <tr><td>Bookings list</td><td>Custom</td><td><code>order.php</code></td><td>Filter by status, date range, vehicle, customer; search by reference, name, phone. CSV export.</td></tr>
+    <tr><td>Booking detail</td><td>Custom</td><td><code>orderDetails.php</code>, <code>update-status.php</code></td><td>Itinerary, fare breakdown, payment status, driver, amendment, cancellation with fee, status history, resend confirmation.</td></tr>
+    <tr><td>Fleet &amp; rates</td><td>Django admin (inline)</td><td><code>car_list.php</code></td><td>Vehicles with distance bands edited inline. The commercial control panel.</td></tr>
+    <tr><td>Surcharges</td><td>Django admin</td><td><code>special-time.php</code></td><td>Time-window rules with real start/end times.</td></tr>
+    <tr><td>Blackout dates</td><td>Django admin</td><td><code>busy-dates.php</code></td><td>Date-specific uplifts for holidays and Austin events.</td></tr>
+    <tr><td>Customers</td><td>Django admin</td><td><code>user.php</code>, <code>userDetails.php</code></td><td>Accounts with booking history inline. No password visibility — hashes only.</td></tr>
+    <tr><td>Drivers</td><td>Django admin</td><td>—</td><td>New. Replaces free-text driver names on bookings.</td></tr>
+    <tr><td>Pages</td><td>Django admin</td><td><code>page.php</code>, <code>page_list.php</code>, <code>service.php</code>, <code>edit_service.php</code>, <code>global.php</code></td><td>Content, SEO metadata, slug, menu placement. Five legacy modules collapse into one.</td></tr>
+    <tr><td>Banners, testimonials, gallery</td><td>Django admin</td><td><code>banner.php</code>, <code>page_banner.php</code></td><td>Media with ordering and active flags.</td></tr>
+    <tr><td>Enquiries</td><td>Custom</td><td><code>contactUs.php</code>, <code>viewMessage.php</code>, <code>replyMessage.php</code></td><td>Inbox with read/replied state; reply sends email and records who replied.</td></tr>
+    <tr><td>Site settings</td><td>Django admin (singleton)</td><td><code>followUs.php</code>, <code>my_account.php</code></td><td>Social links, notification recipients, tax rate.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h4>Staff roles</h4>
+<p>
+  Django groups replace the single shared admin login. <strong>Dispatcher</strong> — bookings, drivers,
+  status changes. <strong>Manager</strong> — the above plus rates, surcharges, refunds, exports.
+  <strong>Editor</strong> — content only. Every status change and refund records the acting user, which
+  the legacy single-account system made impossible.
+</p>
+
+<h2 id="frontend">8. Next.js frontend</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th>Route</th><th>Rendering</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>/</code></td><td>ISR</td><td>Homepage — banners, fleet teaser, booking widget.</td></tr>
+    <tr><td><code>/austin-airport-car-service</code><br><code>/wedding-limousine-services</code><br><code>/executive-transportation-service</code><br><code>/graduations-parties-limousine</code></td><td>ISR</td><td>The four SEO landing pages. <strong>URLs must not change.</strong></td></tr>
+    <tr><td><code>/fleet</code></td><td>ISR</td><td>Vehicles, capacity, indicative rates.</td></tr>
+    <tr><td><code>/about-us</code>, <code>/privacy-policy</code>, <code>/terms-conditions</code></td><td>ISR</td><td>CMS-driven static pages.</td></tr>
+    <tr><td><code>/contact-us</code></td><td>SSR</td><td>Contact form → API. Needs bot protection the legacy form lacked.</td></tr>
+    <tr><td><code>/book/details</code></td><td>Client</td><td>Funnel step 1 — pickup, destination, date/time, passengers.</td></tr>
+    <tr><td><code>/book/vehicle</code></td><td>Client</td><td>Steps 2–3 merged — quotes for all vehicles, pick one. Removes a page load from the legacy funnel.</td></tr>
+    <tr><td><code>/book/account</code></td><td>Client</td><td>Step 4 — sign in, register, or continue as guest.</td></tr>
+    <tr><td><code>/book/payment</code></td><td>Client</td><td>Step 5 — Stripe Elements. Card fields are Stripe-hosted iframes.</td></tr>
+    <tr><td><code>/book/confirmation/[reference]</code></td><td>SSR</td><td>Step 6 — confirmation, PDF download.</td></tr>
+    <tr><td><code>/account</code>, <code>/account/bookings/[reference]</code>, <code>/account/profile</code></td><td>SSR</td><td>Customer dashboard, booking detail, amendment, rebooking, profile.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note">
+  <strong>Funnel state</strong>
+  The legacy funnel carries state in <code>$_SESSION</code> and persists nothing until payment, so abandoned
+  bookings vanish. The new funnel keeps state client-side plus a server-side <code>Quote</code> record
+  with a short expiry. That makes the price tamper-proof and, as a side effect, makes abandonment
+  measurable — currently there is no way to know how many bookings are lost mid-funnel.
+</div>
+
+<h2 id="api">9. API contract</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td><code>/api/pages/{slug}/</code></td><td>—</td><td>Page content + SEO metadata.</td></tr>
+    <tr><td>GET</td><td><code>/api/vehicles/</code></td><td>—</td><td>Active fleet with capacity and photos.</td></tr>
+    <tr><td>POST</td><td><code>/api/quotes/</code></td><td>—</td><td>Pickup, destination, datetime → distance lookup + fares for every vehicle. Returns a signed quote token.</td></tr>
+    <tr><td>GET</td><td><code>/api/availability/</code></td><td>—</td><td>Blackout dates and surcharge windows for the date picker.</td></tr>
+    <tr><td>POST</td><td><code>/api/bookings/</code></td><td>Optional</td><td>Create a pending booking from a quote token. Fare recomputed server-side.</td></tr>
+    <tr><td>POST</td><td><code>/api/payments/intent/</code></td><td>Session</td><td>Create a Stripe PaymentIntent, return client secret.</td></tr>
+    <tr><td>POST</td><td><code>/api/payments/webhook/</code></td><td>Stripe sig</td><td>Confirm or fail the booking. <strong>The authoritative payment outcome.</strong></td></tr>
+    <tr><td>POST</td><td><code>/api/auth/register/</code> · <code>login/</code> · <code>logout/</code> · <code>password-reset/</code></td><td>—</td><td>Account lifecycle.</td></tr>
+    <tr><td>GET</td><td><code>/api/account/bookings/</code></td><td>Session</td><td>The signed-in customer's bookings.</td></tr>
+    <tr><td>PATCH</td><td><code>/api/account/bookings/{ref}/</code></td><td>Session</td><td>Amend or cancel, subject to the cancellation window.</td></tr>
+    <tr><td>POST</td><td><code>/api/enquiries/</code></td><td>—</td><td>Contact form. Rate-limited and bot-checked.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="auth">10. Authentication</h2>
+<ul>
+  <li><strong>Customers</strong> — email + password, session cookies (HttpOnly, Secure, SameSite=Lax). Django's PBKDF2 hashing.</li>
+  <li><strong>No password migration is possible.</strong> Legacy passwords are plaintext, and importing them as-is would carry the vulnerability forward. Every one of the 1,251 accounts is created without a usable password and receives a reset link at launch. This must be communicated to customers in advance.</li>
+  <li><strong>Guest checkout</strong> — the legacy funnel forces registration before payment. Guest booking with an optional account afterwards is expected to reduce abandonment; the client should confirm they want this.</li>
+  <li><strong>Staff</strong> — Django auth with groups, on a separate subdomain, rate-limited, with a lockout after repeated failures.</li>
+</ul>
+
+<h2 id="payments">11. Payments &amp; PCI scope</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th></th><th>Legacy</th><th>New</th></tr></thead>
+  <tbody>
+    <tr><td>Card entry</td><td>Our HTML form, posted to our server</td><td>Stripe Elements iframe, hosted by Stripe</td></tr>
+    <tr><td>Card storage</td><td>Full PAN + expiry + CVV in MySQL</td><td>Nothing. Brand and last four only, returned by Stripe</td></tr>
+    <tr><td>API</td><td><code>Stripe_Charge::create</code>, SDK v1.13.0 (2014)</td><td>Payment Intents, current SDK</td></tr>
+    <tr><td>SCA / 3-D Secure</td><td>Unsupported</td><td>Handled by Stripe</td></tr>
+    <tr><td>Secret key</td><td>Hardcoded in a web-root PHP file</td><td>Environment variable, outside the document root</td></tr>
+    <tr><td>Confirmation</td><td>Trusts the browser's return</td><td>Webhook-driven, signature-verified</td></tr>
+    <tr><td>PCI burden</td><td>Full SAQ D</td><td>SAQ A — the lightest tier</td></tr>
+  </tbody>
+</table>
+</div>
+<p>
+  Saved cards, if the client wants them, use Stripe's customer vault — we store a customer ID, never a card.
+  The legacy "save my card" feature was implemented by writing the number to our own database.
+</p>
+
+<h2 id="comms">12. Email, PDF &amp; notifications</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th>Trigger</th><th>To</th><th>Contains</th></tr></thead>
+  <tbody>
+    <tr><td>Booking confirmed</td><td>Customer</td><td>Itinerary, fare breakdown, reference, cancellation policy, PDF attachment</td></tr>
+    <tr><td>Booking confirmed</td><td>Operations</td><td>New booking alert with pickup time and vehicle</td></tr>
+    <tr><td>Booking amended / cancelled</td><td>Both</td><td>What changed, any cancellation fee</td></tr>
+    <tr><td>Driver assigned</td><td>Customer</td><td>Driver name and contact number</td></tr>
+    <tr><td>Pickup reminder</td><td>Customer</td><td>24 hours ahead, via nightly cron</td></tr>
+    <tr><td>Password reset</td><td>Customer</td><td>Signed, expiring link</td></tr>
+    <tr><td>Enquiry received</td><td>Operations</td><td>Contact form contents</td></tr>
+  </tbody>
+</table>
+</div>
+<p>
+  All emails render from Django templates with a plain-text alternative. PDFs use WeasyPrint over the same
+  HTML, so the confirmation email and its attachment cannot drift apart. Legacy includes phpMailer six
+  separate times in one file and builds PDFs through a different library with a different layout.
+</p>
+
+<h2 id="schema">13. Database schema</h2>
+<p>
+  MySQL 8, InnoDB, <code>utf8mb4</code> throughout. Every foreign key is enforced. Django's own tables
+  (<code>auth_group</code>, <code>django_session</code>, <code>django_admin_log</code>, migrations,
+  content types) are omitted here.
+</p>
+
+<div class="erd">
+<svg viewBox="0 0 920 530" role="img" aria-label="Entity relationship diagram of the core booking model">
+  <defs>
+    <style>
+      .b{fill:#fff;stroke:#0f6b4f;stroke-width:1.5;rx:6}
+      .bc{fill:#e8f4ef;stroke:#0f6b4f;stroke-width:2.5;rx:6}
+      .t{font:600 13px -apple-system,Helvetica,Arial,sans-serif;fill:#15181c}
+      .s{font:11px ui-monospace,Menlo,monospace;fill:#59626c}
+      .l{stroke:#7d8892;stroke-width:1.4;fill:none}
+      .c{font:600 10px -apple-system,Helvetica,Arial,sans-serif;fill:#0f6b4f}
+    </style>
+  </defs>
+
+  <rect class="b" x="30" y="30" width="180" height="52"/>
+  <text class="t" x="44" y="52">User</text><text class="s" x="44" y="69">accounts</text>
+
+  <rect class="b" x="30" y="240" width="180" height="52"/>
+  <text class="t" x="44" y="262">Vehicle</text><text class="s" x="44" y="279">fleet</text>
+
+  <rect class="b" x="30" y="380" width="180" height="52"/>
+  <text class="t" x="44" y="402">DistanceBand</text><text class="s" x="44" y="419">fleet</text>
+
+  <rect class="bc" x="370" y="160" width="190" height="62"/>
+  <text class="t" x="386" y="185">Booking</text><text class="s" x="386" y="203">bookings · core</text>
+
+  <rect class="b" x="370" y="380" width="190" height="52"/>
+  <text class="t" x="386" y="402">BookingPriceLine</text><text class="s" x="386" y="419">bookings</text>
+
+  <rect class="b" x="710" y="30" width="180" height="52"/>
+  <text class="t" x="724" y="52">Driver</text><text class="s" x="724" y="69">bookings</text>
+
+  <rect class="b" x="710" y="240" width="180" height="52"/>
+  <text class="t" x="724" y="262">Payment</text><text class="s" x="724" y="279">payments</text>
+
+  <rect class="b" x="710" y="380" width="180" height="52"/>
+  <text class="t" x="724" y="402">Refund</text><text class="s" x="724" y="419">payments</text>
+
+  <path class="l" d="M210 56 L290 56 L290 180 L370 180"/>
+  <text class="c" x="296" y="120">1 : N</text>
+
+  <path class="l" d="M210 266 L290 266 L290 205 L370 205"/>
+  <text class="c" x="296" y="243">1 : N</text>
+
+  <path class="l" d="M120 292 L120 380"/>
+  <text class="c" x="128" y="340">1 : N</text>
+
+  <path class="l" d="M710 56 L630 56 L630 175 L560 175"/>
+  <text class="c" x="576" y="120">1 : N</text>
+
+  <path class="l" d="M560 210 L630 210 L630 266 L710 266"/>
+  <text class="c" x="576" y="243">1 : N</text>
+
+  <path class="l" d="M800 292 L800 380"/>
+  <text class="c" x="808" y="340">1 : N</text>
+
+  <path class="l" d="M465 222 L465 380"/>
+  <text class="c" x="473" y="305">1 : N</text>
+</svg>
+</div>
+
+<h3>accounts_user</h3>
+<p>Custom user model (<code>AbstractBaseUser</code>), email as the login identity. Replaces both <code>limousin_member</code> and <code>limousin_admin</code>.</p>
+<div class="scroll">
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>bigint</td><td><span class="pill pk">PK</span></td><td>—</td></tr>
+    <tr><td><code>email</code></td><td>varchar(254)</td><td>unique, indexed</td><td>Login identity. Legacy had two competing email columns; this resolves to one.</td></tr>
+    <tr><td><code>password</code></td><td>varchar(128)</td><td></td><td>PBKDF2 hash. Never plaintext.</td></tr>
+    <tr><td><code>title</code></td><td>varchar(10)</td><td>blank</td><td>Mr/Ms/Dr — legacy <code>pfix</code>.</td></tr>
+    <tr><td><code>first_name</code> / <code>last_name</code></td><td>varchar(150)</td><td></td><td>—</td></tr>
+    <tr><td><code>phone</code></td><td>varchar(32)</td><td></td><td>Contact number for dispatch.</td></tr>
+    <tr><td><code>is_active</code></td><td>bool</td><td>default true</td><td>Soft-disable.</td></tr>
+    <tr><td><code>is_staff</code> / <code>is_superuser</code></td><td>bool</td><td></td><td>Dashboard access; roles come from groups.</td></tr>
+    <tr><td><code>marketing_opt_in</code></td><td>bool</td><td>default false</td><td><span class="pill new">new</span> Legacy had no consent record.</td></tr>
+    <tr><td><code>legacy_member_id</code></td><td>int</td><td>null, indexed</td><td><span class="pill new">new</span> Traceability back to <code>limousin_member.id</code>.</td></tr>
+    <tr><td><code>date_joined</code> / <code>last_login</code></td><td>datetime</td><td></td><td>—</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>accounts_billingaddress</h3>
+<div class="scroll">
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>bigint</td><td><span class="pill pk">PK</span></td><td>—</td></tr>
+    <tr><td><code>user_id</code></td><td>bigint</td><td>FK → user, CASCADE</td><td>Owner.</td></tr>
+    <tr><td><code>line1</code> / <code>line2</code></td><td>varchar(255)</td><td></td><td>Legacy split this across five inconsistently-used fields.</td></tr>
+    <tr><td><code>city</code> / <code>state</code> / <code>postal_code</code></td><td>varchar</td><td></td><td>—</td></tr>
+    <tr><td><code>country</code></td><td>char(2)</td><td>default 'US'</td><td>ISO code. Replaces the 240-row country table.</td></tr>
+    <tr><td><code>is_default</code></td><td>bool</td><td></td><td>—</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>fleet_vehicle</h3>
+<div class="scroll">
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>bigint</td><td><span class="pill pk">PK</span></td><td>—</td></tr>
+    <tr><td><code>name</code></td><td>varchar(120)</td><td></td><td>"Business Class", "Business SUV".</td></tr>
+    <tr><td><code>slug</code></td><td>slug</td><td>unique</td><td><span class="pill new">new</span> For fleet page URLs.</td></tr>
+    <tr><td><code>description</code> / <code>features</code></td><td>text</td><td></td><td>Marketing copy and cancellation terms.</td></tr>
+    <tr><td><code>photo</code></td><td>image</td><td></td><td>—</td></tr>
+    <tr><td><code>passenger_capacity</code> / <code>luggage_capacity</code></td><td>smallint</td><td></td><td>Typed. Legacy stored these as varchar.</td></tr>
+    <tr><td><code>hourly_rate</code></td><td>decimal(8,2)</td><td></td><td>For hourly hire.</td></tr>
+    <tr><td><code>meet_greet_fee</code></td><td>decimal(8,2)</td><td>default 0</td><td>Airport supplement.</td></tr>
+    <tr><td><code>minimum_fare</code></td><td>decimal(8,2)</td><td>default 0</td><td>Fare floor.</td></tr>
+    <tr><td><code>display_order</code></td><td>smallint</td><td></td><td>—</td></tr>
+    <tr><td><code>is_active</code></td><td>bool</td><td></td><td>Bookable flag.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>fleet_distanceband <span class="pill new">replaces 4 fixed columns</span></h3>
+<p>Legacy hardcodes four mileage bands as columns with boundaries in PHP constants. Bands become rows, so tiers can be added or reshaped without a deployment.</p>
+<div class="scroll">
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>bigint</td><td><span class="pill pk">PK</span></td><td>—</td></tr>
+    <tr><td><code>vehicle_id</code></td><td>bigint</td><td>FK → vehicle, CASCADE</td><td>Owning vehicle.</td></tr>
+    <tr><td><code>from_miles</code></td><td>decimal(6,2)</td><td></td><td>Lower bound, inclusive.</td></tr>
+    <tr><td><code>to_miles</code></td><td>decimal(6,2)</td><td>null</td><td>Upper bound; null means unbounded.</td></tr>
+    <tr><td><code>rate_per_mile</code></td><td>decimal(8,2)</td><td></td><td>Rate within this band.</td></tr>
+    <tr><td colspan="4" style="color:var(--muted)">Unique together: (<code>vehicle_id</code>, <code>from_miles</code>). Validation rejects gaps and overlaps.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>pricing_timesurcharge</h3>
+<div class="scroll">
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>bigint</td><td><span class="pill pk">PK</span></td><td>—</td></tr>
+    <tr><td><code>name</code></td><td>varchar(120)</td><td></td><td>"Late night pickup".</td></tr>
+    <tr><td><code>start_time</code> / <code>end_time</code></td><td>time</td><td></td><td><span class="pill new">new</span> Real times. Windows crossing midnight are supported. Legacy kept these in prose while PHP hardcoded the hours.</td></tr>
+    <tr><td><code>percentage</code></td><td>decimal(5,2)</td><td></td><td>Uplift, e.g. 20.00.</td></tr>
+    <tr><td><code>is_active</code></td><td>bool</td><td></td><td>—</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>pricing_blackoutdate</h3>
+<div class="scroll">
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>bigint</td><td><span class="pill pk">PK</span></td><td>—</td></tr>
+    <tr><td><code>name</code> / <code>description</code></td><td>varchar / text</td><td></td><td>"New Year's Eve", "ACL weekend".</td></tr>
+    <tr><td><code>date</code></td><td>date</td><td>unique</td><td>The affected date.</td></tr>
+    <tr><td><code>percentage</code></td><td>decimal(5,2)</td><td></td><td>Uplift for that date.</td></tr>
+    <tr><td><code>is_active</code></td><td>bool</td><td></td><td>—</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>bookings_booking <span class="pill new">core</span></h3>
+<div class="scroll">
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>bigint</td><td><span class="pill pk">PK</span></td><td>—</td></tr>
+    <tr><td><code>reference</code></td><td>varchar(16)</td><td>unique, indexed</td><td>Customer-facing code. Legacy had two competing reference columns.</td></tr>
+    <tr><td><code>customer_id</code></td><td>bigint</td><td>FK → user, SET_NULL</td><td>Null for guest bookings. A deleted account must not delete booking history.</td></tr>
+    <tr><td><code>vehicle_id</code></td><td>bigint</td><td>FK → vehicle, PROTECT</td><td>PROTECT — a vehicle with bookings cannot be deleted, only deactivated.</td></tr>
+    <tr><td><code>driver_id</code></td><td>bigint</td><td>FK → driver, SET_NULL</td><td>Assigned at dispatch.</td></tr>
+    <tr><td><code>trip_type</code></td><td>varchar(10)</td><td>choices</td><td><code>transfer</code> (distance) or <code>hourly</code>.</td></tr>
+    <tr><td><code>status</code></td><td>varchar(12)</td><td>choices, indexed</td><td><code>pending</code>, <code>confirmed</code>, <code>completed</code>, <code>cancelled</code>. Legacy used opaque single letters (P/N/D/C/DL) with one never used.</td></tr>
+    <tr><td><code>pickup_address</code> / <code>dropoff_address</code></td><td>varchar(255)</td><td></td><td>As selected from autocomplete.</td></tr>
+    <tr><td><code>pickup_lat/lng</code>, <code>dropoff_lat/lng</code></td><td>decimal(9,6)</td><td>null</td><td><span class="pill new">new</span> Coordinates retained so a trip can be re-quoted without another API call.</td></tr>
+    <tr><td><code>pickup_at</code></td><td>datetime</td><td>indexed</td><td><strong>Timezone-aware.</strong> Legacy stored <code>Sat, 03 Oct 2026, 10:15 PM</code> as a string.</td></tr>
+    <tr><td><code>distance_miles</code></td><td>decimal(7,2)</td><td>null</td><td>From Distance Matrix. Typed.</td></tr>
+    <tr><td><code>duration_minutes</code></td><td>int</td><td>null</td><td>Estimated journey time.</td></tr>
+    <tr><td><code>hours</code></td><td>decimal(4,1)</td><td>null</td><td>For hourly hire.</td></tr>
+    <tr><td><code>passenger_count</code> / <code>luggage_count</code></td><td>smallint</td><td></td><td>Validated against vehicle capacity.</td></tr>
+    <tr><td><code>flight_number</code> / <code>pickup_sign</code></td><td>varchar</td><td>blank</td><td>Airport meet-and-greet details.</td></tr>
+    <tr><td><code>meet_and_greet</code></td><td>bool</td><td></td><td>Whether the fee applies.</td></tr>
+    <tr><td><code>notes</code></td><td>text</td><td>blank</td><td>Customer instructions.</td></tr>
+    <tr><td><code>subtotal</code> / <code>surcharge_total</code> / <code>tax</code> / <code>total</code></td><td>decimal(10,2)</td><td></td><td>Fare summary; detail in price lines.</td></tr>
+    <tr><td><code>currency</code></td><td>char(3)</td><td>default 'USD'</td><td>—</td></tr>
+    <tr><td><code>vehicle_name_snapshot</code></td><td>varchar(120)</td><td></td><td>Deliberate denormalisation — the vehicle name as sold, preserved if the fleet is renamed.</td></tr>
+    <tr><td><code>cancelled_at</code> / <code>cancellation_reason</code> / <code>cancellation_fee</code></td><td>datetime / text / decimal</td><td>null</td><td>Legacy spread these across three misspelled columns.</td></tr>
+    <tr><td><code>legacy_order_id</code></td><td>int</td><td>null, indexed</td><td><span class="pill new">new</span> Traceability to <code>limousin_order.id</code>.</td></tr>
+    <tr><td><code>created_at</code> / <code>updated_at</code></td><td>datetime</td><td>auto</td><td>—</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>bookings_bookingpriceline <span class="pill new">new</span></h3>
+<p>The fare breakdown, persisted. Legacy stores only a final total, so a disputed charge cannot be explained.</p>
+<div class="scroll">
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>bigint</td><td><span class="pill pk">PK</span></td><td>—</td></tr>
+    <tr><td><code>booking_id</code></td><td>bigint</td><td>FK → booking, CASCADE</td><td>—</td></tr>
+    <tr><td><code>kind</code></td><td>varchar(20)</td><td>choices</td><td><code>base</code>, <code>band</code>, <code>surcharge</code>, <code>meet_greet</code>, <code>minimum_adjustment</code>, <code>tax</code>.</td></tr>
+    <tr><td><code>label</code></td><td>varchar(160)</td><td></td><td>"6–50 mi × $2.90", "Late night +20%".</td></tr>
+    <tr><td><code>amount</code></td><td>decimal(10,2)</td><td></td><td>Signed; adjustments may be negative.</td></tr>
+    <tr><td><code>ordering</code></td><td>smallint</td><td></td><td>Display sequence.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>bookings_driver <span class="pill new">new</span></h3>
+<div class="scroll">
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>bigint</td><td><span class="pill pk">PK</span></td><td>—</td></tr>
+    <tr><td><code>full_name</code></td><td>varchar(150)</td><td></td><td>Legacy typed this free-text onto every booking.</td></tr>
+    <tr><td><code>phone</code> / <code>email</code></td><td>varchar</td><td></td><td>Shared with the customer once assigned.</td></tr>
+    <tr><td><code>is_active</code></td><td>bool</td><td></td><td>—</td></tr>
+    <tr><td><code>notes</code></td><td>text</td><td>blank</td><td>Internal.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>bookings_bookingstatuschange <span class="pill new">new</span></h3>
+<div class="scroll">
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>bigint</td><td><span class="pill pk">PK</span></td><td>—</td></tr>
+    <tr><td><code>booking_id</code></td><td>bigint</td><td>FK → booking, CASCADE</td><td>—</td></tr>
+    <tr><td><code>from_status</code> / <code>to_status</code></td><td>varchar(12)</td><td></td><td>Transition.</td></tr>
+    <tr><td><code>changed_by_id</code></td><td>bigint</td><td>FK → user, SET_NULL</td><td>Who acted. Impossible in a single shared admin account.</td></tr>
+    <tr><td><code>changed_at</code></td><td>datetime</td><td>auto</td><td>—</td></tr>
+    <tr><td><code>note</code></td><td>text</td><td>blank</td><td>Reason.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>payments_payment</h3>
+<div class="note warn">
+  <strong>No cardholder data, by construction</strong>
+  This table has no column capable of holding a card number, expiry or security code. Card details are
+  entered into Stripe-hosted iframes and never transit our servers.
+</div>
+<div class="scroll">
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>bigint</td><td><span class="pill pk">PK</span></td><td>—</td></tr>
+    <tr><td><code>booking_id</code></td><td>bigint</td><td>FK → booking, PROTECT</td><td>—</td></tr>
+    <tr><td><code>payment_intent_id</code></td><td>varchar(64)</td><td>unique, indexed</td><td>Stripe reference — the source of truth.</td></tr>
+    <tr><td><code>charge_id</code></td><td>varchar(64)</td><td>blank</td><td>Set once captured.</td></tr>
+    <tr><td><code>amount</code></td><td>decimal(10,2)</td><td></td><td>Charged amount.</td></tr>
+    <tr><td><code>currency</code></td><td>char(3)</td><td></td><td>—</td></tr>
+    <tr><td><code>status</code></td><td>varchar(24)</td><td>indexed</td><td>Mirrors Stripe: <code>requires_payment_method</code>, <code>succeeded</code>, <code>failed</code>.</td></tr>
+    <tr><td><code>card_brand</code></td><td>varchar(20)</td><td>blank</td><td>visa / mastercard / amex — display only.</td></tr>
+    <tr><td><code>card_last4</code></td><td>char(4)</td><td>blank</td><td>Last four only, from Stripe.</td></tr>
+    <tr><td><code>receipt_url</code></td><td>url</td><td>blank</td><td>Stripe-hosted receipt.</td></tr>
+    <tr><td><code>error_message</code></td><td>text</td><td>blank</td><td>Decline reason.</td></tr>
+    <tr><td><code>created_at</code> / <code>updated_at</code></td><td>datetime</td><td>auto</td><td>—</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>payments_refund</h3>
+<div class="scroll">
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>bigint</td><td><span class="pill pk">PK</span></td><td>—</td></tr>
+    <tr><td><code>payment_id</code></td><td>bigint</td><td>FK → payment, PROTECT</td><td>—</td></tr>
+    <tr><td><code>stripe_refund_id</code></td><td>varchar(64)</td><td>unique</td><td>—</td></tr>
+    <tr><td><code>amount</code></td><td>decimal(10,2)</td><td></td><td>Supports partial refunds (cancellation fees).</td></tr>
+    <tr><td><code>reason</code></td><td>varchar(160)</td><td></td><td>—</td></tr>
+    <tr><td><code>created_by_id</code></td><td>bigint</td><td>FK → user, SET_NULL</td><td>Which staff member issued it.</td></tr>
+    <tr><td><code>created_at</code></td><td>datetime</td><td>auto</td><td>—</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>content_page</h3>
+<div class="scroll">
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>bigint</td><td><span class="pill pk">PK</span></td><td>—</td></tr>
+    <tr><td><code>slug</code></td><td>slug(200)</td><td>unique, indexed</td><td>URL path. Legacy values must be preserved exactly — see <a href="#seo">§16</a>.</td></tr>
+    <tr><td><code>title</code></td><td>varchar(255)</td><td></td><td>On-page heading.</td></tr>
+    <tr><td><code>page_type</code></td><td>varchar(20)</td><td>choices</td><td><code>home</code>, <code>service</code>, <code>standard</code>, <code>legal</code>. Selects the Next.js layout — replaces the legacy <code>template</code> column naming a PHP file.</td></tr>
+    <tr><td><code>body</code></td><td>text</td><td></td><td>Rich text. Cleaned of inline font styling on import.</td></tr>
+    <tr><td><code>meta_title</code> / <code>meta_description</code></td><td>varchar / text</td><td></td><td>SEO. Repaired for mojibake on import.</td></tr>
+    <tr><td><code>hero_image</code></td><td>image</td><td>null</td><td>—</td></tr>
+    <tr><td><code>parent_id</code></td><td>bigint</td><td>FK → self, SET_NULL</td><td>Menu hierarchy.</td></tr>
+    <tr><td><code>menu_placement</code></td><td>varchar(12)</td><td>choices</td><td><code>main</code>, <code>footer</code>, <code>none</code>. Replaces the six-value <code>for_menu</code> enum whose funnel codes are no longer needed — routing is Next.js's job now.</td></tr>
+    <tr><td><code>display_order</code></td><td>smallint</td><td></td><td>—</td></tr>
+    <tr><td><code>is_published</code></td><td>bool</td><td></td><td>—</td></tr>
+    <tr><td><code>created_at</code> / <code>updated_at</code></td><td>datetime</td><td>auto</td><td>—</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>content_banner · content_testimonial · content_galleryimage · content_sitesettings</h3>
+<div class="scroll">
+<table>
+  <thead><tr><th>Model</th><th>Key columns</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>Banner</code></td><td><code>title</code>, <code>image</code>, <code>link_url</code>, <code>page_id</code> FK→page SET_NULL, <code>display_order</code>, <code>is_active</code></td>
+      <td>Null <code>page_id</code> means homepage. Replaces the legacy <code>banner_for</code> H/P enum.</td></tr>
+    <tr><td><code>Testimonial</code></td><td><code>customer_name</code>, <code>quote</code>, <code>rating</code>, <code>photo</code>, <code>is_published</code>, <code>display_order</code></td>
+      <td>Was <code>limousin_castomer</code> (sic). <code>rating</code> becomes a small integer.</td></tr>
+    <tr><td><code>GalleryImage</code></td><td><code>title</code>, <code>image</code>, <code>category</code>, <code>display_order</code>, <code>is_active</code></td>
+      <td><code>category</code> is <code>gallery</code> or <code>partner</code> — legacy used a misspelled <code>partrers</code> flag.</td></tr>
+    <tr><td><code>SiteSettings</code></td><td><code>facebook</code>, <code>instagram</code>, <code>twitter</code>, <code>linkedin</code>, <code>contact_email</code>, <code>contact_phone</code>, <code>ops_notification_email</code>, <code>tax_rate</code>, <code>cancellation_window_hours</code></td>
+      <td>Singleton. Absorbs <code>limousin_social_media</code>, <code>limousin_paging</code>, and the tax rate that legacy stored on the admin user row.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>enquiries_contactmessage</h3>
+<div class="scroll">
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>bigint</td><td><span class="pill pk">PK</span></td><td>—</td></tr>
+    <tr><td><code>name</code> / <code>email</code> / <code>phone</code></td><td>varchar</td><td></td><td>Sender.</td></tr>
+    <tr><td><code>nature</code></td><td>varchar(30)</td><td>choices</td><td><code>general</code>, <code>service</code>, <code>corporate</code>. Merges three legacy tables into one.</td></tr>
+    <tr><td><code>subject</code> / <code>message</code></td><td>varchar / text</td><td></td><td>—</td></tr>
+    <tr><td><code>company_name</code></td><td>varchar(255)</td><td>blank</td><td>For corporate enquiries.</td></tr>
+    <tr><td><code>source_ip</code></td><td>inet</td><td>null</td><td>Typed. Legacy <code>clint_ip</code> (sic) was varchar.</td></tr>
+    <tr><td><code>is_read</code> / <code>replied_at</code> / <code>replied_by_id</code></td><td>bool / datetime / FK</td><td></td><td><span class="pill new">new</span> Legacy had no read or reply state.</td></tr>
+    <tr><td><code>created_at</code></td><td>datetime</td><td>auto, indexed</td><td>—</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="relations">14. Relations reference</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th>Parent</th><th>Child</th><th>Cardinality</th><th>On delete</th><th>Rationale</th></tr></thead>
+  <tbody>
+    <tr><td><code>User</code></td><td><code>Booking.customer</code></td><td>1 : N</td><td>SET_NULL</td><td>Deleting an account must not erase booking or revenue history.</td></tr>
+    <tr><td><code>User</code></td><td><code>BillingAddress</code></td><td>1 : N</td><td>CASCADE</td><td>Addresses are meaningless without their owner.</td></tr>
+    <tr><td><code>User</code></td><td><code>CorporateAccount</code></td><td>1 : 0..1</td><td>SET_NULL</td><td>Applications may predate an account.</td></tr>
+    <tr><td><code>Vehicle</code></td><td><code>DistanceBand</code></td><td>1 : N</td><td>CASCADE</td><td>Bands belong to their vehicle's rate card.</td></tr>
+    <tr><td><code>Vehicle</code></td><td><code>Booking</code></td><td>1 : N</td><td>PROTECT</td><td>A vehicle with history cannot be deleted — deactivate instead.</td></tr>
+    <tr><td><code>Driver</code></td><td><code>Booking</code></td><td>1 : N</td><td>SET_NULL</td><td>Drivers leave; their bookings remain.</td></tr>
+    <tr><td><code>Booking</code></td><td><code>BookingPriceLine</code></td><td>1 : N</td><td>CASCADE</td><td>Lines have no meaning apart from the booking.</td></tr>
+    <tr><td><code>Booking</code></td><td><code>Payment</code></td><td>1 : N</td><td>PROTECT</td><td>Usually one; retries create more. Financial records are never cascade-deleted.</td></tr>
+    <tr><td><code>Booking</code></td><td><code>BookingStatusChange</code></td><td>1 : N</td><td>CASCADE</td><td>Audit trail for that booking.</td></tr>
+    <tr><td><code>Payment</code></td><td><code>Refund</code></td><td>1 : N</td><td>PROTECT</td><td>Partial refunds; financial history preserved.</td></tr>
+    <tr><td><code>Page</code></td><td><code>Page.parent</code></td><td>1 : N</td><td>SET_NULL</td><td>Menu hierarchy; orphaning beats deleting.</td></tr>
+    <tr><td><code>Page</code></td><td><code>Banner</code></td><td>1 : N</td><td>SET_NULL</td><td>Null means homepage.</td></tr>
+    <tr><td><code>User</code></td><td><code>ContactMessage.replied_by</code></td><td>1 : N</td><td>SET_NULL</td><td>Who answered.</td></tr>
+    <tr><td><code>User</code></td><td><code>Refund.created_by</code></td><td>1 : N</td><td>SET_NULL</td><td>Who refunded.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="migration">15. Data migration</h2>
+<p>Idempotent Django management commands in <code>legacy_import/</code>, run against the sanitised replica and re-runnable until launch.</p>
+<div class="scroll">
+<table>
+  <thead><tr><th>Order</th><th>Legacy</th><th>New</th><th>Rows</th><th>Handling</th></tr></thead>
+  <tbody>
+    <tr><td class="num">1</td><td><code>limousin_cms</code></td><td><code>content_page</code></td><td class="num">36</td><td>Repair mojibake; map <code>template</code>→<code>page_type</code>; drop the 8 rows pointing at missing templates; preserve slugs exactly.</td></tr>
+    <tr><td class="num">2</td><td><code>limousin_car_list</code></td><td><code>fleet_vehicle</code> + <code>distanceband</code></td><td class="num">7</td><td>Expand 4 rate columns into band rows using the 6/50/100 constants.</td></tr>
+    <tr><td class="num">3</td><td><code>limousin_special_time_rate</code>, <code>busy_date</code></td><td><code>pricing_*</code></td><td class="num">12</td><td>Parse the prose window into real times; verify against the hardcoded PHP hours.</td></tr>
+    <tr><td class="num">4</td><td><code>limousin_member</code></td><td><code>accounts_user</code> + address</td><td class="num">1,251</td><td><strong>Passwords discarded.</strong> Resolve the two email columns; deduplicate; split the address; keep <code>legacy_member_id</code>.</td></tr>
+    <tr><td class="num">5</td><td><code>limousin_order</code></td><td><code>bookings_booking</code></td><td class="num">2,217</td><td>Parse string dates; map status letters; link vehicle and customer; <strong>drop all card columns</strong>; keep <code>legacy_order_id</code>.</td></tr>
+    <tr><td class="num">6</td><td><code>limousin_orderdetails</code></td><td><code>payments_payment</code></td><td class="num">2,488</td><td>Historical records only — no intent IDs exist. Amount and date retained; <strong>card number, expiry and CVV discarded</strong>.</td></tr>
+    <tr><td class="num">7</td><td><code>contact_us</code> + <code>service_inquiry</code> + <code>corporate_account</code></td><td><code>enquiries_contactmessage</code></td><td class="num">934</td><td>Merged with a <code>nature</code> discriminator.</td></tr>
+    <tr><td class="num">8</td><td><code>banner</code>, <code>gallery</code>, <code>castomer</code>, <code>social_media</code></td><td><code>content_*</code></td><td class="num">25</td><td>Direct mapping plus image file copy.</td></tr>
+    <tr><td class="num">—</td><td><code>country</code>, <code>paging</code>, <code>uploads</code>, <code>admin</code></td><td><span class="pill drop">not migrated</span></td><td class="num">244</td><td>Template residue, config, or replaced by Django auth.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h4>Validation gates before launch</h4>
+<ol>
+  <li>Row counts reconcile for every migrated table.</li>
+  <li>Total historical revenue matches to the cent.</li>
+  <li>Every booking resolves to a customer and a vehicle, or is explicitly listed as an exception.</li>
+  <li>All 2,217 fares replay through the new engine within tolerance, with every discrepancy explained.</li>
+  <li>Zero rows in the new database match a card-number or CVV pattern.</li>
+  <li>Spot-check 30 pages and 50 customer names for encoding damage.</li>
+</ol>
+
+<h2 id="seo">16. SEO &amp; URL preservation</h2>
+<p>
+  Organic search is how this business gets found. Rankings on the service pages are the most valuable asset
+  in the migration, and they are lost by carelessness with URLs, not by changing the stack.
+</p>
+<ul>
+  <li><strong>Keep these paths byte-identical:</strong> <code>/austin-airport-car-service</code>, <code>/wedding-limousine-services</code>, <code>/executive-transportation-service</code>, <code>/graduations-parties-limousine</code>, <code>/fleet</code>, <code>/contact-us</code>, <code>/about-us</code>, <code>/privacy-policy</code>, <code>/terms-conditions</code>.</li>
+  <li><strong>Two homepage slugs are malformed</strong> — <code>wwwaustinlimoshuttlecom</code> and <code>httpswwwaustinlimoshuttlecom</code> — a URL with punctuation stripped. Map them to <code>/</code> and the services page, then 301 the old forms.</li>
+  <li><strong>The blog needs redirects, not deletion.</strong> Dropping WordPress removes 195 uploaded files and every <code>/blog/*</code> URL. Before switch-over, export the blog's URL list, check which have inbound links or search traffic, and 301 the ones that matter to the nearest service page. Deleting them outright returns 404s on pages Google may still rank.</li>
+  <li>Meta titles and descriptions migrate with mojibake repaired — several are currently served to search engines with visible <code>â€™</code> corruption.</li>
+  <li>Server-render every marketing page; ship <code>sitemap.xml</code> and <code>robots.txt</code>; add <code>LocalBusiness</code> and <code>Service</code> structured data, which the legacy site lacks entirely.</li>
+  <li>Keep the <code>www.</code> canonical host and the existing HTTPS redirect behaviour.</li>
+</ul>
+
+<h2 id="deploy">17. Deployment</h2>
+<div class="note warn">
+  <strong>Hosting needs confirmation before build starts</strong>
+  The client has chosen to stay on InMotion shared hosting. The account has
+  <code>cloudlinux-selector</code> present with Python 3.6–3.13 and Node 6–24 available, which indicates
+  both app types are supported — but no <code>~/virtualenv</code> or <code>~/nodevenv</code> directory
+  exists, so neither has ever been provisioned. <strong>Confirm with InMotion that this plan permits both
+  a Python and a Node application before committing.</strong> Running two Passenger apps plus MySQL on
+  shared hosting is workable at this traffic level but is the least comfortable part of this plan.
+</div>
+<div class="scroll">
+<table>
+  <thead><tr><th>Component</th><th>Placement</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>Next.js</td><td>cPanel Node app → <code>www.austinlimoshuttle.com</code></td><td>Node 22. Build locally or in CI, upload the artefact; shared hosting is a poor build environment.</td></tr>
+    <tr><td>Django API</td><td>cPanel Python app → <code>api.austinlimoshuttle.com</code></td><td>Python 3.12, Passenger WSGI.</td></tr>
+    <tr><td>Admin dashboard</td><td>Same Django app → <code>admin.austinlimoshuttle.com</code></td><td>Separate subdomain so it can be IP-restricted independently.</td></tr>
+    <tr><td>Database</td><td>cPanel MySQL 8</td><td>New database and user; the legacy database stays untouched until decommissioning.</td></tr>
+    <tr><td>Static &amp; media</td><td><code>~/public_html/static</code>, <code>~/media</code></td><td>Media outside the document root, served through Django.</td></tr>
+    <tr><td>Cron</td><td>cPanel cron</td><td>Pickup reminders, quote expiry, nightly backup.</td></tr>
+    <tr><td>Secrets</td><td><code>.env</code> outside <code>public_html</code></td><td>Never in the web root. This is precisely how the current Stripe key became exposed.</td></tr>
+  </tbody>
+</table>
+</div>
+<p>
+  <strong>Cutover:</strong> build against a copy of production data, run the migration and validation gates,
+  soft-launch on a staging subdomain for client acceptance, then switch DNS with the legacy application kept
+  intact and reachable for a rollback window. The old site is not deleted until the new one has processed
+  live bookings successfully for an agreed period.
+</p>
+
+<h2 id="security">18. Security requirements</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th>Legacy finding</th><th>Resolution</th></tr></thead>
+  <tbody>
+    <tr><td>Plaintext card numbers (3,416 across two tables)</td><td>No column exists to store them. Stripe Elements keeps card data off our servers entirely.</td></tr>
+    <tr><td>CVV retained (68 values)</td><td>Never collected by us.</td></tr>
+    <tr><td>Plaintext passwords (1,251)</td><td>PBKDF2 hashing; legacy passwords discarded, all accounts force-reset.</td></tr>
+    <tr><td>SQL injection (27 sites, 16 files)</td><td>The ORM parameterises every query. Raw SQL is prohibited outside reviewed migration scripts.</td></tr>
+    <tr><td>Unauthenticated injection on a public URL</td><td>DRF permission classes; no unauthenticated write path reaches a booking lookup by ID.</td></tr>
+    <tr><td>Stripe secret key in web root</td><td>Environment variable outside the document root, never committed.</td></tr>
+    <tr><td>PHP 5.4, unpatched 11 years</td><td>Supported Python and Node with a documented patching cadence.</td></tr>
+    <tr><td>Source archives publicly downloadable</td><td>Nothing outside <code>static/</code> is web-servable; deployment excludes archives.</td></tr>
+    <tr><td>No CSRF protection</td><td>Django CSRF on all state-changing requests.</td></tr>
+    <tr><td>No rate limiting; contact form spam</td><td>Throttling on auth, quote and enquiry endpoints; bot protection on public forms.</td></tr>
+    <tr><td>Single shared admin account</td><td>Individual staff accounts, role groups, audited actions.</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Baseline: HTTPS everywhere with HSTS, secure cookie flags, Content-Security-Policy, dependency scanning in CI, and nightly off-server database backups — none of which the current stack has.</p>
+
+<h2 id="testing">19. Testing</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th>Layer</th><th>Coverage</th></tr></thead>
+  <tbody>
+    <tr><td>Pricing engine</td><td>Unit tests per band boundary, surcharge window (including midnight crossing), blackout date, minimum-fare floor, meet-and-greet, hourly hire. <strong>Plus the 2,217-booking historical replay.</strong></td></tr>
+    <tr><td>Booking flow</td><td>Integration tests: quote → booking → intent → webhook → confirmed, including declines, expired quotes and tampered totals.</td></tr>
+    <tr><td>Payments</td><td>Stripe test mode with 3-D Secure challenge cards; webhook signature verification; idempotent replay.</td></tr>
+    <tr><td>API</td><td>Contract tests per endpoint including permissions and throttling.</td></tr>
+    <tr><td>Migration</td><td>Every validation gate in §15 automated and re-runnable.</td></tr>
+    <tr><td>Frontend</td><td>Component tests plus one end-to-end booking journey against Stripe test mode.</td></tr>
+    <tr><td>Security</td><td>Dependency scanning, Django deployment checklist, and a review pass over the auth and payment paths before launch.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="phases">20. Delivery phases</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th>Phase</th><th>Deliverable</th><th>Exit criteria</th></tr></thead>
+  <tbody>
+    <tr><td>0 · Urgent remediation</td><td>Independent of the rebuild: rotate the Stripe key, remove the public archives, take <code>direct-payment.php</code> offline, contact the payment processor.</td><td>Client confirms all four done.</td></tr>
+    <tr><td>1 · Foundations</td><td>Django project, models, migrations, Django admin, staff roles.</td><td>Schema reviewed; admin can create a booking by hand.</td></tr>
+    <tr><td>2 · Pricing engine</td><td>Quote engine, surcharge rules, distance bands, full test suite.</td><td>All 2,217 historical fares replay within tolerance.</td></tr>
+    <tr><td>3 · API &amp; payments</td><td>DRF endpoints, Stripe Intents, webhooks, email and PDF.</td><td>End-to-end booking completes in Stripe test mode.</td></tr>
+    <tr><td>4 · Dashboard</td><td>Dispatch board, booking list and detail, enquiries inbox.</td><td>Client accepts a dry run of a normal operating day.</td></tr>
+    <tr><td>5 · Frontend</td><td>Next.js marketing pages, booking funnel, customer account.</td><td>Lighthouse and SEO checks pass; content matches the legacy pages.</td></tr>
+    <tr><td>6 · Migration</td><td>Import commands and validation gates.</td><td>All six gates green on a full rehearsal.</td></tr>
+    <tr><td>7 · Launch</td><td>Staging acceptance, redirects, DNS cutover, rollback window.</td><td>Live bookings processing; legacy retained but unreachable.</td></tr>
+    <tr><td>8 · Decommission</td><td>Purge legacy cardholder data, archive the old application, close the account.</td><td>Only after the processor confirms evidence retention is no longer required.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<footer>
+  Prepared 12 August 2026. Companion documents: <em>Legacy Application Brief</em> (file-by-file inventory and
+  existing schema) and <em>Security Issue Report</em> (production findings requiring immediate action).
+  Phase 0 is independent of this rebuild and should not wait for it.
+</footer>
+
+</div>
+</body>
+</html>

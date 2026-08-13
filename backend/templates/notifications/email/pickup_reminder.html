@@ -1,0 +1,9 @@
+{% extends "notifications/email/_base.html" %}
+{% block body %}
+<h1 style="font-size:20px;margin:0 0 6px">Your pickup is tomorrow</h1>
+<p style="margin:0 0 20px;color:#5b636d">A reminder of the details.</p>
+{% include "notifications/email/_itinerary.html" %}
+{% if booking.driver %}
+  <p style="margin:0 0 6px"><strong>Driver:</strong> {{ booking.driver.full_name }}{% if booking.driver.phone %} · {{ booking.driver.phone }}{% endif %}</p>
+{% endif %}
+{% endblock %}

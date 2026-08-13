@@ -1,0 +1,52 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Enquiries{% endblock %}
+
+{% block content %}
+<h1>Enquiries</h1>
+<p class="lede">{{ counts.unread }} unread · {{ counts.unanswered }} unanswered · {{ counts.all }} total</p>
+
+<div class="panel">
+  <form class="inline" method="get">
+    <select name="state">
+      <option value="all" {% if state == 'all' %}selected{% endif %}>All</option>
+      <option value="unread" {% if state == 'unread' %}selected{% endif %}>Unread</option>
+      <option value="unanswered" {% if state == 'unanswered' %}selected{% endif %}>Unanswered</option>
+    </select>
+    <select name="nature">
+      <option value="">All types</option>
+      {% for value, label in natures %}
+        <option value="{{ value }}" {% if value == nature %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Filter</button>
+  </form>
+</div>
+
+{% if enquiries %}
+<div class="scroll">
+  <table>
+    <thead><tr><th>Received</th><th>From</th><th>Type</th><th>Subject</th><th>State</th></tr></thead>
+    <tbody>
+    {% for enquiry in enquiries %}
+      <tr>
+        <td class="num">{{ enquiry.created_at|date:"j M Y" }}</td>
+        <td>
+          <a href="{% url 'dashboard:enquiry_detail' enquiry.pk %}">{{ enquiry.name }}</a><br>
+          <span class="muted">{{ enquiry.email }}</span>
+        </td>
+        <td>{{ enquiry.get_nature_display }}</td>
+        <td>{{ enquiry.subject|default:enquiry.message|truncatechars:60 }}</td>
+        <td>
+          {% if enquiry.is_answered %}<span class="tag completed">Replied</span>
+          {% elif enquiry.is_read %}<span class="tag pending">Read</span>
+          {% else %}<span class="tag cancelled">Unread</span>{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <div class="empty">Nothing here.</div>
+{% endif %}
+{% endblock %}

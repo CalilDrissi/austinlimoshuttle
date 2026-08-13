@@ -1,0 +1,24 @@
+{% autoescape off %}Your booking is confirmed
+
+Thank you{% if booking.customer.first_name %}, {{ booking.customer.first_name }}{% endif %} - we have you booked in.
+
+Reference : {{ booking.reference }}
+Pickup    : {{ booking.pickup_at|date:"l j F Y, H:i" }}
+From      : {{ booking.pickup_address }}
+{% if booking.dropoff_address %}To        : {{ booking.dropoff_address }}
+{% endif %}{% if booking.hours %}Duration  : {{ booking.hours }} hours
+{% endif %}Vehicle   : {{ booking.vehicle_name_snapshot }}
+Passengers: {{ booking.passenger_count }}
+{% if booking.flight_number %}Flight    : {{ booking.flight_number }}
+{% endif %}{% if booking.pickup_sign %}Placard   : {{ booking.pickup_sign }}
+{% endif %}
+Fare
+{% for line in lines %}  {{ line.label }}: ${{ line.amount }}
+{% endfor %}  TOTAL PAID: ${{ booking.total }} {{ booking.currency }}
+
+A PDF copy is attached.
+
+Need to change or cancel? Reply to this email or call us, quoting {{ booking.reference }}.
+
+Austin Limo Shuttle{% if settings.contact_phone %} - {{ settings.contact_phone }}{% endif %}
+{% endautoescape %}

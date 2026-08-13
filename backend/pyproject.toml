@@ -1,0 +1,75 @@
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+exclude = [".venv", "*/migrations/*"]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "F",      # pyflakes
+    "I",      # import sorting
+    "B",      # bugbear
+    "UP",     # pyupgrade
+    "DJ",     # Django-specific
+    "S",      # bandit security rules
+    "PL",     # pylint
+    "RUF",
+]
+ignore = [
+    # Django's ModelAdmin/Meta idiom is list-valued class attributes. Enforcing
+    # immutable defaults here would fight the framework for no safety gain.
+    "RUF012",
+    # Long lines in generated migrations and help_text are not worth breaking up.
+    "E501",
+    # Ambiguous-unicode warnings. This codebase deliberately contains en dashes,
+    # curly quotes and non-breaking spaces: they are correct typography in
+    # customer-facing labels, and the mojibake tests require the exact
+    # characters as literals.
+    "RUF001", "RUF002", "RUF003",
+    # zip(a, a[1:]) reads more clearly than itertools.pairwise for range checks.
+    "RUF007",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Settings modules intentionally re-export via star-import so that dev/prod can
+# layer over base.
+"config/settings/*.py" = ["F401", "F403", "F405"]
+# Tests legitimately use asserts, dummy credentials, literal expected values,
+# and deferred imports (models must load after settings are configured).
+"**/test_*.py" = ["S101", "S105", "S106", "S107", "PLR2004", "PLC0415"]
+"**/tests/*.py" = ["S101", "S105", "S106", "S107", "PLR2004", "PLC0415"]
+# Django's own generated idiom: the import is deferred so the ImportError can
+# be caught and turned into a helpful "is your virtualenv active?" message.
+"manage.py" = ["PLC0415"]
+# Passenger requires sys.path setup before Django is importable.
+"passenger_wsgi.py" = ["E402", "PLC0415"]
+# The fare engine takes preloaded reference data (settings, surcharges,
+# blackouts, bands) as optional keyword arguments so that bulk callers -- the
+# historical replay prices 2,217 bookings -- can avoid a query per booking.
+# Bundling them into a context object would hide that trade-off rather than
+# remove it, and the arguments are keyword-only.
+"pricing/engine.py" = ["PLR0913", "PLR0917", "PLR0912"]
+# Guard clauses. create_intent rejects six distinct bad states before doing any
+# work; collapsing them into nested conditionals would be harder to read, not
+# safer.
+"api/payment_views.py" = ["PLR0911"]
+# The email backend is constructed during app startup, before the model
+# registry is ready, so EmailSettings must be imported lazily.
+"notifications/backend.py" = ["PLC0415"]
+# xhtml2pdf is imported inside the function so a missing PDF library degrades
+# to "send without an attachment" rather than breaking import of the mailer.
+"notifications/pdf.py" = ["PLC0415"]
+# _send() takes seven keyword-only arguments describing one message. Bundling
+# them into an object would add indirection without removing any of them.
+"notifications/mailer.py" = ["PLR0913"]
+# The notifications import inside the payment path is deliberate isolation: a
+# broken notifications app must not take payment confirmation down with it.
+"payments/gateway.py" = ["PLC0415"]
+# Report rendering legitimately takes many counters.
+"legacy_import/management/commands/replay_fares.py" = ["PLR0913", "PLR0917"]
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "accounts", "fleet", "pricing", "bookings",
+    "payments", "content", "enquiries", "dashboard", "api", "config",
+]

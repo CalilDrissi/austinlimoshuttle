@@ -1,0 +1,12 @@
+{% autoescape off %}<!doctype html>
+<html>
+<body style="margin:0;padding:24px;background:#f4f6f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#15181c">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e2e7ec;border-radius:12px;padding:30px">
+    <div style="font-weight:700;color:#0f6b4f;margin-bottom:20px">Austin Limo Shuttle</div>
+    {% block body %}{% endblock %}
+    <p style="margin:26px 0 0;color:#5b636d;font-size:13px;border-top:1px solid #e2e7ec;padding-top:16px">
+      Austin Limo Shuttle{% if settings.contact_phone %} · {{ settings.contact_phone }}{% endif %}
+    </p>
+  </div>
+</body>
+</html>{% endautoescape %}

@@ -1,0 +1,51 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Bookings{% endblock %}
+
+{% block content %}
+<h1>Bookings</h1>
+<p class="lede">Showing {{ showing }} of {{ total }} matching bookings.</p>
+
+<div class="panel">
+  <form class="inline" method="get">
+    <input type="text" name="q" value="{{ filters.q }}" placeholder="Reference, name, address, flight…" style="min-width:280px">
+    <select name="status">
+      <option value="">All statuses</option>
+      {% for value, label in statuses %}
+        <option value="{{ value }}" {% if value == filters.status %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <input type="date" name="from" value="{{ filters.from }}" title="Pickup from">
+    <input type="date" name="to" value="{{ filters.to }}" title="Pickup to">
+    <button type="submit">Filter</button>
+    <a class="btn secondary" href="{% url 'dashboard:bookings' %}">Reset</a>
+    <button type="submit" name="export" value="csv" class="secondary">Export CSV</button>
+  </form>
+</div>
+
+{% if bookings %}
+<div class="scroll">
+  <table>
+    <thead><tr><th>Pickup</th><th>Reference</th><th>Customer</th><th>Route</th><th>Vehicle</th><th>Driver</th><th>Status</th><th class="num">Total</th></tr></thead>
+    <tbody>
+    {% for booking in bookings %}
+      <tr>
+        <td class="num">{{ booking.pickup_at|date:"j M Y, H:i" }}</td>
+        <td><a href="{% url 'dashboard:booking_detail' booking.reference %}">{{ booking.reference }}</a></td>
+        <td>{{ booking.customer_name }}</td>
+        <td class="muted">{{ booking.pickup_address|truncatechars:26 }} → {{ booking.dropoff_address|truncatechars:26|default:"—" }}</td>
+        <td>{{ booking.vehicle_name_snapshot }}</td>
+        <td>{{ booking.driver.full_name|default:"—" }}</td>
+        <td><span class="tag {{ booking.status }}">{{ booking.get_status_display }}</span></td>
+        <td class="num">${{ booking.total }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if total > showing %}
+  <p class="muted" style="margin-top:12px">Only the first {{ showing }} are shown. Narrow the filters, or export to CSV for the full set.</p>
+{% endif %}
+{% else %}
+  <div class="empty">No bookings match those filters.</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,158 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{{ booking.reference }}{% endblock %}
+
+{% block content %}
+<h1>{{ booking.reference }} <span class="tag {{ booking.status }}">{{ booking.get_status_display }}</span></h1>
+<p class="lede">{{ booking.pickup_at|date:"l j F Y, H:i" }} · {{ booking.vehicle_name_snapshot }}</p>
+
+<div class="panel">
+  <h2>Journey</h2>
+  <dl class="kv">
+    <dt>Pickup</dt><dd>{{ booking.pickup_address }}</dd>
+    <dt>Destination</dt><dd>{{ booking.dropoff_address|default:"—" }}</dd>
+    <dt>Type</dt><dd>{{ booking.get_trip_type_display }}</dd>
+    {% if booking.distance_miles %}<dt>Distance</dt><dd>{{ booking.distance_miles }} miles</dd>{% endif %}
+    {% if booking.hours %}<dt>Hours booked</dt><dd>{{ booking.hours }}</dd>{% endif %}
+    <dt>Passengers / luggage</dt><dd>{{ booking.passenger_count }} / {{ booking.luggage_count }}</dd>
+    {% if booking.flight_number %}<dt>Flight</dt><dd>{{ booking.flight_number }}</dd>{% endif %}
+    {% if booking.pickup_sign %}<dt>Placard name</dt><dd>{{ booking.pickup_sign }}</dd>{% endif %}
+    {% if booking.notes %}<dt>Customer notes</dt><dd>{{ booking.notes|linebreaksbr }}</dd>{% endif %}
+  </dl>
+</div>
+
+<div class="panel">
+  <h2>Customer</h2>
+  <dl class="kv">
+    <dt>Name</dt><dd>{{ booking.customer_name }}</dd>
+    {% if booking.customer %}
+      <dt>Email</dt><dd>{{ booking.customer.email }}</dd>
+      <dt>Phone</dt><dd>{{ booking.customer.phone|default:"—" }}</dd>
+    {% else %}
+      <dt>Account</dt><dd class="muted">Guest booking — no account attached</dd>
+    {% endif %}
+  </dl>
+</div>
+
+<div class="panel">
+  <h2>Fare</h2>
+  {% if booking.price_lines.all %}
+    <table>
+      <tbody>
+      {% for line in booking.price_lines.all %}
+        <tr><td>{{ line.label }}</td><td class="num" style="text-align:right">${{ line.amount }}</td></tr>
+      {% endfor %}
+      <tr><td><strong>Total</strong></td><td class="num" style="text-align:right"><strong>${{ booking.total }}</strong></td></tr>
+      </tbody>
+    </table>
+  {% else %}
+    <dl class="kv">
+      <dt>Total charged</dt><dd><strong>${{ booking.total }}</strong> {{ booking.currency }}</dd>
+    </dl>
+    <p class="muted" style="margin:10px 0 0">
+      No itemised breakdown — this booking predates the current pricing engine.
+    </p>
+  {% endif %}
+</div>
+
+<div class="panel">
+  <h2>Payments</h2>
+  {% if booking.payments.all %}
+    <table>
+      <thead><tr><th>Date</th><th>Provider</th><th>Status</th><th>Card</th><th class="num">Amount</th></tr></thead>
+      <tbody>
+      {% for payment in booking.payments.all %}
+        <tr>
+          <td class="num">{{ payment.created_at|date:"j M Y" }}</td>
+          <td>{{ payment.get_provider_display }}</td>
+          <td>{{ payment.get_status_display }}</td>
+          <td>{{ payment.masked_card|default:"—" }}</td>
+          <td class="num">${{ payment.amount }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted" style="margin:0">No payment records.</p>
+  {% endif %}
+</div>
+
+{% if is_manager %}
+<div class="panel">
+  <h2>Refund</h2>
+  {% with payment=booking.payments.first %}
+    {% if payment and payment.status == 'succeeded' %}
+      <p class="muted">
+        Charged ${{ payment.amount }} {{ payment.currency }}
+        {% if payment.masked_card %}on {{ payment.masked_card }}{% endif %}.
+        {% if payment.refunds.all %}
+          Already refunded:
+          {% for r in payment.refunds.all %}${{ r.amount }}{% if not forloop.last %}, {% endif %}{% endfor %}.
+        {% endif %}
+      </p>
+      <form method="post" action="{% url 'dashboard:issue_refund' booking.reference %}">
+        {% csrf_token %}
+        <div class="inline" style="margin-bottom:10px">
+          <label>Amount
+            <input type="text" name="amount" placeholder="blank = full remaining" size="18">
+          </label>
+          <label style="flex:1">Reason
+            <input type="text" name="reason" placeholder="e.g. cancelled inside the window"
+                   style="width:100%;min-width:220px">
+          </label>
+        </div>
+        <button type="submit">Issue refund</button>
+      </form>
+    {% else %}
+      <p class="muted" style="margin:0">No successful payment to refund.</p>
+    {% endif %}
+  {% endwith %}
+</div>
+{% endif %}
+
+<div class="panel">
+  <h2>Update</h2>
+  <form method="post" action="{% url 'dashboard:booking_update' booking.reference %}">
+    {% csrf_token %}
+    <div class="inline" style="margin-bottom:10px">
+      <label>Driver
+        <select name="driver">
+          <option value="">— unassigned —</option>
+          {% for driver in drivers %}
+            <option value="{{ driver.pk }}" {% if driver.pk == booking.driver_id %}selected{% endif %}>{{ driver.full_name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Status
+        <select name="status">
+          {% for value, label in statuses %}
+            <option value="{{ value }}" {% if value == booking.status %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+    <textarea name="note" placeholder="Note (recorded against the status change — e.g. why it was cancelled)"></textarea>
+    <p style="margin:10px 0 0"><button type="submit">Save changes</button></p>
+  </form>
+</div>
+
+<div class="panel">
+  <h2>History</h2>
+  {% if booking.status_changes.all %}
+    <table>
+      <thead><tr><th>When</th><th>Change</th><th>By</th><th>Note</th></tr></thead>
+      <tbody>
+      {% for change in booking.status_changes.all %}
+        <tr>
+          <td class="num">{{ change.changed_at|date:"j M Y, H:i" }}</td>
+          <td>{{ change.from_status|default:"—" }} → <strong>{{ change.to_status }}</strong></td>
+          <td>{{ change.changed_by.get_full_name|default:change.changed_by.email|default:"system" }}</td>
+          <td class="muted">{{ change.note|default:"" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted" style="margin:0">No changes recorded yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

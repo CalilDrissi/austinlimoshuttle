@@ -1,0 +1,92 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Payment settings{% endblock %}
+
+{% block content %}
+<h1>Payment settings</h1>
+<p class="lede">Stripe credentials. Changes take effect immediately.</p>
+
+{% if settings_obj.is_enabled and settings_obj.mode == 'live' %}
+  <div class="panel" style="border-left:4px solid var(--danger)">
+    <strong style="color:var(--danger)">Live mode is active.</strong>
+    Real cards are being charged.
+  </div>
+{% elif settings_obj.is_enabled %}
+  <div class="panel" style="border-left:4px solid var(--info)">
+    <strong style="color:var(--info)">Test mode is active.</strong>
+    No real money moves. Use Stripe's test cards.
+  </div>
+{% else %}
+  <div class="panel" style="border-left:4px solid var(--warn)">
+    <strong style="color:var(--warn)">Card payments are switched off.</strong>
+    Bookings can still be taken; they will stay unpaid.
+  </div>
+{% endif %}
+
+<div class="panel">
+  <h2>Current configuration</h2>
+  <dl class="kv">
+    <dt>Mode</dt><dd>{{ settings_obj.get_mode_display }}</dd>
+    <dt>Publishable key</dt>
+    <dd>{% if settings_obj.publishable_key %}<code>{{ settings_obj.publishable_key }}</code>{% else %}<span class="muted">not set</span>{% endif %}</dd>
+    <dt>Secret key</dt>
+    <dd>{% if settings_obj.has_secret_key %}<code>{{ settings_obj.secret_key_masked }}</code> <span class="muted">(encrypted)</span>{% else %}<span class="muted">not set</span>{% endif %}</dd>
+    <dt>Webhook secret</dt>
+    <dd>{% if settings_obj.has_webhook_secret %}<code>{{ settings_obj.webhook_secret_masked }}</code> <span class="muted">(encrypted)</span>{% else %}<span class="muted">not set</span>{% endif %}</dd>
+    <dt>Ready to charge</dt>
+    <dd>{% if settings_obj.is_configured %}<span class="tag completed">Yes</span>{% else %}<span class="tag pending">No</span>{% endif %}</dd>
+    {% if not settings_obj.key_mode_matches %}
+      <dt>Warning</dt>
+      <dd style="color:var(--danger)"><strong>The stored key does not match the selected mode.</strong></dd>
+    {% endif %}
+    <dt>Last changed</dt>
+    <dd>{% if settings_obj.updated_by %}{{ settings_obj.updated_at|date:"j M Y, H:i" }} by {{ settings_obj.updated_by.get_full_name|default:settings_obj.updated_by.email }}{% else %}<span class="muted">never</span>{% endif %}</dd>
+  </dl>
+</div>
+
+<div class="panel">
+  <h2>Update</h2>
+  <form method="post" autocomplete="off">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <ul class="messages">{% for e in form.non_field_errors %}<li class="error">{{ e }}</li>{% endfor %}</ul>
+    {% endif %}
+
+    {% for field in form %}
+      <div style="margin-bottom:16px">
+        <label for="{{ field.id_for_label }}" style="display:block;font-weight:600;margin-bottom:4px">
+          {{ field.label }}
+        </label>
+        {{ field }}
+        {% if field.help_text %}<div class="muted" style="font-size:13px;margin-top:3px">{{ field.help_text }}</div>{% endif %}
+        {% for e in field.errors %}<div style="color:var(--danger);font-size:13.5px;margin-top:3px">{{ e }}</div>{% endfor %}
+      </div>
+    {% endfor %}
+
+    <button type="submit">Save settings</button>
+  </form>
+</div>
+
+<div class="panel">
+  <h2>Stripe webhook</h2>
+  <p>
+    Add this endpoint in the Stripe dashboard (Developers → Webhooks), then paste
+    its signing secret above. Without it, a payment that succeeds at Stripe will
+    never confirm the booking here.
+  </p>
+  <p><code>{{ webhook_url }}</code></p>
+  <p class="muted" style="margin:0">
+    Events required: <code>payment_intent.succeeded</code>,
+    <code>payment_intent.payment_failed</code>, <code>charge.refunded</code>.
+  </p>
+</div>
+
+<div class="panel">
+  <h2>How these are stored</h2>
+  <p class="muted" style="margin:0">
+    The secret key and webhook secret are encrypted before they are written to the
+    database, using a key derived from the server's <code>DJANGO_SECRET_KEY</code>.
+    They are never displayed again after saving — only the last four characters.
+    If <code>DJANGO_SECRET_KEY</code> is ever changed, both must be re-entered.
+  </p>
+</div>
+{% endblock %}
