@@ -165,3 +165,42 @@ admin login, so no action could be attributed to anyone.
   quote $0.00. Needs a client decision: deactivate, or supply rates.
 - **This project is not under version control.** `.gitignore` is prepared and
   excludes `.env`, `.secrets/`, `legacy/` and `dumps/`.
+
+## API documentation
+
+```
+/api/docs/     Swagger UI   — try requests against a running server
+/api/redoc/    ReDoc        — easier to read end to end
+/api/schema/   OpenAPI 3.1  — machine-readable
+docs/openapi.yaml            — checked-in snapshot for the frontend
+```
+
+Open in development; **staff-only in production**, because the schema lists
+every endpoint, its throttles and its error shapes.
+
+Generate a typed TypeScript client for the Next.js app:
+
+```bash
+npx openapi-typescript docs/openapi.yaml -o frontend/lib/api-types.ts
+```
+
+Re-export the snapshot after changing any endpoint:
+
+```bash
+cd backend && python manage.py spectacular --file ../docs/openapi.yaml
+```
+
+`--fail-on-warn` is part of the test suite, so an endpoint added without a
+schema annotation fails CI rather than shipping undocumented.
+
+### The two rules the schema encodes
+
+**No endpoint accepts a price or a distance.** `POST /api/quotes/` takes two
+addresses and returns a signed `quote_token`; `POST /api/bookings/` takes that
+token and the server recomputes the fare. Tests assert the request schemas have
+no such properties.
+
+**Payment is confirmed by webhook, not by the browser.** A successful card
+confirmation client-side does not mark a booking paid — Stripe calls
+`/api/payments/webhook/` and that is what confirms it. The frontend should show
+a pending state and poll `/api/account/bookings/{reference}/`.

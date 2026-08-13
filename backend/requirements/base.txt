@@ -8,6 +8,12 @@ Django>=5.2,<5.3
 djangorestframework>=3.15,<4.0
 django-environ>=0.11,<1.0
 
+# OpenAPI schema and Swagger UI for the Next.js frontend. The sidecar package
+# ships the UI's JS/CSS locally so the docs page works under our
+# Content-Security-Policy, which forbids external scripts.
+drf-spectacular>=0.27,<1.0
+drf-spectacular-sidecar>=2024.1.1
+
 # MySQL/MariaDB driver. Pure Python by design -- mysqlclient needs a compiler
 # and libmysqlclient headers, neither available on shared hosting.
 PyMySQL>=1.1,<2.0

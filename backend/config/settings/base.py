@@ -43,6 +43,8 @@ DJANGO_APPS = [
 
 THIRD_PARTY_APPS = [
     "rest_framework",
+    "drf_spectacular",
+    "drf_spectacular_sidecar",
 ]
 
 LOCAL_APPS = [
@@ -202,6 +204,49 @@ REST_FRAMEWORK = {
     },
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
+    ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+# --------------------------------------------------------------------------
+# API documentation
+# --------------------------------------------------------------------------
+# Consumed by the Next.js frontend. The sidecar serves Swagger UI's assets from
+# our own domain -- the CSP in config/middleware.py forbids external scripts, so
+# the CDN-hosted default would render a blank page.
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Austin Limo Shuttle API",
+    "DESCRIPTION": (
+        "Booking, quoting and payment API.\n\n"
+        "**Fares are computed server-side and cannot be supplied by a client.** "
+        "Request a quote to receive a signed, short-lived `quote_token`, then "
+        "present that token when creating a booking; the server re-measures the "
+        "journey and recomputes the fare before anything is stored. No endpoint "
+        "accepts a price or a distance.\n\n"
+        "Authentication is session-based. Sign in via `/api/auth/login/`; the "
+        "session cookie authorises subsequent requests. State-changing requests "
+        "require the CSRF token from the `csrftoken` cookie in an "
+        "`X-CSRFToken` header."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_DIST": "SIDECAR",
+    "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
+    "REDOC_DIST": "SIDECAR",
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SORT_OPERATIONS": False,
+    "TAGS": [
+        {"name": "content", "description": "Pages, vehicles and availability."},
+        {"name": "quotes", "description": "Fare quoting. Returns signed tokens."},
+        {"name": "bookings", "description": "Creating and managing bookings."},
+        {"name": "payments", "description": "Stripe checkout and webhooks."},
+        {"name": "auth", "description": "Sign in, register, password reset."},
+        {"name": "enquiries", "description": "Contact form."},
+    ],
+    "SERVERS": [
+        {"url": "http://localhost:8000", "description": "Local development"},
+        {"url": "https://api.austinlimoshuttle.com", "description": "Production"},
     ],
 }
 

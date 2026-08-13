@@ -19,6 +19,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.utils import timezone
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.exceptions import ValidationError
@@ -39,11 +40,19 @@ from pricing.models import BlackoutDate, TimeSurcharge
 
 from . import quotes
 from .serializers import (
+    AvailabilitySerializer,
     BookingCreateSerializer,
     BookingSerializer,
+    CancelBookingSerializer,
+    DetailSerializer,
     EnquirySerializer,
+    LoginRequestSerializer,
     PageSerializer,
+    PasswordResetRequestSerializer,
     QuoteRequestSerializer,
+    QuoteResponseSerializer,
+    RegisterRequestSerializer,
+    UserSerializer,
     VehicleSerializer,
 )
 
@@ -73,6 +82,14 @@ class EnquiryThrottle(ScopedRateThrottle):
 # -- content ---------------------------------------------------------------
 
 
+@extend_schema(
+    tags=["content"],
+    summary="Fetch one published page",
+    description="Content and SEO metadata for a CMS page. Unpublished pages 404.",
+    parameters=[OpenApiParameter("slug", str, OpenApiParameter.PATH,
+                                 description='URL slug, e.g. "fleet".')],
+    responses={200: PageSerializer, 404: DetailSerializer},
+)
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def page_detail(request, slug):
@@ -82,6 +99,12 @@ def page_detail(request, slug):
     return Response(PageSerializer(page).data)
 
 
+@extend_schema(
+    tags=["content"],
+    summary="List published pages",
+    description="Every published page. Use this to build navigation and a sitemap.",
+    responses={200: PageSerializer(many=True)},
+)
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def page_list(request):
@@ -89,6 +112,14 @@ def page_list(request):
     return Response(PageSerializer(pages, many=True).data)
 
 
+@extend_schema(
+    tags=["content"],
+    summary="List bookable vehicles",
+    description="Active vehicles only. Per-mile rates are not exposed — fares "
+                "come from the quote endpoint so they cannot be recomputed "
+                "(or disputed) client-side.",
+    responses={200: VehicleSerializer(many=True)},
+)
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def vehicle_list(request):
@@ -96,6 +127,13 @@ def vehicle_list(request):
     return Response(VehicleSerializer(vehicles, many=True).data)
 
 
+@extend_schema(
+    tags=["content"],
+    summary="Surcharge windows and blackout dates",
+    description="For the date picker, so a customer can see before choosing that "
+                "a late-night pickup or an event date costs more.",
+    responses={200: AvailabilitySerializer},
+)
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def availability(request):
@@ -121,6 +159,48 @@ def availability(request):
 # -- quoting ---------------------------------------------------------------
 
 
+@extend_schema(
+    tags=["quotes"],
+    summary="Price a journey across every vehicle",
+    description=(
+        "Measures the journey server-side from the two addresses and returns a "
+        "fare per bookable vehicle.\n\n"
+        "**There is no `distance_miles` field and no price field.** A client "
+        "cannot declare either. Each result carries a signed `quote_token` — "
+        "present it to `POST /api/bookings/` and the fare is recomputed before "
+        "anything is stored.\n\n"
+        "Supply `dropoff_address` for a transfer, or `hours` for hourly hire, "
+        "never both. Throttled to 30/hour."
+    ),
+    request=QuoteRequestSerializer,
+    responses={
+        200: QuoteResponseSerializer,
+        400: DetailSerializer,
+        422: DetailSerializer,
+        429: DetailSerializer,
+    },
+    examples=[
+        OpenApiExample(
+            "Airport transfer",
+            request_only=True,
+            value={
+                "pickup_address": "Austin-Bergstrom International Airport",
+                "dropoff_address": "Downtown Austin, TX",
+                "pickup_at": "2026-09-01T14:30:00-05:00",
+                "meet_and_greet": True,
+            },
+        ),
+        OpenApiExample(
+            "Hourly hire",
+            request_only=True,
+            value={
+                "pickup_address": "Downtown Austin, TX",
+                "pickup_at": "2026-09-01T19:00:00-05:00",
+                "hours": "3",
+            },
+        ),
+    ],
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])
 @throttle_classes([QuoteThrottle])
@@ -203,6 +283,19 @@ def create_quote(request):
 # -- bookings --------------------------------------------------------------
 
 
+@extend_schema(
+    tags=["bookings"],
+    summary="Create a booking from a signed quote",
+    description=(
+        "Redeems a `quote_token` and creates a booking in `pending` status. The "
+        "fare is recomputed from the token; any amount in the request body is "
+        "ignored because no such field exists.\n\n"
+        "Sign in first, or supply `guest_email` for guest checkout. Take payment "
+        "next via `POST /api/payments/intent/`."
+    ),
+    request=BookingCreateSerializer,
+    responses={201: BookingSerializer, 400: DetailSerializer},
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def create_booking(request):
@@ -264,6 +357,11 @@ def create_booking(request):
     return Response(BookingSerializer(booking).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(
+    tags=["bookings"],
+    summary="The signed-in customer's bookings",
+    responses={200: BookingSerializer(many=True), 403: DetailSerializer},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def my_bookings(request):
@@ -275,6 +373,20 @@ def my_bookings(request):
     return Response(BookingSerializer(bookings, many=True).data)
 
 
+@extend_schema(
+    tags=["bookings"],
+    summary="Read or cancel one of your bookings",
+    description=(
+        "Scoped to the signed-in customer. Another customer's reference returns "
+        "**404, not 403** — a 403 would confirm the reference exists and allow "
+        "bookings to be enumerated.\n\n"
+        "`PATCH {\"action\": \"cancel\"}` cancels, if the pickup is still in "
+        "the future."
+    ),
+    parameters=[OpenApiParameter("reference", str, OpenApiParameter.PATH)],
+    request=CancelBookingSerializer,
+    responses={200: BookingSerializer, 400: DetailSerializer, 404: DetailSerializer},
+)
 @api_view(["GET", "PATCH"])
 @permission_classes([IsAuthenticated])
 def my_booking_detail(request, reference):
@@ -318,6 +430,15 @@ def my_booking_detail(request, reference):
 # -- auth -------------------------------------------------------------------
 
 
+@extend_schema(
+    tags=["auth"],
+    summary="Sign in",
+    description="Sets a session cookie. A wrong password and an unknown address "
+                "return the identical response, so this cannot be used to "
+                "discover who has an account.",
+    request=LoginRequestSerializer,
+    responses={200: UserSerializer, 401: DetailSerializer},
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])
 @throttle_classes([AnonRateThrottle])
@@ -342,6 +463,9 @@ def auth_login(request):
     })
 
 
+@extend_schema(
+    tags=["auth"], summary="Sign out", request=None, responses={204: None},
+)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def auth_logout(request):
@@ -349,6 +473,15 @@ def auth_logout(request):
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@extend_schema(
+    tags=["auth"],
+    summary="Create an account",
+    description="Password strength is enforced. Registering an address that "
+                "already exists returns **202 with a neutral message** rather "
+                "than an error, for the same anti-enumeration reason as sign-in.",
+    request=RegisterRequestSerializer,
+    responses={201: UserSerializer, 202: DetailSerializer, 400: DetailSerializer},
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])
 @throttle_classes([AnonRateThrottle])
@@ -382,6 +515,18 @@ def auth_register(request):
     return Response({"email": user.email}, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(
+    tags=["auth"],
+    summary="Request a password reset link",
+    description=(
+        "Always returns 202, whether or not the address is registered.\n\n"
+        "The reset is completed on Django-served pages under `/accounts/`, not "
+        "in the frontend. Note that customers migrated from the previous system "
+        "have no password at all until they use this."
+    ),
+    request=PasswordResetRequestSerializer,
+    responses={202: DetailSerializer},
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])
 @throttle_classes([AnonRateThrottle])
@@ -415,6 +560,10 @@ def auth_password_reset(request):
     )
 
 
+@extend_schema(
+    tags=["auth"], summary="The signed-in customer",
+    responses={200: UserSerializer, 403: DetailSerializer},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def auth_me(request):
@@ -430,6 +579,13 @@ def auth_me(request):
 # -- enquiries --------------------------------------------------------------
 
 
+@extend_schema(
+    tags=["enquiries"],
+    summary="Submit the contact form",
+    description="Throttled to 10/hour per address.",
+    request=EnquirySerializer,
+    responses={201: DetailSerializer, 400: DetailSerializer, 429: DetailSerializer},
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])
 @throttle_classes([EnquiryThrottle])

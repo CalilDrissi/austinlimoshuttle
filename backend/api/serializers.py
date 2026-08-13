@@ -5,6 +5,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from bookings.models import Booking
@@ -124,7 +125,9 @@ class BookingSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = fields
 
+    @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_price_lines(self, obj):
+        """The itemised fare. Amounts are strings -- money is never a float."""
         return [
             {"kind": line.kind, "label": line.label, "amount": f"{line.amount:.2f}"}
             for line in obj.price_lines.all()
@@ -140,3 +143,128 @@ class EnquirySerializer(serializers.ModelSerializer):
         if len(value.strip()) < 10:  # noqa: PLR2004
             raise serializers.ValidationError("Please provide a little more detail.")
         return value
+
+
+# ---------------------------------------------------------------------------
+# Response shapes
+#
+# These exist so the OpenAPI schema describes what the frontend actually
+# receives. They are documentation-bearing types, not input validation: nothing
+# here is ever used to parse a request.
+# ---------------------------------------------------------------------------
+
+
+class DetailSerializer(serializers.Serializer):
+    """A human-readable message. Used for errors and simple acknowledgements."""
+
+    detail = serializers.CharField()
+
+
+class JourneySerializer(serializers.Serializer):
+    """The route as measured server-side. Null for hourly hire."""
+
+    distance_miles = serializers.CharField(help_text="Decimal string, e.g. \"25.000\".")
+    duration_minutes = serializers.IntegerField()
+    pickup_address = serializers.CharField(help_text="As resolved by the mapping service.")
+    dropoff_address = serializers.CharField()
+
+
+class QuoteLineSerializer(serializers.Serializer):
+    """One component of a fare."""
+
+    kind = serializers.ChoiceField(
+        choices=["base", "band", "surcharge", "meet_greet", "minimum_adjustment", "tax"],
+    )
+    label = serializers.CharField(help_text='e.g. "19 mi in 6–50 mi × $2.90".')
+    amount = serializers.CharField(help_text="Decimal string. Money is never a float.")
+
+
+class QuoteResultSerializer(serializers.Serializer):
+    """A priced option for one vehicle."""
+
+    vehicle_id = serializers.IntegerField()
+    vehicle_name = serializers.CharField()
+    subtotal = serializers.CharField()
+    surcharge_total = serializers.CharField()
+    tax = serializers.CharField()
+    total = serializers.CharField()
+    currency = serializers.CharField()
+    lines = QuoteLineSerializer(many=True)
+    quote_token = serializers.CharField(
+        help_text="Signed and short-lived. Present this to create a booking; "
+                  "the server recomputes the fare from it.",
+    )
+
+
+class QuoteResponseSerializer(serializers.Serializer):
+    journey = JourneySerializer(allow_null=True)
+    quotes = QuoteResultSerializer(many=True)
+
+
+class BlackoutDateSerializer(serializers.Serializer):
+    date = serializers.DateField()
+    name = serializers.CharField()
+    percentage = serializers.CharField()
+
+
+class TimeSurchargeSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    start_time = serializers.TimeField()
+    end_time = serializers.TimeField()
+    percentage = serializers.CharField()
+    crosses_midnight = serializers.BooleanField()
+
+
+class AvailabilitySerializer(serializers.Serializer):
+    """Everything a date picker needs to warn about surcharged times."""
+
+    blackout_dates = BlackoutDateSerializer(many=True)
+    time_surcharges = TimeSurchargeSerializer(many=True)
+
+
+class PaymentConfigSerializer(serializers.Serializer):
+    enabled = serializers.BooleanField()
+    publishable_key = serializers.CharField(
+        allow_blank=True, help_text="Safe to embed in the page. Empty when disabled.",
+    )
+    mode = serializers.CharField(allow_null=True, help_text='"test" or "live".')
+
+
+class PaymentIntentRequestSerializer(serializers.Serializer):
+    reference = serializers.CharField(help_text="Booking reference.")
+
+
+class PaymentIntentResponseSerializer(serializers.Serializer):
+    client_secret = serializers.CharField(help_text="Pass to Stripe Elements.")
+    publishable_key = serializers.CharField()
+    amount = serializers.CharField()
+    currency = serializers.CharField()
+    reference = serializers.CharField()
+
+
+class LoginRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+
+class UserSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    first_name = serializers.CharField(allow_blank=True)
+    last_name = serializers.CharField(allow_blank=True)
+    phone = serializers.CharField(allow_blank=True, required=False)
+
+
+class RegisterRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+    first_name = serializers.CharField(required=False, allow_blank=True)
+    last_name = serializers.CharField(required=False, allow_blank=True)
+    phone = serializers.CharField(required=False, allow_blank=True)
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class CancelBookingSerializer(serializers.Serializer):
+    action = serializers.ChoiceField(choices=["cancel"])

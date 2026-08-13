@@ -19,6 +19,7 @@ import logging
 
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny
@@ -28,6 +29,13 @@ from rest_framework.throttling import AnonRateThrottle
 from bookings.models import Booking
 from payments import gateway
 from payments.models import Payment, PaymentSettings, WebhookEvent
+
+from .serializers import (
+    DetailSerializer,
+    PaymentConfigSerializer,
+    PaymentIntentRequestSerializer,
+    PaymentIntentResponseSerializer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +48,13 @@ HANDLED_EVENTS = {
 }
 
 
+@extend_schema(
+    tags=["payments"],
+    summary="Publishable key and payment availability",
+    description="What the browser needs to render Stripe Elements. Only the "
+                "publishable key is ever exposed; it is designed to be public.",
+    responses={200: PaymentConfigSerializer},
+)
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def payment_config(request):
@@ -52,6 +67,31 @@ def payment_config(request):
     })
 
 
+@extend_schema(
+    tags=["payments"],
+    summary="Start payment for a booking",
+    description=(
+        "Creates a Stripe PaymentIntent and returns its client secret for "
+        "Stripe Elements.\n\n"
+        "The amount comes from the booking, which the pricing engine computed. "
+        "Nothing in the request body influences it.\n\n"
+        "**Confirmation happens by webhook, not here.** A successful card "
+        "confirmation in the browser does not mark the booking paid — Stripe "
+        "calls `/api/payments/webhook/` and that is what confirms it. Poll "
+        "`/api/account/bookings/{reference}/` or show a pending state."
+    ),
+    request=PaymentIntentRequestSerializer,
+    responses={
+        200: PaymentIntentResponseSerializer,
+        400: DetailSerializer,
+        404: DetailSerializer,
+        409: OpenApiResponse(DetailSerializer,
+                             description="Already paid, or the booking was cancelled."),
+        502: DetailSerializer,
+        503: OpenApiResponse(DetailSerializer,
+                             description="Card payments are not configured."),
+    },
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])
 @throttle_classes([AnonRateThrottle])
@@ -108,6 +148,18 @@ def create_intent(request):
     })
 
 
+@extend_schema(
+    tags=["payments"],
+    summary="Stripe webhook (not for frontend use)",
+    description=(
+        "Called by Stripe, never by the frontend. Requests are authenticated by "
+        "HMAC signature over the raw body; unsigned requests are refused.\n\n"
+        "Idempotent: every processed event id is recorded, so Stripe's retries "
+        "cannot double-confirm a booking or double-record a refund."
+    ),
+    request=None,
+    responses={200: DetailSerializer, 400: DetailSerializer, 503: DetailSerializer},
+)
 @csrf_exempt
 @api_view(["POST"])
 @permission_classes([AllowAny])

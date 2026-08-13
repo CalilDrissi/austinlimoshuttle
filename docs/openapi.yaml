@@ -1,0 +1,1245 @@
+openapi: 3.0.3
+info:
+  title: Austin Limo Shuttle API
+  version: 1.0.0
+  description: |-
+    Booking, quoting and payment API.
+
+    **Fares are computed server-side and cannot be supplied by a client.** Request a quote to receive a signed, short-lived `quote_token`, then present that token when creating a booking; the server re-measures the journey and recomputes the fare before anything is stored. No endpoint accepts a price or a distance.
+
+    Authentication is session-based. Sign in via `/api/auth/login/`; the session cookie authorises subsequent requests. State-changing requests require the CSRF token from the `csrftoken` cookie in an `X-CSRFToken` header.
+paths:
+  /api/pages/:
+    get:
+      operationId: pages_list
+      description: Every published page. Use this to build navigation and a sitemap.
+      summary: List published pages
+      tags:
+      - content
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Page'
+          description: ''
+  /api/pages/{slug}/:
+    get:
+      operationId: pages_retrieve
+      description: Content and SEO metadata for a CMS page. Unpublished pages 404.
+      summary: Fetch one published page
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        description: URL slug, e.g. "fleet".
+        required: true
+      tags:
+      - content
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+  /api/vehicles/:
+    get:
+      operationId: vehicles_list
+      description: Active vehicles only. Per-mile rates are not exposed — fares come
+        from the quote endpoint so they cannot be recomputed (or disputed) client-side.
+      summary: List bookable vehicles
+      tags:
+      - content
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Vehicle'
+          description: ''
+  /api/availability/:
+    get:
+      operationId: availability_retrieve
+      description: For the date picker, so a customer can see before choosing that
+        a late-night pickup or an event date costs more.
+      summary: Surcharge windows and blackout dates
+      tags:
+      - content
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Availability'
+          description: ''
+  /api/quotes/:
+    post:
+      operationId: quotes_create
+      description: |-
+        Measures the journey server-side from the two addresses and returns a fare per bookable vehicle.
+
+        **There is no `distance_miles` field and no price field.** A client cannot declare either. Each result carries a signed `quote_token` — present it to `POST /api/bookings/` and the fare is recomputed before anything is stored.
+
+        Supply `dropoff_address` for a transfer, or `hours` for hourly hire, never both. Throttled to 30/hour.
+      summary: Price a journey across every vehicle
+      tags:
+      - quotes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuoteRequestRequest'
+            examples:
+              AirportTransfer:
+                value:
+                  pickup_address: Austin-Bergstrom International Airport
+                  dropoff_address: Downtown Austin, TX
+                  pickup_at: '2026-09-01T14:30:00-05:00'
+                  meet_and_greet: true
+                summary: Airport transfer
+              HourlyHire:
+                value:
+                  pickup_address: Downtown Austin, TX
+                  pickup_at: '2026-09-01T19:00:00-05:00'
+                  hours: '3'
+                summary: Hourly hire
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/QuoteRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/QuoteRequestRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuoteResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+  /api/bookings/:
+    post:
+      operationId: bookings_create
+      description: |-
+        Redeems a `quote_token` and creates a booking in `pending` status. The fare is recomputed from the token; any amount in the request body is ignored because no such field exists.
+
+        Sign in first, or supply `guest_email` for guest checkout. Take payment next via `POST /api/payments/intent/`.
+      summary: Create a booking from a signed quote
+      tags:
+      - bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BookingCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BookingCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+  /api/account/bookings/:
+    get:
+      operationId: account_bookings_list
+      summary: The signed-in customer's bookings
+      tags:
+      - bookings
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Booking'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+  /api/account/bookings/{reference}/:
+    get:
+      operationId: account_bookings_retrieve
+      description: |-
+        Scoped to the signed-in customer. Another customer's reference returns **404, not 403** — a 403 would confirm the reference exists and allow bookings to be enumerated.
+
+        `PATCH {"action": "cancel"}` cancels, if the pickup is still in the future.
+      summary: Read or cancel one of your bookings
+      parameters:
+      - in: path
+        name: reference
+        schema:
+          type: string
+        required: true
+      tags:
+      - bookings
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+    patch:
+      operationId: account_bookings_partial_update
+      description: |-
+        Scoped to the signed-in customer. Another customer's reference returns **404, not 403** — a 403 would confirm the reference exists and allow bookings to be enumerated.
+
+        `PATCH {"action": "cancel"}` cancels, if the pickup is still in the future.
+      summary: Read or cancel one of your bookings
+      parameters:
+      - in: path
+        name: reference
+        schema:
+          type: string
+        required: true
+      tags:
+      - bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCancelBookingRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCancelBookingRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCancelBookingRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+  /api/auth/login/:
+    post:
+      operationId: auth_login_create
+      description: Sets a session cookie. A wrong password and an unknown address
+        return the identical response, so this cannot be used to discover who has
+        an account.
+      summary: Sign in
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginRequestRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+  /api/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      summary: Sign out
+      tags:
+      - auth
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/auth/register/:
+    post:
+      operationId: auth_register_create
+      description: Password strength is enforced. Registering an address that already
+        exists returns **202 with a neutral message** rather than an error, for the
+        same anti-enumeration reason as sign-in.
+      summary: Create an account
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegisterRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegisterRequestRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+  /api/auth/password-reset/:
+    post:
+      operationId: auth_password_reset_create
+      description: |-
+        Always returns 202, whether or not the address is registered.
+
+        The reset is completed on Django-served pages under `/accounts/`, not in the frontend. Note that customers migrated from the previous system have no password at all until they use this.
+      summary: Request a password reset link
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+  /api/auth/me/:
+    get:
+      operationId: auth_me_retrieve
+      summary: The signed-in customer
+      tags:
+      - auth
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+  /api/payments/config/:
+    get:
+      operationId: payments_config_retrieve
+      description: What the browser needs to render Stripe Elements. Only the publishable
+        key is ever exposed; it is designed to be public.
+      summary: Publishable key and payment availability
+      tags:
+      - payments
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentConfig'
+          description: ''
+  /api/payments/intent/:
+    post:
+      operationId: payments_intent_create
+      description: |-
+        Creates a Stripe PaymentIntent and returns its client secret for Stripe Elements.
+
+        The amount comes from the booking, which the pricing engine computed. Nothing in the request body influences it.
+
+        **Confirmation happens by webhook, not here.** A successful card confirmation in the browser does not mark the booking paid — Stripe calls `/api/payments/webhook/` and that is what confirms it. Poll `/api/account/bookings/{reference}/` or show a pending state.
+      summary: Start payment for a booking
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentIntentRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PaymentIntentRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PaymentIntentRequestRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentIntentResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Already paid, or the booking was cancelled.
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Card payments are not configured.
+  /api/payments/webhook/:
+    post:
+      operationId: payments_webhook_create
+      description: |-
+        Called by Stripe, never by the frontend. Requests are authenticated by HMAC signature over the raw body; unsigned requests are refused.
+
+        Idempotent: every processed event id is recorded, so Stripe's retries cannot double-confirm a booking or double-record a refund.
+      summary: Stripe webhook (not for frontend use)
+      tags:
+      - payments
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+  /api/enquiries/:
+    post:
+      operationId: enquiries_create
+      description: Throttled to 10/hour per address.
+      summary: Submit the contact form
+      tags:
+      - enquiries
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnquiryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EnquiryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EnquiryRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+components:
+  schemas:
+    ActionEnum:
+      enum:
+      - cancel
+      type: string
+      description: '* `cancel` - cancel'
+    Availability:
+      type: object
+      description: Everything a date picker needs to warn about surcharged times.
+      properties:
+        blackout_dates:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlackoutDate'
+        time_surcharges:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimeSurcharge'
+      required:
+      - blackout_dates
+      - time_surcharges
+    BlackoutDate:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        name:
+          type: string
+        percentage:
+          type: string
+      required:
+      - date
+      - name
+      - percentage
+    Booking:
+      type: object
+      properties:
+        reference:
+          type: string
+          readOnly: true
+          description: Customer-facing booking code.
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          readOnly: true
+        status_display:
+          type: string
+          readOnly: true
+        trip_type:
+          allOf:
+          - $ref: '#/components/schemas/TripTypeEnum'
+          readOnly: true
+        pickup_address:
+          type: string
+          readOnly: true
+        dropoff_address:
+          type: string
+          readOnly: true
+        pickup_at:
+          type: string
+          format: date-time
+          readOnly: true
+        distance_miles:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,3})?$
+          readOnly: true
+          nullable: true
+          description: From the Distance Matrix API. Null for hourly hire.
+        duration_minutes:
+          type: integer
+          readOnly: true
+          nullable: true
+        hours:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+          description: Booked hours, for hourly hire.
+        passenger_count:
+          type: integer
+          readOnly: true
+        luggage_count:
+          type: integer
+          readOnly: true
+        flight_number:
+          type: string
+          readOnly: true
+        pickup_sign:
+          type: string
+          readOnly: true
+          description: Name shown on the placard.
+        meet_and_greet:
+          type: boolean
+          readOnly: true
+        notes:
+          type: string
+          readOnly: true
+          description: Customer instructions.
+        vehicle_name:
+          type: string
+          readOnly: true
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        surcharge_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        tax:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        currency:
+          type: string
+          readOnly: true
+        price_lines:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - currency
+      - distance_miles
+      - dropoff_address
+      - duration_minutes
+      - flight_number
+      - hours
+      - luggage_count
+      - meet_and_greet
+      - notes
+      - passenger_count
+      - pickup_address
+      - pickup_at
+      - pickup_sign
+      - price_lines
+      - reference
+      - status
+      - status_display
+      - subtotal
+      - surcharge_total
+      - tax
+      - total
+      - trip_type
+      - vehicle_name
+    BookingCreateRequest:
+      type: object
+      description: |-
+        Create a booking from a signed quote token.
+
+        Deliberately has no `total`, `subtotal` or any other money field: the server
+        recomputes the fare from the token. A client-supplied amount is not merely
+        ignored here, it is impossible to express.
+      properties:
+        quote_token:
+          type: string
+          minLength: 1
+        passenger_count:
+          type: integer
+          maximum: 20
+          minimum: 1
+          default: 1
+        luggage_count:
+          type: integer
+          maximum: 20
+          minimum: 0
+          default: 0
+        flight_number:
+          type: string
+          maxLength: 32
+        pickup_sign:
+          type: string
+          maxLength: 120
+        notes:
+          type: string
+        guest_email:
+          oneOf:
+          - type: string
+            format: email
+          - type: string
+            maxLength: 0
+        guest_name:
+          type: string
+          maxLength: 150
+      required:
+      - quote_token
+    Detail:
+      type: object
+      description: A human-readable message. Used for errors and simple acknowledgements.
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    EnquiryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        phone:
+          type: string
+          maxLength: 32
+        nature:
+          $ref: '#/components/schemas/NatureEnum'
+        subject:
+          type: string
+          maxLength: 255
+        message:
+          type: string
+          minLength: 1
+        company_name:
+          type: string
+          description: Corporate enquiries only.
+          maxLength: 255
+      required:
+      - email
+      - message
+      - name
+    Journey:
+      type: object
+      description: The route as measured server-side. Null for hourly hire.
+      properties:
+        distance_miles:
+          type: string
+          description: Decimal string, e.g. "25.000".
+        duration_minutes:
+          type: integer
+        pickup_address:
+          type: string
+          description: As resolved by the mapping service.
+        dropoff_address:
+          type: string
+      required:
+      - distance_miles
+      - dropoff_address
+      - duration_minutes
+      - pickup_address
+    KindEnum:
+      enum:
+      - base
+      - band
+      - surcharge
+      - meet_greet
+      - minimum_adjustment
+      - tax
+      type: string
+      description: |-
+        * `base` - base
+        * `band` - band
+        * `surcharge` - surcharge
+        * `meet_greet` - meet_greet
+        * `minimum_adjustment` - minimum_adjustment
+        * `tax` - tax
+    LoginRequestRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
+    NatureEnum:
+      enum:
+      - general
+      - service
+      - corporate
+      type: string
+      description: |-
+        * `general` - General enquiry
+        * `service` - Service enquiry
+        * `corporate` - Corporate account
+    Page:
+      type: object
+      properties:
+        slug:
+          type: string
+          description: URL path. Changing this breaks search rankings — don't.
+          maxLength: 200
+          pattern: ^[-a-zA-Z0-9_]+$
+        url:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        page_type:
+          $ref: '#/components/schemas/PageTypeEnum'
+        body:
+          type: string
+        meta_title:
+          type: string
+          maxLength: 255
+        meta_description:
+          type: string
+        meta_keywords:
+          type: string
+      required:
+      - slug
+      - title
+      - url
+    PageTypeEnum:
+      enum:
+      - home
+      - service
+      - standard
+      - legal
+      type: string
+      description: |-
+        * `home` - Homepage
+        * `service` - Service landing page
+        * `standard` - Standard content page
+        * `legal` - Legal / policy page
+    PasswordResetRequestRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+      required:
+      - email
+    PatchedCancelBookingRequest:
+      type: object
+      properties:
+        action:
+          $ref: '#/components/schemas/ActionEnum'
+    PaymentConfig:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        publishable_key:
+          type: string
+          description: Safe to embed in the page. Empty when disabled.
+        mode:
+          type: string
+          nullable: true
+          description: '"test" or "live".'
+      required:
+      - enabled
+      - mode
+      - publishable_key
+    PaymentIntentRequestRequest:
+      type: object
+      properties:
+        reference:
+          type: string
+          minLength: 1
+          description: Booking reference.
+      required:
+      - reference
+    PaymentIntentResponse:
+      type: object
+      properties:
+        client_secret:
+          type: string
+          description: Pass to Stripe Elements.
+        publishable_key:
+          type: string
+        amount:
+          type: string
+        currency:
+          type: string
+        reference:
+          type: string
+      required:
+      - amount
+      - client_secret
+      - currency
+      - publishable_key
+      - reference
+    QuoteLine:
+      type: object
+      description: One component of a fare.
+      properties:
+        kind:
+          $ref: '#/components/schemas/KindEnum'
+        label:
+          type: string
+          description: e.g. "19 mi in 6–50 mi × $2.90".
+        amount:
+          type: string
+          description: Decimal string. Money is never a float.
+      required:
+      - amount
+      - kind
+      - label
+    QuoteRequestRequest:
+      type: object
+      description: |-
+        A request for fares.
+
+        Deliberately accepts NO distance and NO price. A transfer is described by
+        its two addresses and the server measures it (pricing/distance.py); an
+        hourly hire is described by its duration. A client-supplied distance is a
+        client-supplied fare with extra steps.
+      properties:
+        pickup_address:
+          type: string
+          minLength: 1
+          maxLength: 255
+        dropoff_address:
+          type: string
+          maxLength: 255
+        pickup_at:
+          type: string
+          format: date-time
+        hours:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+          description: Hourly hire only. Omit for a point-to-point transfer.
+        meet_and_greet:
+          type: boolean
+          default: false
+      required:
+      - pickup_address
+      - pickup_at
+    QuoteResponse:
+      type: object
+      properties:
+        journey:
+          allOf:
+          - $ref: '#/components/schemas/Journey'
+          nullable: true
+        quotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteResult'
+      required:
+      - journey
+      - quotes
+    QuoteResult:
+      type: object
+      description: A priced option for one vehicle.
+      properties:
+        vehicle_id:
+          type: integer
+        vehicle_name:
+          type: string
+        subtotal:
+          type: string
+        surcharge_total:
+          type: string
+        tax:
+          type: string
+        total:
+          type: string
+        currency:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteLine'
+        quote_token:
+          type: string
+          description: Signed and short-lived. Present this to create a booking; the
+            server recomputes the fare from it.
+      required:
+      - currency
+      - lines
+      - quote_token
+      - subtotal
+      - surcharge_total
+      - tax
+      - total
+      - vehicle_id
+      - vehicle_name
+    RegisterRequestRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        first_name:
+          type: string
+        last_name:
+          type: string
+        phone:
+          type: string
+      required:
+      - email
+      - password
+    StatusEnum:
+      enum:
+      - pending
+      - confirmed
+      - completed
+      - cancelled
+      type: string
+      description: |-
+        * `pending` - Pending payment
+        * `confirmed` - Confirmed
+        * `completed` - Completed
+        * `cancelled` - Cancelled
+    TimeSurcharge:
+      type: object
+      properties:
+        name:
+          type: string
+        start_time:
+          type: string
+          format: time
+        end_time:
+          type: string
+          format: time
+        percentage:
+          type: string
+        crosses_midnight:
+          type: boolean
+      required:
+      - crosses_midnight
+      - end_time
+      - name
+      - percentage
+      - start_time
+    TripTypeEnum:
+      enum:
+      - transfer
+      - hourly
+      type: string
+      description: |-
+        * `transfer` - Point-to-point transfer
+        * `hourly` - Hourly hire
+    User:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        phone:
+          type: string
+      required:
+      - email
+      - first_name
+      - last_name
+    Vehicle:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          description: e.g. "Business Class".
+          maxLength: 120
+        slug:
+          type: string
+          maxLength: 140
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+        features:
+          type: string
+          description: Marketing copy, e.g. "Free cancellation up until 1 hour before
+            pickup".
+        passenger_capacity:
+          type: integer
+          maximum: 65535
+          minimum: 0
+        luggage_capacity:
+          type: integer
+          maximum: 65535
+          minimum: 0
+        minimum_fare:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+          description: Fare floor. Applied after every other adjustment.
+      required:
+      - id
+      - name
+      - slug
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+servers:
+- url: http://localhost:8000
+  description: Local development
+- url: https://api.austinlimoshuttle.com
+  description: Production
+tags:
+- name: content
+  description: Pages, vehicles and availability.
+- name: quotes
+  description: Fare quoting. Returns signed tokens.
+- name: bookings
+  description: Creating and managing bookings.
+- name: payments
+  description: Stripe checkout and webhooks.
+- name: auth
+  description: Sign in, register, password reset.
+- name: enquiries
+  description: Contact form.
