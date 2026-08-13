@@ -15,6 +15,8 @@ attention regardless of when it ships.
 | `security-issue.html` | Findings in the live legacy system, ordered by severity |
 | `legacy-app-brief.html` | File-by-file map of the old application and its schema |
 | `new-build-brief.html` | Target architecture, data model, delivery plan |
+| `new-app-notes.html` | How the new system works — fare engine, price integrity, payments, roles |
+| `outstanding-notes.html` | Every carried-forward item, grouped by who acts |
 | `docs/qa/phase-*.md` | QA report per build phase, with defects found and decisions taken |
 
 Two corrections to the client documents, recorded in the QA reports: the server

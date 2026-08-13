@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New App Notes — Django Backend</title>
+<style>
+  :root{
+    --ink:#15181c; --muted:#59626c; --line:#e1e6ea; --bg:#fff; --panel:#f6f8fa;
+    --accent:#0f6b4f; --accent-bg:#e8f4ef;
+    --blue:#1f4e8c; --blue-bg:#eaf1fa;
+    --warn:#8a6320; --warn-bg:#fbf4e5;
+    --crit:#b3261e; --crit-bg:#fdecea;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.62 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1020px;margin:0 auto;padding:44px 24px 96px}
+  header{border-bottom:3px solid var(--ink);padding-bottom:18px;margin-bottom:26px}
+  h1{font-size:31px;line-height:1.2;margin:0 0 8px;letter-spacing:-.022em}
+  .sub{color:var(--muted);font-size:15px;margin:0}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 24px;color:var(--muted);font-size:13.5px;margin-top:12px}
+  h2{font-size:22px;margin:46px 0 6px;letter-spacing:-.015em;padding-bottom:8px;
+     border-bottom:2px solid var(--line)}
+  h3{font-size:17.5px;margin:28px 0 8px;letter-spacing:-.01em}
+  h4{font-size:14.5px;margin:20px 0 6px;color:var(--accent);text-transform:uppercase;
+     letter-spacing:.05em}
+  p{margin:0 0 12px}
+  .lede{font-size:16.5px;background:var(--accent-bg);border-left:4px solid var(--accent);
+        padding:16px 20px;border-radius:0 6px 6px 0;margin:0 0 8px}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--panel);font-weight:600;font-size:11.5px;text-transform:uppercase;
+     letter-spacing:.05em;color:var(--muted)}
+  td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:14px 0}
+  .scroll table{margin:0}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;
+       background:var(--panel);padding:1px 5px;border-radius:4px;border:1px solid var(--line);
+       white-space:nowrap}
+  td code{background:none;border:none;padding:0}
+  pre{background:#1d2126;color:#e4e8ec;padding:14px 16px;border-radius:6px;overflow-x:auto;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.7px;
+      line-height:1.6;margin:12px 0}
+  pre code{background:none;border:none;padding:0;color:inherit;white-space:pre}
+  .note{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--blue);
+        border-radius:0 7px 7px 0;padding:15px 18px;margin:16px 0;font-size:14.8px}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-bg);border-color:#eddfba}
+  .note.crit{border-left-color:var(--crit);background:var(--crit-bg);border-color:#f3c9c4}
+  .note strong:first-child{display:block;margin-bottom:4px}
+  .grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin:16px 0}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:13px 15px}
+  .stat .n{font-size:23px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .stat .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+  ol,ul{margin:0 0 12px;padding-left:22px}
+  li{margin-bottom:6px}
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:16px 22px;margin:20px 0}
+  .toc ul{margin:0;padding-left:18px;columns:2;column-gap:30px}
+  .toc li{margin-bottom:4px;font-size:14.5px;break-inside:avoid}
+  .toc a{color:var(--accent);text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+  .flow{background:var(--panel);border:1px solid var(--line);border-radius:9px;
+        padding:16px 20px;margin:14px 0;font-size:14.5px}
+  footer{margin-top:52px;padding-top:18px;border-top:1px solid var(--line);
+         color:var(--muted);font-size:13px}
+  @media print{
+    body{font-size:10.5pt}.wrap{padding:0;max-width:none}
+    .note,table,.flow{break-inside:avoid} h2,h3{break-after:avoid} .toc{display:none}
+    pre{white-space:pre-wrap}
+  }
+  @media (max-width:720px){.toc ul{columns:1}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>New App Notes</h1>
+  <p class="sub">Django backend — how it works, and the things worth knowing before changing it</p>
+  <div class="meta">
+    <span><strong>Updated:</strong> 13 August 2026</span>
+    <span><strong>Stack:</strong> Django 5.2 · Python 3.12 · MariaDB 10.11</span>
+    <span><strong>Phases:</strong> 0–13, all passed</span>
+  </div>
+</header>
+
+<p class="lede">
+  A reference on the system we built: how the fare engine, price integrity,
+  payments, email and roles actually work, plus the thirteen defects the QA gates
+  caught along the way. Written for whoever picks this up next — including us in
+  six months.
+</p>
+
+<div class="grid">
+  <div class="stat"><div class="n">12,742</div><div class="l">lines of Python</div></div>
+  <div class="stat"><div class="n">379</div><div class="l">tests</div></div>
+  <div class="stat"><div class="n">8</div><div class="l">apps</div></div>
+  <div class="stat"><div class="n">21</div><div class="l">models</div></div>
+  <div class="stat"><div class="n">17</div><div class="l">API endpoints</div></div>
+  <div class="stat"><div class="n">9</div><div class="l">management commands</div></div>
+</div>
+
+<p style="color:var(--muted);font-size:14.5px;margin-top:-4px">
+  Replacing 47,712 lines of PHP — about a quarter of the code, because roughly a
+  third of the legacy admin never worked and much of the rest was duplicated files.
+</p>
+
+<div class="toc">
+  <strong>Contents</strong>
+  <ul>
+    <li><a href="#shape">1. The shape of it</a></li>
+    <li><a href="#fares">2. The fare engine</a></li>
+    <li><a href="#integrity">3. Price integrity</a></li>
+    <li><a href="#payments">4. Payments</a></li>
+    <li><a href="#settings">5. Credentials in the dashboard</a></li>
+    <li><a href="#roles">6. Roles and the dashboard</a></li>
+    <li><a href="#email">7. Email</a></li>
+    <li><a href="#cron">8. Scheduled jobs</a></li>
+    <li><a href="#auth">9. Accounts and password reset</a></li>
+    <li><a href="#import">10. The legacy importers</a></li>
+    <li><a href="#defects">11. Defects the QA gates caught</a></li>
+    <li><a href="#commands">12. Command reference</a></li>
+    <li><a href="#tests">13. Testing approach</a></li>
+  </ul>
+</div>
+
+<h2 id="shape">1. The shape of it</h2>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>App</th><th>Models</th><th>Responsibility</th></tr></thead>
+  <tbody>
+    <tr><td><code>accounts</code></td><td>User, BillingAddress, CorporateAccount</td>
+        <td>Email-identified users. Replaces both legacy member and admin tables.</td></tr>
+    <tr><td><code>fleet</code></td><td>Vehicle, DistanceBand</td>
+        <td>Vehicles and rate cards. Bands are rows, not columns.</td></tr>
+    <tr><td><code>pricing</code></td><td>TimeSurcharge, BlackoutDate, PricingSettings</td>
+        <td>Surcharge rules, and <code>engine.py</code> — the fare logic.</td></tr>
+    <tr><td><code>bookings</code></td><td>Booking, BookingPriceLine, Driver, BookingStatusChange</td>
+        <td>The core record, its fare breakdown, dispatch, audit trail.</td></tr>
+    <tr><td><code>payments</code></td><td>Payment, Refund, PaymentSettings, WebhookEvent</td>
+        <td>Stripe references only. No field can hold a card number.</td></tr>
+    <tr><td><code>content</code></td><td>Page, Banner, Testimonial, GalleryImage, SiteSettings</td>
+        <td>CMS pages with SEO metadata.</td></tr>
+    <tr><td><code>enquiries</code></td><td>ContactMessage</td>
+        <td>Three legacy tables merged into one with a discriminator.</td></tr>
+    <tr><td><code>notifications</code></td><td>EmailSettings, EmailLog</td>
+        <td>Transactional email, PDF confirmations, delivery log.</td></tr>
+    <tr><td><code>dashboard</code></td><td>—</td>
+        <td>Staff screens in Django templates; role definitions in code.</td></tr>
+    <tr><td><code>api</code></td><td>—</td>
+        <td>DRF endpoints, signed quote tokens, OpenAPI schema.</td></tr>
+    <tr><td><code>legacy_import</code></td><td>—</td>
+        <td>Idempotent importers and the mojibake repair.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h4>Three surfaces</h4>
+<div class="flow">
+  <strong>/dashboard/</strong> — staff, Django templates. Dispatch board, bookings,
+  enquiries, settings.<br>
+  <strong>/admin/</strong> — Django's generated admin, for plain CRUD that does not
+  warrant a bespoke screen.<br>
+  <strong>/api/</strong> — DRF, for the Next.js frontend. Schema at
+  <code>/api/docs/</code>.
+</div>
+
+<h2 id="fares">2. The fare engine</h2>
+
+<p>
+  <code>pricing/engine.py</code>. A pure function — no request, no session, no
+  database writes. That is what makes it testable against nine years of real
+  bookings, which is the only way to know a rewrite prices identically to the
+  system it replaces.
+</p>
+
+<h4>Order of operations</h4>
+<pre><code>1. base fare      cumulative distance bands, or hours × hourly rate
+2. surcharge      (blackout% + late-night%) applied ONCE to the base
+3. meet & greet   flat fee, added after the surcharge
+4. minimum fare   floor, applied last
+5. tax            if configured (currently 0)</code></pre>
+
+<div class="note crit">
+  <strong>Surcharges are added, never compounded</strong>
+  A 40% event date at 22:00 is <strong>+60%</strong>, not +68%. Legacy sums the
+  percentages and applies the total once:
+  <code>fare + (increase/100 × fare)</code>. Applying them sequentially would
+  overcharge every surcharged booking by about 5%. A test asserts the correct
+  figure <em>and</em> that the compounded figure is not produced.
+</div>
+
+<h4>Bands are cumulative</h4>
+<p>25 miles on Business Class is <strong>not</strong> 25 × the 6–50 rate:</p>
+<pre><code>(6 mi × $15.00)  +  (19 mi × $2.90)  =  $90.00 + $55.10  =  $145.10
+
+charging all 25 at the band it lands in  =  25 × $2.90  =  $72.50   ← wrong, ~half</code></pre>
+<p>
+  A test asserts every mile is accounted for exactly once across the whole rate
+  card, at several distances.
+</p>
+
+<div class="note warn">
+  <strong>Surcharge windows are exclusive at both ends</strong>
+  A pickup at exactly <code>21:00:00</code> is <strong>not</strong> surcharged,
+  matching the legacy condition <code>&gt; 21:00:00</code>. Moving either bound by
+  a second silently reprices every booking near it. Both boundaries are pinned by
+  tests.
+</div>
+
+<h4>Time-of-day uses Austin local time</h4>
+<p>
+  22:00 in Austin is 03:00 UTC the next day. Comparing in UTC would misapply the
+  late-night rule to every booking near the boundary. There is a test for this,
+  and a test caught me making exactly that mistake while writing another test.
+</p>
+
+<h4>What became data instead of code</h4>
+<div class="scroll">
+<table>
+  <thead><tr><th>Thing</th><th>Legacy</th><th>Now</th></tr></thead>
+  <tbody>
+    <tr><td>Mileage bands</td><td>PHP constants (6 / 50 / 100)</td>
+        <td><code>DistanceBand</code> rows, editable per vehicle</td></tr>
+    <tr><td>Late-night window</td>
+        <td>English sentence in the DB; real hours hardcoded in PHP</td>
+        <td><code>start_time</code> / <code>end_time</code> fields</td></tr>
+    <tr><td>Tax rate</td><td>A column on the admin <em>user</em> row</td>
+        <td><code>PricingSettings</code> singleton</td></tr>
+  </tbody>
+</table>
+</div>
+<p style="color:var(--muted);font-size:14.5px">
+  The middle one mattered: the legacy admin screen described behaviour the system
+  did not have. Whoever read it was misled.
+</p>
+
+<h2 id="integrity">3. Price integrity</h2>
+
+<p>The central design constraint: <strong>a client can declare neither a price nor a distance.</strong></p>
+
+<div class="flow">
+  <strong>1.</strong> <code>POST /api/quotes/</code> — two addresses and a time.
+  The server measures the journey via Distance Matrix and prices every vehicle.<br>
+  <strong>2.</strong> Each result carries a signed, short-lived
+  <code>quote_token</code>.<br>
+  <strong>3.</strong> <code>POST /api/bookings/</code> — present the token. The
+  server <strong>recomputes</strong> the fare before storing anything.
+</div>
+
+<p>
+  The tokens are <code>TimestampSigner</code> payloads: tamper-evident and
+  perishable. They are not encrypted and do not need to be — they contain only
+  values the customer supplied.
+</p>
+
+<div class="note">
+  <strong>Why recompute rather than replay?</strong>
+  A token that carried a price would let a stale quote buy a journey at
+  yesterday's rate. Recomputing means a rate change between quoting and booking is
+  honoured in both directions — the customer cannot lock in an old price, and the
+  business cannot accidentally honour one.
+</div>
+
+<h4>What is asserted</h4>
+<div class="scroll">
+<table>
+  <thead><tr><th>Attempt</th><th>Result</th></tr></thead>
+  <tbody>
+    <tr><td>Post <code>total: 1.00</code> with a valid token</td>
+        <td>Booking stored at <strong>145.10</strong></td></tr>
+    <tr><td>Post <code>distance_miles: 1</code> for a 25-mile journey</td>
+        <td>Priced at the <strong>measured</strong> 25 miles</td></tr>
+    <tr><td>Alter the token signature</td><td>400, no booking</td></tr>
+    <tr><td>Reuse a token after its TTL</td><td>400 "expired", no booking</td></tr>
+    <tr><td>Distance lookup fails</td>
+        <td>422, <strong>no fallback</strong> to a client value</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note warn">
+  <strong>Distance failures are hard failures, deliberately</strong>
+  There is no fallback to a client-supplied distance when the mapping API is
+  unreachable. A fallback is the same vulnerability behind a retry: anyone wanting
+  the cheap fare need only make the lookup fail.
+</div>
+
+<h2 id="payments">4. Payments</h2>
+
+<div class="flow">
+  <strong>1.</strong> <code>POST /api/payments/intent/</code> → client secret<br>
+  <strong>2.</strong> Browser confirms with Stripe Elements — card details go
+  customer → Stripe, never through this server<br>
+  <strong>3.</strong> Stripe calls <code>/api/payments/webhook/</code> → booking
+  confirmed
+</div>
+
+<div class="note crit">
+  <strong>Step 3 is authoritative, not step 2</strong>
+  A successful card confirmation in the browser does <strong>not</strong> mark a
+  booking paid. The browser's return can be forged, and it simply does not arrive
+  when a customer closes the tab. The legacy system confirmed orders on the
+  browser's say-so. <strong>The frontend should show a pending state and poll</strong>
+  <code>/api/account/bookings/{reference}/</code>.
+</div>
+
+<h4>Idempotency at both ends</h4>
+<p>
+  <strong>Outbound:</strong> intent creation carries a stable idempotency key from
+  the booking reference and amount, so a retried request returns the same intent
+  rather than charging twice. A live intent is reused instead of stacking up
+  abandoned ones.
+</p>
+<p>
+  <strong>Inbound:</strong> a <code>WebhookEvent</code> row records every processed
+  event id. Stripe retries until it gets a 2xx and may deliver the same event more
+  than once anyway. Processing runs inside a transaction with the dedupe row, so a
+  failure rolls both back and the retry gets a genuine attempt.
+</p>
+
+<h4>Cardholder data has nowhere to go</h4>
+<p>
+  <code>Payment</code> stores a Stripe reference, a brand and a last-4 — in a
+  <strong>4-character column</strong>. Two tests enforce this structurally: one
+  scans every model for a field that could hold a card number, another scans every
+  stored value in the real dataset for a card-shaped string.
+</p>
+
+<h4>Refunds</h4>
+<p>
+  Full or partial, from the booking detail page, Manager-only, always attributed.
+  Refunds issued directly in Stripe's own dashboard are captured by the
+  <code>charge.refunded</code> webhook, so the two systems cannot drift apart
+  about what a customer was charged.
+</p>
+
+<h2 id="settings">5. Credentials in the dashboard</h2>
+
+<p>
+  Stripe keys and SMTP credentials are managed at <strong>Dashboard → Payments</strong>
+  and <strong>Dashboard → Email</strong>, not in environment variables — so an
+  administrator can change them without a deployment.
+</p>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>Property</th><th>How</th></tr></thead>
+  <tbody>
+    <tr><td>At rest</td><td>Fernet-encrypted, key derived from <code>DJANGO_SECRET_KEY</code></td></tr>
+    <tr><td>In the UI</td><td>Never rendered — <code>sk_test_••••9911</code> only</td></tr>
+    <tr><td>Form field</td><td>Write-only; blank submission keeps the stored value</td></tr>
+    <tr><td>Access</td><td>Manager only. Dispatcher and Editor get 403; the nav link is hidden</td></tr>
+    <tr><td>Audit</td><td>Records who changed it, when, and which fields</td></tr>
+    <tr><td>Publishable key</td><td>Stored plainly — it is designed to be public</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note crit">
+  <strong>Rotating <code>DJANGO_SECRET_KEY</code> makes all stored credentials unreadable</strong>
+  The Stripe secret, the webhook secret and the SMTP password all become
+  undecryptable and must be re-entered. Decryption returns "not configured" rather
+  than raising, so the symptom is <strong>payments and email quietly stopping</strong>,
+  not an error page.
+</div>
+
+<h4>Two mistakes the forms refuse</h4>
+<p>
+  Both fail <em>silently</em> in production, which is why they are validation
+  errors rather than warnings:
+</p>
+<ul>
+  <li><strong>Live mode with a test key</strong> — checkout appears to work and no
+      money moves.</li>
+  <li><strong>Test mode with a live key</strong> — testing charges real cards.</li>
+</ul>
+<p>The email form similarly flags port 465 with STARTTLS, or 587 with SSL — the symptom there is a connection that hangs rather than an error.</p>
+
+<h2 id="roles">6. Roles and the dashboard</h2>
+
+<p>
+  Three groups, defined in <code>dashboard/permissions.py</code> and applied by
+  <code>manage.py sync_roles</code>. Permissions live in code and go through
+  review, rather than drifting in a database nobody audits.
+</p>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>Capability</th><th>Dispatcher</th><th>Manager</th><th>Editor</th></tr></thead>
+  <tbody>
+    <tr><td>Bookings, drivers, status changes</td><td>✅</td><td>✅</td><td>❌</td></tr>
+    <tr><td>Vehicle rates, surcharges, blackout dates</td><td>❌</td><td>✅</td><td>❌</td></tr>
+    <tr><td>Refunds</td><td>❌</td><td>✅</td><td>❌</td></tr>
+    <tr><td>Stripe &amp; SMTP credentials</td><td>❌</td><td>✅</td><td>❌</td></tr>
+    <tr><td>Content, banners, testimonials</td><td>❌</td><td>❌</td><td>✅</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>
+  Tests assert the <em>negative</em> cases explicitly — an Editor gets 403 on
+  bookings, a Dispatcher gets 403 on settings. Access control tested only
+  positively is not tested.
+</p>
+
+<div class="note">
+  <strong>Every status change records who made it</strong>
+  <code>BookingStatusChange</code> names the acting user. The legacy system had one
+  shared admin login, so no action could be attributed to anyone. A no-op save
+  deliberately writes nothing.
+</div>
+
+<h2 id="email">7. Email</h2>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>Trigger</th><th>To</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>Payment succeeds (webhook)</td><td>Customer</td><td>Itinerary, fare breakdown, <strong>PDF attached</strong></td></tr>
+    <tr><td>Payment succeeds</td><td>Operations</td><td>New-booking alert</td></tr>
+    <tr><td>Driver assigned</td><td>Customer</td><td>Name and phone</td></tr>
+    <tr><td>Cancelled</td><td>Customer</td><td>Refund amount, or the fee that applied</td></tr>
+    <tr><td>24h before pickup</td><td>Customer</td><td>Cron-driven</td></tr>
+    <tr><td>Manual test</td><td>Chosen address</td><td>Proves the SMTP settings work</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>
+  All render text and HTML from the same context. The PDF uses xhtml2pdf — pure
+  Python, because WeasyPrint needs cairo and pango which cannot be installed on
+  shared hosting.
+</p>
+
+<div class="note">
+  <strong>A mail failure never breaks a booking</strong>
+  The webhook confirms the booking and <em>then</em> emails. Every send is wrapped,
+  logged and returns a boolean; nothing raises. A test patches the mailer to throw
+  and asserts the booking is still <code>confirmed</code> afterwards. The money has
+  already moved — losing the booking to save a notification would be the wrong
+  trade.
+</div>
+
+<p>
+  <code>EmailLog</code> records every attempt, successful or not. Without it, "the
+  customer says they never got the confirmation" is unanswerable; with it,
+  never-sent and sent-and-lost are at least distinguishable.
+</p>
+
+<h2 id="cron">8. Scheduled jobs</h2>
+
+<p>
+  Shared hosting has no worker process, so these are management commands invoked
+  by cPanel cron. Both are written for how cron actually behaves: it double-fires,
+  fires late after outages, and occasionally overlaps.
+</p>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>Command</th><th>Schedule</th><th>Behaviour</th></tr></thead>
+  <tbody>
+    <tr><td><code>send_pickup_reminders</code></td><td>Hourly</td>
+        <td>Dedupes on <code>EmailLog</code>. Running twice sends one email; a
+            <em>failed</em> send is retried next run, because the dedupe keys on
+            success rather than attempt.</td></tr>
+    <tr><td><code>cleanup_stale_data</code></td><td>Sunday 03:15</td>
+        <td>Prunes webhook ids (90d) and email logs (180d). Closes bookings unpaid
+            48h past pickup.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note">
+  <strong>Cleanup never deletes a booking, a payment or a customer</strong>
+  Abandoned bookings are <em>cancelled</em>, with an audit row carrying no user so
+  it reads plainly as automated. Anything with a successful payment is excluded — a
+  paid booking stuck on <code>pending</code> is a bug elsewhere, and auto-closing it
+  would hide that rather than reveal it. A test asserts nothing is deleted.
+</div>
+
+<p>
+  Hourly is the right cadence for reminders, not daily: a booking made 20 hours
+  before pickup would never enter a once-a-day window.
+</p>
+
+<h2 id="auth">9. Accounts and password reset</h2>
+
+<p>
+  Django's built-in views throughout — only the templates are ours. They already
+  handle signed one-time tokens, expiry, and invalidation once the password
+  changes.
+</p>
+
+<div class="note crit">
+  <strong>The one override, and why it must stay</strong>
+  Django's <code>PasswordResetForm.get_users()</code> filters on
+  <code>has_usable_password()</code>. Every migrated customer has an unusable
+  password <em>by design</em> — the legacy passwords were plaintext and were
+  discarded. Under the stock form, a returning customer clicking "forgot password"
+  would get a cheerful "check your email" page and <strong>no email, ever</strong>.
+  Nothing errors. Nothing logs.
+  <br><br>
+  <code>MigrationPasswordResetForm</code> drops that one filter and nothing else.
+  There is a test asserting what <em>stock Django</em> does, specifically so nobody
+  simplifies it back.
+</div>
+
+<p>
+  With no bulk mailing (per the client's decision), that link is the <strong>only</strong>
+  route those 1,251 accounts have to a working login.
+</p>
+
+<h4>No enumeration, anywhere</h4>
+<p>
+  A known and an unknown address produce byte-identical responses from the web
+  form, the API, sign-in and registration — same status, same body. Tested
+  explicitly.
+</p>
+
+<h2 id="import">10. The legacy importers</h2>
+
+<p>
+  All idempotent, all keyed on a <code>legacy_*_id</code>, all supporting
+  <code>--dry-run</code> and <code>--limit N</code>. Run in this order — bookings
+  reference vehicles and customers:
+</p>
+<pre><code>import_fleet      →  import_pricing  →  import_members
+                                     →  import_orders  →  import_content</code></pre>
+
+<div class="note">
+  <strong>No importer reads a card column or a password column</strong>
+  The replica is checked for cardholder data before any import runs and the run
+  aborts if it finds any. A test inspects the importer's own source to assert the
+  column names never appear — the SQL cannot return what it does not ask for.
+</div>
+
+<h4>Mojibake repair</h4>
+<p>
+  Legacy columns are latin1 holding UTF-8 bytes. The repair re-decodes them, with
+  a cp1252 fallback for smart quotes written by a Windows WYSIWYG. It is
+  conservative — genuinely-latin1 text is left alone — and idempotent.
+</p>
+<p>
+  A straight <code>latin1 → utf8mb4</code> database conversion would store the
+  mojibake permanently as valid UTF-8, at which point the original characters are
+  unrecoverable. That is why repair happens on import.
+</p>
+
+<h2 id="defects">11. Defects the QA gates caught</h2>
+
+<p>
+  Recorded because they show what the per-phase gates were <em>for</em>. Several
+  would have reached production silently.
+</p>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>#</th><th>Defect</th><th>Would have caused</th></tr></thead>
+  <tbody>
+    <tr><td class="num">1</td><td>Admin "add user" page 500'd — wrong form class for Django 5.1+</td><td>Staff unable to create accounts</td></tr>
+    <tr><td class="num">2</td><td>Adding a user failed silently with an empty error list</td><td>A blank page and no explanation</td></tr>
+    <tr><td class="num">3</td><td>Mojibake regex had an invalid character range</td><td>Every importer crashed on import</td></tr>
+    <tr><td class="num">4</td><td>cp1252 smart quotes left as raw control characters</td><td>Corrupt text in customer-facing copy</td></tr>
+    <tr><td class="num">5</td><td>PyMySQL could not read the legacy tables at all (cp1252 codec)</td><td>Import impossible</td></tr>
+    <tr><td class="num">6</td><td>Historical bookings all claimed to be created today</td><td>Nine years of history flattened</td></tr>
+    <tr><td class="num">7</td><td>MariaDB silently discarded a conditional unique constraint</td><td>Duplicate imports undetected</td></tr>
+    <tr><td class="num">8</td><td>Money serialized as JSON floats (<code>145.1</code>)</td><td>Rounding errors in the frontend</td></tr>
+    <tr><td class="num">9</td><td><strong>Distance was client-supplied and unverified</strong></td><td>A 40-mile trip bookable at the minimum fare</td></tr>
+    <tr><td class="num">10</td><td><strong>Guest bookings discarded the email they validated</strong></td><td>No guest ever receives a confirmation</td></tr>
+    <tr><td class="num">11</td><td><strong>Django's reset form excludes migrated accounts</strong></td><td>1,251 customers locked out, silently and permanently</td></tr>
+    <tr><td class="num">12</td><td>Docs permission frozen at import time</td><td>Schema exposed, or staff locked out</td></tr>
+    <tr><td class="num">13</td><td>Pre-commit hook's own key-pattern check never ran</td><td>A private key committable</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p style="color:var(--muted);font-size:14.5px">
+  Numbers 9, 10 and 11 are the ones that matter: each was invisible in normal use
+  and would have been discovered by a customer rather than by us.
+</p>
+
+<h2 id="commands">12. Command reference</h2>
+
+<pre><code># Setup
+docker compose -f ops/docker-compose.yml up -d
+./ops/load-legacy.sh
+python manage.py migrate
+python manage.py sync_roles          # Dispatcher / Manager / Editor
+
+# Import legacy data (order matters)
+python manage.py import_fleet
+python manage.py import_pricing
+python manage.py import_members      # passwords are never read
+python manage.py import_orders       # card columns are never read
+python manage.py import_content      # repairs mojibake
+
+# Verify the pricing engine against nine years of real fares
+python manage.py replay_fares --report
+python manage.py replay_fares --write    # persist price lines where they agree
+
+# Scheduled (cron calls these)
+python manage.py send_pickup_reminders --dry-run
+python manage.py cleanup_stale_data --dry-run
+
+# API schema
+python manage.py spectacular --file ../docs/openapi.yaml
+
+# Checks
+pytest -m "not legacy"               # ~340 unit tests, ~25s
+pytest                               # everything, ~8 min
+ruff check .
+./ops/check-wheels.sh                # after ANY dependency change
+./ops/deploy-rehearsal.sh            # clean-venv install + prod boot</code></pre>
+
+<h2 id="tests">13. Testing approach</h2>
+
+<p>
+  379 tests. Two marks: unmarked tests run in about 25 seconds; those marked
+  <code>legacy</code> need the sanitised replica loaded and take several minutes
+  because they run full imports.
+</p>
+
+<h4>What the tests are actually for</h4>
+<ul>
+  <li><strong>Pinning behaviour that is expensive to rediscover</strong> — band
+      arithmetic, surcharge ordering, boundary exclusivity. These encode decisions,
+      not just correctness.</li>
+  <li><strong>Asserting the negative</strong> — an Editor gets 403, a forged webhook
+      changes nothing, a posted price is ignored. Access control tested only
+      positively is not tested.</li>
+  <li><strong>Guarding structure</strong> — one test scans every model for a field
+      that could hold a card number; another scans every stored value in the real
+      dataset. These would catch a card column reintroduced by a future migration.</li>
+  <li><strong>Documenting framework behaviour we depend on</strong> — there is a test
+      asserting what stock Django's <code>PasswordResetForm</code> does, because
+      our override exists precisely to change it.</li>
+</ul>
+
+<div class="note">
+  <strong>The historical replay is the highest-value check</strong>
+  <code>replay_fares</code> puts 2,217 real bookings through the new engine and
+  diffs against what was actually charged. It agrees on 100% of 2026 fares. Re-run
+  it after any rate-card change: the recent cohort should stay at or near 100%, and
+  a drop there means the engine's behaviour moved.
+</div>
+
+<footer>
+  Compiled 13 August 2026 from phases 0–13. Companion documents:
+  <em>Outstanding Notes</em> (action items), <em>Security Issue Report</em>,
+  <em>Legacy Application Brief</em>, <em>Build Brief</em>. Per-phase detail with
+  defects and decisions is in <code>docs/qa/</code>.
+</footer>
+
+</div>
+</body>
+</html>
