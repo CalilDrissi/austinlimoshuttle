@@ -6,7 +6,30 @@ from notifications.models import EmailSettings
 from payments.models import PaymentSettings
 
 
-class PaymentSettingsForm(forms.ModelForm):
+class BootstrapFormMixin:
+    """
+    Apply Bootstrap's form classes to every widget.
+
+    Done here rather than in the templates so a new field is styled the moment
+    it is added, and so the markup stays declarative -- a template that has to
+    remember `class="form-control"` on each field will eventually forget one.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            widget = field.widget
+            existing = widget.attrs.get("class", "")
+            if isinstance(widget, forms.CheckboxInput):
+                css = "form-check-input"
+            elif isinstance(widget, forms.Select):
+                css = "form-select"
+            else:
+                css = "form-control"
+            widget.attrs["class"] = f"{existing} {css}".strip()
+
+
+class PaymentSettingsForm(BootstrapFormMixin, forms.ModelForm):
     """
     Stripe credentials.
 
@@ -128,7 +151,7 @@ class PaymentSettingsForm(forms.ModelForm):
         return instance
 
 
-class EmailSettingsForm(forms.ModelForm):
+class EmailSettingsForm(BootstrapFormMixin, forms.ModelForm):
     """
     SMTP credentials.
 

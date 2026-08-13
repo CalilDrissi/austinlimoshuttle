@@ -1,0 +1,5 @@
+{% if status == 'completed' %}<span class="badge text-bg-success-subtle text-success-emphasis badge-status">{{ label }}</span>
+{% elif status == 'confirmed' %}<span class="badge text-bg-primary-subtle text-primary-emphasis badge-status">{{ label }}</span>
+{% elif status == 'pending' %}<span class="badge text-bg-warning-subtle text-warning-emphasis badge-status">{{ label }}</span>
+{% elif status == 'cancelled' %}<span class="badge text-bg-danger-subtle text-danger-emphasis badge-status">{{ label }}</span>
+{% else %}<span class="badge text-bg-secondary badge-status">{{ label }}</span>{% endif %}

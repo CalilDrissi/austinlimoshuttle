@@ -1,51 +1,86 @@
 {% extends "dashboard/base.html" %}
 {% block title %}Bookings{% endblock %}
+{% block page_title %}Bookings{% endblock %}
+{% block lede %}<p class="lede">Showing {{ showing }} of {{ total|default:0 }} matching bookings.</p>{% endblock %}
 
 {% block content %}
-<h1>Bookings</h1>
-<p class="lede">Showing {{ showing }} of {{ total }} matching bookings.</p>
-
-<div class="panel">
-  <form class="inline" method="get">
-    <input type="text" name="q" value="{{ filters.q }}" placeholder="Reference, name, address, flight…" style="min-width:280px">
-    <select name="status">
-      <option value="">All statuses</option>
-      {% for value, label in statuses %}
-        <option value="{{ value }}" {% if value == filters.status %}selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
-    <input type="date" name="from" value="{{ filters.from }}" title="Pickup from">
-    <input type="date" name="to" value="{{ filters.to }}" title="Pickup to">
-    <button type="submit">Filter</button>
-    <a class="btn secondary" href="{% url 'dashboard:bookings' %}">Reset</a>
-    <button type="submit" name="export" value="csv" class="secondary">Export CSV</button>
-  </form>
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-12 col-lg-4">
+        <label class="form-label small fw-semibold mb-1">Search</label>
+        <input type="text" name="q" value="{{ filters.q }}" class="form-control form-control-sm"
+               placeholder="Reference, name, address, flight…">
+      </div>
+      <div class="col-6 col-lg-2">
+        <label class="form-label small fw-semibold mb-1">Status</label>
+        <select name="status" class="form-select form-select-sm">
+          <option value="">All</option>
+          {% for value, label in statuses %}
+            <option value="{{ value }}" {% if value == filters.status %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-lg-2">
+        <label class="form-label small fw-semibold mb-1">Pickup from</label>
+        <input type="date" name="from" value="{{ filters.from }}" class="form-control form-control-sm">
+      </div>
+      <div class="col-6 col-lg-2">
+        <label class="form-label small fw-semibold mb-1">Pickup to</label>
+        <input type="date" name="to" value="{{ filters.to }}" class="form-control form-control-sm">
+      </div>
+      <div class="col-6 col-lg-2 d-flex gap-2">
+        <button type="submit" class="btn btn-brand btn-sm flex-grow-1">
+          <i class="bi bi-funnel"></i> Filter
+        </button>
+        <a href="{% url 'dashboard:bookings' %}" class="btn btn-outline-secondary btn-sm">Reset</a>
+      </div>
+      <div class="col-12">
+        <button type="submit" name="export" value="csv" class="btn btn-outline-secondary btn-sm mt-1">
+          <i class="bi bi-download"></i> Export CSV
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
 
 {% if bookings %}
-<div class="scroll">
-  <table>
-    <thead><tr><th>Pickup</th><th>Reference</th><th>Customer</th><th>Route</th><th>Vehicle</th><th>Driver</th><th>Status</th><th class="num">Total</th></tr></thead>
-    <tbody>
-    {% for booking in bookings %}
-      <tr>
-        <td class="num">{{ booking.pickup_at|date:"j M Y, H:i" }}</td>
-        <td><a href="{% url 'dashboard:booking_detail' booking.reference %}">{{ booking.reference }}</a></td>
-        <td>{{ booking.customer_name }}</td>
-        <td class="muted">{{ booking.pickup_address|truncatechars:26 }} → {{ booking.dropoff_address|truncatechars:26|default:"—" }}</td>
-        <td>{{ booking.vehicle_name_snapshot }}</td>
-        <td>{{ booking.driver.full_name|default:"—" }}</td>
-        <td><span class="tag {{ booking.status }}">{{ booking.get_status_display }}</span></td>
-        <td class="num">${{ booking.total }}</td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% if total > showing %}
-  <p class="muted" style="margin-top:12px">Only the first {{ showing }} are shown. Narrow the filters, or export to CSV for the full set.</p>
-{% endif %}
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead><tr>
+          <th>Pickup</th><th>Reference</th><th>Customer</th><th>Route</th>
+          <th>Vehicle</th><th>Driver</th><th>Status</th><th class="text-end">Total</th>
+        </tr></thead>
+        <tbody>
+        {% for booking in bookings %}
+          <tr>
+            <td class="text-nowrap small">{{ booking.pickup_at|date:"j M Y" }}
+              <span class="text-secondary">{{ booking.pickup_at|date:"H:i" }}</span></td>
+            <td><a href="{% url 'dashboard:booking_detail' booking.reference %}"
+                   class="fw-semibold">{{ booking.reference }}</a></td>
+            <td>{{ booking.customer_name }}</td>
+            <td class="small text-secondary">{{ booking.pickup_address|truncatechars:24 }}
+              <i class="bi bi-arrow-right mx-1"></i>{{ booking.dropoff_address|truncatechars:24|default:"—" }}</td>
+            <td class="small">{{ booking.vehicle_name_snapshot }}</td>
+            <td class="small">{{ booking.driver.full_name|default:"—" }}</td>
+            <td>{% include "dashboard/_status.html" with status=booking.status label=booking.get_status_display %}</td>
+            <td class="text-end fw-semibold">${{ booking.total }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if total > showing %}
+      <div class="card-footer bg-white small text-secondary">
+        Only the first {{ showing }} are shown. Narrow the filters, or export to CSV for the full set.
+      </div>
+    {% endif %}
+  </div>
 {% else %}
-  <div class="empty">No bookings match those filters.</div>
+  <div class="card"><div class="empty-state">
+    <i class="bi bi-search"></i>
+    <div class="fw-semibold">No bookings match those filters</div>
+  </div></div>
 {% endif %}
 {% endblock %}

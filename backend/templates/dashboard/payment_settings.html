@@ -1,92 +1,104 @@
 {% extends "dashboard/base.html" %}
 {% block title %}Payment settings{% endblock %}
+{% block page_title %}Payment settings{% endblock %}
+{% block lede %}<p class="lede">Stripe credentials. Changes take effect immediately.</p>{% endblock %}
 
 {% block content %}
-<h1>Payment settings</h1>
-<p class="lede">Stripe credentials. Changes take effect immediately.</p>
-
 {% if settings_obj.is_enabled and settings_obj.mode == 'live' %}
-  <div class="panel" style="border-left:4px solid var(--danger)">
-    <strong style="color:var(--danger)">Live mode is active.</strong>
-    Real cards are being charged.
-  </div>
+  <div class="alert alert-danger d-flex gap-2"><i class="bi bi-broadcast"></i>
+    <div><strong>Live mode is active.</strong> Real cards are being charged.</div></div>
 {% elif settings_obj.is_enabled %}
-  <div class="panel" style="border-left:4px solid var(--info)">
-    <strong style="color:var(--info)">Test mode is active.</strong>
-    No real money moves. Use Stripe's test cards.
-  </div>
+  <div class="alert alert-info d-flex gap-2"><i class="bi bi-tools"></i>
+    <div><strong>Test mode is active.</strong> No real money moves — use Stripe's test cards.</div></div>
 {% else %}
-  <div class="panel" style="border-left:4px solid var(--warn)">
-    <strong style="color:var(--warn)">Card payments are switched off.</strong>
-    Bookings can still be taken; they will stay unpaid.
-  </div>
+  <div class="alert alert-warning d-flex gap-2"><i class="bi bi-exclamation-triangle"></i>
+    <div><strong>Card payments are switched off.</strong> Bookings can still be taken; they stay unpaid.</div></div>
 {% endif %}
 
-<div class="panel">
-  <h2>Current configuration</h2>
-  <dl class="kv">
-    <dt>Mode</dt><dd>{{ settings_obj.get_mode_display }}</dd>
-    <dt>Publishable key</dt>
-    <dd>{% if settings_obj.publishable_key %}<code>{{ settings_obj.publishable_key }}</code>{% else %}<span class="muted">not set</span>{% endif %}</dd>
-    <dt>Secret key</dt>
-    <dd>{% if settings_obj.has_secret_key %}<code>{{ settings_obj.secret_key_masked }}</code> <span class="muted">(encrypted)</span>{% else %}<span class="muted">not set</span>{% endif %}</dd>
-    <dt>Webhook secret</dt>
-    <dd>{% if settings_obj.has_webhook_secret %}<code>{{ settings_obj.webhook_secret_masked }}</code> <span class="muted">(encrypted)</span>{% else %}<span class="muted">not set</span>{% endif %}</dd>
-    <dt>Ready to charge</dt>
-    <dd>{% if settings_obj.is_configured %}<span class="tag completed">Yes</span>{% else %}<span class="tag pending">No</span>{% endif %}</dd>
-    {% if not settings_obj.key_mode_matches %}
-      <dt>Warning</dt>
-      <dd style="color:var(--danger)"><strong>The stored key does not match the selected mode.</strong></dd>
-    {% endif %}
-    <dt>Last changed</dt>
-    <dd>{% if settings_obj.updated_by %}{{ settings_obj.updated_at|date:"j M Y, H:i" }} by {{ settings_obj.updated_by.get_full_name|default:settings_obj.updated_by.email }}{% else %}<span class="muted">never</span>{% endif %}</dd>
-  </dl>
-</div>
+{% if not settings_obj.key_mode_matches %}
+  <div class="alert alert-danger d-flex gap-2"><i class="bi bi-x-octagon"></i>
+    <div><strong>The stored key does not match the selected mode.</strong>
+      Payments would silently fail. Correct this before taking bookings.</div></div>
+{% endif %}
 
-<div class="panel">
-  <h2>Update</h2>
-  <form method="post" autocomplete="off">
-    {% csrf_token %}
-    {% if form.non_field_errors %}
-      <ul class="messages">{% for e in form.non_field_errors %}<li class="error">{{ e }}</li>{% endfor %}</ul>
-    {% endif %}
-
-    {% for field in form %}
-      <div style="margin-bottom:16px">
-        <label for="{{ field.id_for_label }}" style="display:block;font-weight:600;margin-bottom:4px">
-          {{ field.label }}
-        </label>
-        {{ field }}
-        {% if field.help_text %}<div class="muted" style="font-size:13px;margin-top:3px">{{ field.help_text }}</div>{% endif %}
-        {% for e in field.errors %}<div style="color:var(--danger);font-size:13.5px;margin-top:3px">{{ e }}</div>{% endfor %}
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-shield-lock me-2"></i>Current configuration</div>
+      <div class="card-body">
+        <dl class="kv" style="grid-template-columns:150px 1fr">
+          <dt>Mode</dt><dd>{{ settings_obj.get_mode_display }}</dd>
+          <dt>Publishable key</dt>
+          <dd>{% if settings_obj.publishable_key %}<code>{{ settings_obj.publishable_key|truncatechars:30 }}</code>
+              {% else %}<span class="text-secondary">not set</span>{% endif %}</dd>
+          <dt>Secret key</dt>
+          <dd>{% if settings_obj.has_secret_key %}<code>{{ settings_obj.secret_key_masked }}</code>
+              <span class="badge text-bg-success-subtle text-success-emphasis badge-status ms-1">encrypted</span>
+              {% else %}<span class="text-secondary">not set</span>{% endif %}</dd>
+          <dt>Webhook secret</dt>
+          <dd>{% if settings_obj.has_webhook_secret %}<code>{{ settings_obj.webhook_secret_masked }}</code>
+              <span class="badge text-bg-success-subtle text-success-emphasis badge-status ms-1">encrypted</span>
+              {% else %}<span class="text-secondary">not set</span>{% endif %}</dd>
+          <dt>Ready to charge</dt>
+          <dd>{% if settings_obj.is_configured %}
+                <span class="badge text-bg-success-subtle text-success-emphasis badge-status">Yes</span>
+              {% else %}<span class="badge text-bg-warning-subtle text-warning-emphasis badge-status">No</span>{% endif %}</dd>
+          <dt>Last changed</dt>
+          <dd class="small">{% if settings_obj.updated_by %}{{ settings_obj.updated_at|date:"j M Y, H:i" }}<br>
+              <span class="text-secondary">by {{ settings_obj.updated_by.get_full_name|default:settings_obj.updated_by.email }}</span>
+              {% else %}<span class="text-secondary">never</span>{% endif %}</dd>
+        </dl>
       </div>
-    {% endfor %}
+    </div>
 
-    <button type="submit">Save settings</button>
-  </form>
-</div>
+    <div class="card">
+      <div class="card-header"><i class="bi bi-broadcast-pin me-2"></i>Stripe webhook</div>
+      <div class="card-body">
+        <p class="small mb-2">Add this endpoint in Stripe (Developers → Webhooks), then paste its
+          signing secret opposite. Without it, a successful payment never confirms the booking.</p>
+        <code class="d-block p-2 bg-body-secondary rounded small mb-2">{{ webhook_url }}</code>
+        <p class="small text-secondary mb-0">Events: <code>payment_intent.succeeded</code>,
+          <code>payment_intent.payment_failed</code>, <code>charge.refunded</code>.</p>
+      </div>
+    </div>
+  </div>
 
-<div class="panel">
-  <h2>Stripe webhook</h2>
-  <p>
-    Add this endpoint in the Stripe dashboard (Developers → Webhooks), then paste
-    its signing secret above. Without it, a payment that succeeds at Stripe will
-    never confirm the booking here.
-  </p>
-  <p><code>{{ webhook_url }}</code></p>
-  <p class="muted" style="margin:0">
-    Events required: <code>payment_intent.succeeded</code>,
-    <code>payment_intent.payment_failed</code>, <code>charge.refunded</code>.
-  </p>
-</div>
-
-<div class="panel">
-  <h2>How these are stored</h2>
-  <p class="muted" style="margin:0">
-    The secret key and webhook secret are encrypted before they are written to the
-    database, using a key derived from the server's <code>DJANGO_SECRET_KEY</code>.
-    They are never displayed again after saving — only the last four characters.
-    If <code>DJANGO_SECRET_KEY</code> is ever changed, both must be re-entered.
-  </p>
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-pencil-square me-2"></i>Update credentials</div>
+      <div class="card-body">
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger py-2">
+            {% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}
+          </div>
+        {% endif %}
+        <form method="post" autocomplete="off">
+          {% csrf_token %}
+          {% for field in form %}
+            <div class="mb-3">
+              <label for="{{ field.id_for_label }}" class="form-label fw-semibold small">{{ field.label }}</label>
+              {% if field.field.widget.input_type == 'checkbox' %}
+                <div class="form-check">
+                  <input type="checkbox" name="{{ field.html_name }}" id="{{ field.id_for_label }}"
+                         class="form-check-input" {% if field.value %}checked{% endif %}>
+                  <label class="form-check-label small" for="{{ field.id_for_label }}">Enabled</label>
+                </div>
+              {% else %}
+                {{ field|safe }}
+              {% endif %}
+              {% if field.help_text %}<div class="form-text small">{{ field.help_text }}</div>{% endif %}
+              {% for e in field.errors %}<div class="invalid-feedback d-block small">{{ e }}</div>{% endfor %}
+            </div>
+          {% endfor %}
+          <button type="submit" class="btn btn-brand"><i class="bi bi-check-lg"></i> Save settings</button>
+        </form>
+      </div>
+      <div class="card-footer bg-white small text-secondary">
+        <i class="bi bi-info-circle"></i>
+        The secret key and webhook secret are encrypted before storage and never shown again.
+        If <code>DJANGO_SECRET_KEY</code> is ever changed, both must be re-entered.
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

@@ -1,54 +1,72 @@
 {% extends "dashboard/base.html" %}
 {% block title %}Dispatch{% endblock %}
+{% block page_title %}Dispatch board{% endblock %}
+{% block lede %}<p class="lede">Next 48 hours, in pickup order. Assign a driver or change status without leaving the page.</p>{% endblock %}
 
 {% block content %}
-<h1>Dispatch board</h1>
-<p class="lede">Next 48 hours, in pickup order. Assign a driver or change status without leaving this page.</p>
-
 {% if bookings %}
-<div class="scroll">
-  <table>
-    <thead>
-      <tr><th>Pickup</th><th>Reference</th><th>Customer</th><th>Route</th><th>Vehicle</th>
-          <th>Flight / sign</th><th>Driver &amp; status</th></tr>
-    </thead>
-    <tbody>
-    {% for booking in bookings %}
-      <tr>
-        <td class="num">
-          {{ booking.pickup_at|date:"D j M" }}<br>
-          <strong>{{ booking.pickup_at|date:"H:i" }}</strong>
-          {% if booking.pickup_at < now %}<br><span class="soon">overdue</span>{% endif %}
-        </td>
-        <td><a href="{% url 'dashboard:booking_detail' booking.reference %}">{{ booking.reference }}</a></td>
-        <td>{{ booking.customer_name }}<br><span class="muted">{{ booking.customer.phone|default:"" }}</span></td>
-        <td class="muted">{{ booking.pickup_address|truncatechars:34 }}<br>→ {{ booking.dropoff_address|truncatechars:34|default:"—" }}</td>
-        <td>{{ booking.vehicle_name_snapshot }}</td>
-        <td class="muted">{{ booking.flight_number|default:"" }}{% if booking.pickup_sign %}<br>“{{ booking.pickup_sign }}”{% endif %}</td>
-        <td>
-          <form class="inline" method="post" action="{% url 'dashboard:booking_update' booking.reference %}">
-            {% csrf_token %}
-            <input type="hidden" name="next" value="dashboard:dispatch">
-            <select name="driver">
-              <option value="">— unassigned —</option>
-              {% for driver in drivers %}
-                <option value="{{ driver.pk }}" {% if driver.pk == booking.driver_id %}selected{% endif %}>{{ driver.full_name }}</option>
-              {% endfor %}
-            </select>
-            <select name="status">
-              {% for value, label in statuses %}
-                <option value="{{ value }}" {% if value == booking.status %}selected{% endif %}>{{ label }}</option>
-              {% endfor %}
-            </select>
-            <button type="submit">Save</button>
-          </form>
-        </td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-</div>
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead><tr>
+          <th>Pickup</th><th>Reference</th><th>Customer</th><th>Route</th>
+          <th>Vehicle</th><th>Flight / sign</th><th style="min-width:340px">Driver &amp; status</th>
+        </tr></thead>
+        <tbody>
+        {% for booking in bookings %}
+          <tr>
+            <td class="text-nowrap">
+              <div class="small text-secondary">{{ booking.pickup_at|date:"D j M" }}</div>
+              <div class="fw-bold fs-6">{{ booking.pickup_at|date:"H:i" }}</div>
+              {% if booking.pickup_at < now %}
+                <span class="badge text-bg-danger badge-status">Overdue</span>{% endif %}
+            </td>
+            <td><a href="{% url 'dashboard:booking_detail' booking.reference %}"
+                   class="fw-semibold">{{ booking.reference }}</a></td>
+            <td>
+              {{ booking.customer_name }}
+              {% if booking.customer.phone %}
+                <div class="small text-secondary">{{ booking.customer.phone }}</div>{% endif %}
+            </td>
+            <td class="small text-secondary" style="max-width:250px">
+              {{ booking.pickup_address|truncatechars:36 }}
+              <div><i class="bi bi-arrow-return-right"></i> {{ booking.dropoff_address|truncatechars:36|default:"—" }}</div>
+            </td>
+            <td class="small">{{ booking.vehicle_name_snapshot }}</td>
+            <td class="small text-secondary">
+              {% if booking.flight_number %}<i class="bi bi-airplane"></i> {{ booking.flight_number }}{% endif %}
+              {% if booking.pickup_sign %}<div>“{{ booking.pickup_sign }}”</div>{% endif %}
+            </td>
+            <td>
+              <form method="post" action="{% url 'dashboard:booking_update' booking.reference %}"
+                    class="d-flex gap-2 align-items-center">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="dashboard:dispatch">
+                <select name="driver" class="form-select form-select-sm" style="min-width:135px">
+                  <option value="">— unassigned —</option>
+                  {% for driver in drivers %}
+                    <option value="{{ driver.pk }}" {% if driver.pk == booking.driver_id %}selected{% endif %}>{{ driver.full_name }}</option>
+                  {% endfor %}
+                </select>
+                <select name="status" class="form-select form-select-sm" style="min-width:125px">
+                  {% for value, label in statuses %}
+                    <option value="{{ value }}" {% if value == booking.status %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-brand btn-sm">Save</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 {% else %}
-  <div class="empty">Nothing scheduled in the next 48 hours.</div>
+  <div class="card"><div class="empty-state">
+    <i class="bi bi-calendar-check"></i>
+    <div class="fw-semibold">Nothing scheduled in the next 48 hours</div>
+    <div class="small">Bookings appear here as their pickup time approaches.</div>
+  </div></div>
 {% endif %}
 {% endblock %}

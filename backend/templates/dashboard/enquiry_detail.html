@@ -1,41 +1,57 @@
 {% extends "dashboard/base.html" %}
-{% block title %}Enquiry from {{ enquiry.name }}{% endblock %}
+{% block title %}Enquiry — {{ enquiry.name }}{% endblock %}
+{% block page_title %}{{ enquiry.name }}{% endblock %}
+{% block lede %}
+  <p class="lede">{{ enquiry.get_nature_display }} · received {{ enquiry.created_at|date:"l j F Y, H:i" }}</p>
+{% endblock %}
+{% block actions %}
+  <a href="{% url 'dashboard:enquiries' %}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left"></i> Inbox
+  </a>
+{% endblock %}
 
 {% block content %}
-<h1>{{ enquiry.name }}</h1>
-<p class="lede">{{ enquiry.get_nature_display }} · received {{ enquiry.created_at|date:"l j F Y, H:i" }}</p>
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-chat-left-text me-2"></i>Message</div>
+      <div class="card-body" style="white-space:pre-wrap">{{ enquiry.message }}</div>
+    </div>
 
-<div class="panel">
-  <dl class="kv">
-    <dt>Email</dt><dd><a href="mailto:{{ enquiry.email }}">{{ enquiry.email }}</a></dd>
-    <dt>Phone</dt><dd>{{ enquiry.phone|default:"—" }}</dd>
-    {% if enquiry.company_name %}<dt>Company</dt><dd>{{ enquiry.company_name }}</dd>{% endif %}
-    <dt>Subject</dt><dd>{{ enquiry.subject|default:"—" }}</dd>
-    {% if enquiry.source_ip %}<dt>Sender IP</dt><dd class="muted">{{ enquiry.source_ip }}</dd>{% endif %}
-  </dl>
+    <div class="card">
+      <div class="card-header"><i class="bi bi-reply me-2"></i>Reply</div>
+      <div class="card-body">
+        {% if enquiry.is_answered %}
+          <p class="small text-secondary">
+            Replied {{ enquiry.replied_at|date:"j M Y, H:i" }} by
+            {{ enquiry.replied_by.get_full_name|default:enquiry.replied_by.email|default:"unknown" }}.
+          </p>
+          <div style="white-space:pre-wrap">{{ enquiry.reply_body }}</div>
+        {% else %}
+          <form method="post">
+            {% csrf_token %}
+            <textarea name="reply" class="form-control mb-3" rows="5"
+                      placeholder="Your reply — recorded against this enquiry."></textarea>
+            <button type="submit" class="btn btn-brand"><i class="bi bi-send"></i> Record reply</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-person me-2"></i>Contact</div>
+      <div class="card-body">
+        <dl class="kv">
+          <dt>Email</dt><dd><a href="mailto:{{ enquiry.email }}">{{ enquiry.email }}</a></dd>
+          <dt>Phone</dt><dd>{{ enquiry.phone|default:"—" }}</dd>
+          {% if enquiry.company_name %}<dt>Company</dt><dd>{{ enquiry.company_name }}</dd>{% endif %}
+          <dt>Subject</dt><dd>{{ enquiry.subject|default:"—" }}</dd>
+          {% if enquiry.source_ip %}<dt>Sender IP</dt><dd class="text-secondary">{{ enquiry.source_ip }}</dd>{% endif %}
+        </dl>
+      </div>
+    </div>
+  </div>
 </div>
-
-<div class="panel">
-  <h2>Message</h2>
-  <p style="margin:0;white-space:pre-wrap">{{ enquiry.message }}</p>
-</div>
-
-<div class="panel">
-  <h2>Reply</h2>
-  {% if enquiry.is_answered %}
-    <p class="muted">
-      Replied {{ enquiry.replied_at|date:"j M Y, H:i" }}
-      by {{ enquiry.replied_by.get_full_name|default:enquiry.replied_by.email|default:"unknown" }}.
-    </p>
-    <p style="margin:0;white-space:pre-wrap">{{ enquiry.reply_body }}</p>
-  {% else %}
-    <form method="post">
-      {% csrf_token %}
-      <textarea name="reply" placeholder="Your reply — recorded against this enquiry."></textarea>
-      <p style="margin:10px 0 0"><button type="submit">Record reply</button></p>
-    </form>
-  {% endif %}
-</div>
-
-<p><a class="btn secondary" href="{% url 'dashboard:enquiries' %}">Back to inbox</a></p>
 {% endblock %}

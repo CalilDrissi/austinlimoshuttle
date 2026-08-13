@@ -1,43 +1,88 @@
 {% extends "dashboard/base.html" %}
 {% load humanize %}
 {% block title %}Overview{% endblock %}
+{% block page_title %}Overview{% endblock %}
+{% block lede %}<p class="lede">What needs attention right now.</p>{% endblock %}
+{% block actions %}
+  <a href="{% url 'dashboard:dispatch' %}" class="btn btn-brand btn-sm">
+    <i class="bi bi-clock-history me-1"></i> Dispatch board
+  </a>
+{% endblock %}
 
 {% block content %}
-<h1>Overview</h1>
-<p class="lede">What needs attention right now.</p>
-
-<div class="grid">
-  <div class="stat"><div class="n">{{ today_count }}</div><div class="l">Pickups today</div></div>
-  <div class="stat"><div class="n">{{ week_count }}</div><div class="l">Next 7 days</div></div>
-  <div class="stat {% if unassigned %}alert{% endif %}"><div class="n">{{ unassigned }}</div><div class="l">No driver assigned</div></div>
-  <div class="stat {% if pending %}warn{% endif %}"><div class="n">{{ pending }}</div><div class="l">Awaiting payment</div></div>
-  <div class="stat {% if unread_enquiries %}warn{% endif %}"><div class="n">{{ unread_enquiries }}</div><div class="l">Unread enquiries</div></div>
-  <div class="stat"><div class="n">${{ recent_revenue|default:0|floatformat:0|intcomma }}</div><div class="l">Booked, last 7 days</div></div>
+<div class="row g-3 mb-3">
+  {% with tiles="1" %}
+  <div class="col-6 col-lg-2">
+    <div class="card stat-card h-100"><div class="card-body py-3">
+      <div class="value">{{ today_count }}</div><div class="label">Pickups today</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="card stat-card h-100"><div class="card-body py-3">
+      <div class="value">{{ week_count }}</div><div class="label">Next 7 days</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="card stat-card h-100 {% if unassigned %}is-alert{% endif %}"><div class="card-body py-3">
+      <div class="value {% if unassigned %}text-danger{% endif %}">{{ unassigned }}</div>
+      <div class="label">No driver</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="card stat-card h-100 {% if pending %}is-warn{% endif %}"><div class="card-body py-3">
+      <div class="value {% if pending %}text-warning-emphasis{% endif %}">{{ pending }}</div>
+      <div class="label">Awaiting payment</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="card stat-card h-100 {% if unread_enquiries %}is-warn{% endif %}"><div class="card-body py-3">
+      <div class="value">{{ unread_enquiries }}</div><div class="label">Unread enquiries</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="card stat-card h-100 is-ok"><div class="card-body py-3">
+      <div class="value">${{ recent_revenue|default:0|floatformat:0|intcomma }}</div>
+      <div class="label">Booked, 7 days</div>
+    </div></div>
+  </div>
+  {% endwith %}
 </div>
 
-<div class="panel">
-  <h2>Next pickups</h2>
-  {% if next_pickups %}
-  <div class="scroll">
-    <table>
-      <thead><tr><th>Pickup</th><th>Reference</th><th>Customer</th><th>Route</th><th>Vehicle</th><th>Driver</th><th>Status</th></tr></thead>
-      <tbody>
-      {% for booking in next_pickups %}
-        <tr>
-          <td class="num">{{ booking.pickup_at|date:"D j M, H:i" }}</td>
-          <td><a href="{% url 'dashboard:booking_detail' booking.reference %}">{{ booking.reference }}</a></td>
-          <td>{{ booking.customer_name }}</td>
-          <td class="muted">{{ booking.pickup_address|truncatechars:30 }} → {{ booking.dropoff_address|truncatechars:30|default:"—" }}</td>
-          <td>{{ booking.vehicle_name_snapshot }}</td>
-          <td>{% if booking.driver %}{{ booking.driver.full_name }}{% else %}<span class="soon">unassigned</span>{% endif %}</td>
-          <td><span class="tag {{ booking.status }}">{{ booking.get_status_display }}</span></td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
+<div class="card">
+  <div class="card-header d-flex align-items-center">
+    <i class="bi bi-calendar-event me-2"></i> Next pickups
+    <a href="{% url 'dashboard:bookings' %}" class="ms-auto text-decoration-none fw-semibold"
+       style="font-size:.72rem;letter-spacing:.04em">VIEW ALL</a>
   </div>
+  {% if next_pickups %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead><tr>
+          <th>Pickup</th><th>Reference</th><th>Customer</th><th>Route</th>
+          <th>Vehicle</th><th>Driver</th><th>Status</th>
+        </tr></thead>
+        <tbody>
+        {% for booking in next_pickups %}
+          <tr>
+            <td class="text-nowrap fw-semibold">{{ booking.pickup_at|date:"D j M" }}
+              <span class="text-secondary">{{ booking.pickup_at|date:"H:i" }}</span></td>
+            <td><a href="{% url 'dashboard:booking_detail' booking.reference %}"
+                   class="fw-semibold">{{ booking.reference }}</a></td>
+            <td>{{ booking.customer_name }}</td>
+            <td class="text-secondary small">{{ booking.pickup_address|truncatechars:28 }}
+              <i class="bi bi-arrow-right mx-1"></i>{{ booking.dropoff_address|truncatechars:28|default:"—" }}</td>
+            <td class="small">{{ booking.vehicle_name_snapshot }}</td>
+            <td>{% if booking.driver %}{{ booking.driver.full_name }}
+                {% else %}<span class="badge text-bg-danger-subtle text-danger-emphasis badge-status">Unassigned</span>{% endif %}</td>
+            <td>{% include "dashboard/_status.html" with status=booking.status label=booking.get_status_display %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
   {% else %}
-    <div class="empty">No upcoming bookings.</div>
+    <div class="empty-state"><i class="bi bi-calendar-x"></i>
+      <div class="fw-semibold">No upcoming bookings</div></div>
   {% endif %}
 </div>
 {% endblock %}
