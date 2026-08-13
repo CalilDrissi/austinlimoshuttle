@@ -181,6 +181,24 @@
   </p>
 </div>
 
+<div class="item warn">
+  <span class="who">Client</span>
+  <span class="tag warn">Verify before relying on it</span>
+  <h3>Is PayPal actually used?</h3>
+  <p>
+    A PayPal credentials page now exists at <strong>Dashboard &rarr; PayPal</strong>,
+    with an encrypted client secret and a "test credentials" button that
+    authenticates against the chosen environment.
+  </p>
+  <p style="margin-bottom:0">
+    <strong>But the PayPal checkout flow is not wired up</strong> &mdash; Stripe is
+    the working gateway. And the legacy audit found no identifiable PayPal
+    transactions in any of the 2,217 imported orders, despite a 6,685-line PayPal
+    class being loaded on every legacy payment page. Worth confirming the business
+    actually takes PayPal before building the integration.
+  </p>
+</div>
+
 <div class="item info">
   <span class="who">Client</span>
   <span class="tag info">Awareness</span>

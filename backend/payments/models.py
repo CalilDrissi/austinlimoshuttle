@@ -269,3 +269,130 @@ class WebhookEvent(models.Model):
 
     def __str__(self):
         return f"{self.event_type} ({self.event_id})"
+
+
+class PayPalSettings(models.Model):
+    """
+    PayPal REST credentials, managed in the dashboard alongside Stripe.
+
+    Singleton. The client secret is encrypted at rest (config/crypto.py) and is
+    never rendered back to a browser.
+
+    Note on the mode field: unlike Stripe, PayPal credentials carry no prefix
+    that reveals whether they are sandbox or live, so the two cannot be
+    cross-checked automatically the way `sk_live_` can. The "Test connection"
+    action exists partly for that reason -- it authenticates against the chosen
+    environment and tells you whether the pair actually belongs there.
+    """
+
+    class Mode(models.TextChoices):
+        SANDBOX = "sandbox", "Sandbox"
+        LIVE = "live", "Live"
+
+    API_BASE = {
+        Mode.SANDBOX: "https://api-m.sandbox.paypal.com",
+        Mode.LIVE: "https://api-m.paypal.com",
+    }
+
+    mode = models.CharField(
+        max_length=8, choices=Mode.choices, default=Mode.SANDBOX,
+        help_text="Live mode takes real payments.",
+    )
+
+    client_id = models.CharField(
+        max_length=255, blank=True,
+        help_text="From the PayPal app. Public — it is sent to the browser.",
+    )
+    _client_secret = models.TextField(
+        "client secret", blank=True, db_column="client_secret_encrypted",
+        help_text="Encrypted at rest.",
+    )
+    webhook_id = models.CharField(
+        max_length=64, blank=True,
+        help_text="From the PayPal webhook you create. Required to verify "
+                  "incoming events.",
+    )
+
+    brand_name = models.CharField(
+        max_length=127, blank=True,
+        help_text="Shown on the PayPal checkout page.",
+    )
+
+    is_enabled = models.BooleanField(
+        default=False,
+        help_text="Turn off to hide PayPal at checkout without deleting the credentials.",
+    )
+
+    last_test_at = models.DateTimeField(null=True, blank=True)
+    last_test_ok = models.BooleanField(null=True, blank=True)
+    last_test_error = models.TextField(blank=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="+",
+    )
+
+    class Meta:
+        verbose_name = "PayPal settings"
+        verbose_name_plural = "PayPal settings"
+
+    def __str__(self):
+        return f"PayPal ({self.get_mode_display()})"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("PayPal settings cannot be deleted.")
+
+    @classmethod
+    def load(cls) -> "PayPalSettings":
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    # -- secret -----------------------------------------------------------
+
+    @property
+    def client_secret(self) -> str | None:
+        return crypto.decrypt(self._client_secret)
+
+    @client_secret.setter
+    def client_secret(self, value: str | None) -> None:
+        self._client_secret = crypto.encrypt(value)
+
+    @property
+    def client_secret_masked(self) -> str:
+        stored = self.client_secret
+        return f"••••{stored[-4:]}" if stored else ""
+
+    @property
+    def has_client_secret(self) -> bool:
+        return bool(self._client_secret)
+
+    @property
+    def client_id_masked(self) -> str:
+        """
+        The client id is public, but it is long and unhelpful in full.
+
+        Shown truncated so an administrator can confirm *which* app is
+        configured at a glance.
+        """
+        if not self.client_id:
+            return ""
+        return f"{self.client_id[:10]}…{self.client_id[-6:]}"
+
+    # -- derived ----------------------------------------------------------
+
+    @property
+    def api_base(self) -> str:
+        return self.API_BASE[self.mode]
+
+    @property
+    def is_configured(self) -> bool:
+        return bool(self.is_enabled and self.client_id and self.client_secret)
+
+    @property
+    def is_live(self) -> bool:
+        return self.mode == self.Mode.LIVE

@@ -1,0 +1,134 @@
+{% extends "dashboard/base.html" %}
+{% block title %}PayPal settings{% endblock %}
+{% block page_title %}PayPal settings{% endblock %}
+{% block lede %}<p class="lede">PayPal REST credentials.</p>{% endblock %}
+
+{% block content %}
+<div class="alert alert-secondary d-flex gap-2">
+  <i class="bi bi-info-circle"></i>
+  <div>
+    <strong>The PayPal checkout flow is not wired up yet.</strong>
+    Stripe is the working gateway. These credentials are stored and verifiable so
+    PayPal can be switched on without a deployment once the integration lands.
+  </div>
+</div>
+
+{% if settings_obj.is_enabled and settings_obj.is_live %}
+  <div class="alert alert-danger d-flex gap-2"><i class="bi bi-broadcast"></i>
+    <div><strong>Live credentials are stored and enabled.</strong></div></div>
+{% elif settings_obj.is_enabled %}
+  <div class="alert alert-info d-flex gap-2"><i class="bi bi-tools"></i>
+    <div><strong>Sandbox mode.</strong> No real money would move.</div></div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-shield-lock me-2"></i>Current configuration</div>
+      <div class="card-body">
+        <dl class="kv" style="grid-template-columns:150px 1fr">
+          <dt>Environment</dt><dd>{{ settings_obj.get_mode_display }}</dd>
+          <dt>API endpoint</dt><dd class="small"><code>{{ settings_obj.api_base }}</code></dd>
+          <dt>Client ID</dt>
+          <dd>{% if settings_obj.client_id %}<code>{{ settings_obj.client_id_masked }}</code>
+              {% else %}<span class="text-secondary">not set</span>{% endif %}</dd>
+          <dt>Client secret</dt>
+          <dd>{% if settings_obj.has_client_secret %}<code>{{ settings_obj.client_secret_masked }}</code>
+              <span class="badge text-bg-success-subtle text-success-emphasis badge-status ms-1">encrypted</span>
+              {% else %}<span class="text-secondary">not set</span>{% endif %}</dd>
+          <dt>Webhook ID</dt>
+          <dd>{% if settings_obj.webhook_id %}<code>{{ settings_obj.webhook_id }}</code>
+              {% else %}<span class="text-secondary">not set</span>{% endif %}</dd>
+          <dt>Credentials valid</dt>
+          <dd>{% if settings_obj.is_configured %}
+                <span class="badge text-bg-success-subtle text-success-emphasis badge-status">Stored</span>
+              {% else %}<span class="badge text-bg-warning-subtle text-warning-emphasis badge-status">Incomplete</span>{% endif %}</dd>
+          <dt>Last changed</dt>
+          <dd class="small">{% if settings_obj.updated_by %}{{ settings_obj.updated_at|date:"j M Y, H:i" }}<br>
+              <span class="text-secondary">by {{ settings_obj.updated_by.get_full_name|default:settings_obj.updated_by.email }}</span>
+              {% else %}<span class="text-secondary">never</span>{% endif %}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-plug me-2"></i>Test connection</div>
+      <div class="card-body">
+        <p class="small text-secondary">
+          PayPal credentials carry no sandbox/live prefix, so a mismatched pair
+          cannot be spotted by looking at them. This authenticates against the
+          selected environment and reports what PayPal says.
+        </p>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="test">
+          <button type="submit" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-lightning-charge"></i> Test credentials
+          </button>
+        </form>
+        {% if settings_obj.last_test_at %}
+          <hr class="my-3">
+          <div class="small">
+            Last tested {{ settings_obj.last_test_at|date:"j M Y, H:i" }} —
+            {% if settings_obj.last_test_ok %}
+              <span class="badge text-bg-success-subtle text-success-emphasis badge-status">Succeeded</span>
+            {% else %}
+              <span class="badge text-bg-danger-subtle text-danger-emphasis badge-status">Failed</span>
+              <div class="text-danger mt-1">{{ settings_obj.last_test_error }}</div>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><i class="bi bi-broadcast-pin me-2"></i>Webhook</div>
+      <div class="card-body">
+        <p class="small mb-2">
+          When the integration lands, create a webhook in the PayPal developer
+          dashboard pointing here, and paste its ID opposite.
+        </p>
+        <code class="d-block p-2 bg-body-secondary rounded small">{{ webhook_url }}</code>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-pencil-square me-2"></i>Update credentials</div>
+      <div class="card-body">
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger py-2">
+            {% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}
+          </div>
+        {% endif %}
+        <form method="post" autocomplete="off">
+          {% csrf_token %}
+          {% for field in form %}
+            <div class="mb-3">
+              <label for="{{ field.id_for_label }}" class="form-label fw-semibold small">{{ field.label }}</label>
+              {% if field.field.widget.input_type == 'checkbox' %}
+                <div class="form-check">
+                  <input type="checkbox" name="{{ field.html_name }}" id="{{ field.id_for_label }}"
+                         class="form-check-input" {% if field.value %}checked{% endif %}>
+                  <label class="form-check-label small" for="{{ field.id_for_label }}">Enabled</label>
+                </div>
+              {% else %}
+                {{ field|safe }}
+              {% endif %}
+              {% if field.help_text %}<div class="form-text small">{{ field.help_text }}</div>{% endif %}
+              {% for e in field.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
+            </div>
+          {% endfor %}
+          <button type="submit" class="btn btn-brand"><i class="bi bi-check-lg"></i> Save settings</button>
+        </form>
+      </div>
+      <div class="card-footer bg-white small text-secondary">
+        <i class="bi bi-info-circle"></i>
+        The client secret is encrypted before storage and never shown again.
+        If <code>DJANGO_SECRET_KEY</code> is changed, it must be re-entered.
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

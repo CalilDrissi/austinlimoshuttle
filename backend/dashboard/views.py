@@ -26,10 +26,10 @@ from bookings.models import Booking, BookingStatusChange, Driver
 from enquiries.models import ContactMessage
 from notifications import mailer
 from notifications.models import EmailLog, EmailSettings
-from payments import gateway
-from payments.models import Payment, PaymentSettings
+from payments import gateway, paypal
+from payments.models import Payment, PaymentSettings, PayPalSettings
 
-from .forms import EmailSettingsForm, PaymentSettingsForm
+from .forms import EmailSettingsForm, PaymentSettingsForm, PayPalSettingsForm
 from .permissions import is_manager, role_names
 
 logger = logging.getLogger(__name__)
@@ -434,4 +434,50 @@ def email_settings(request):
         "settings_obj": instance,
         "recent": EmailLog.objects.all()[:15],
         "failures": EmailLog.objects.filter(succeeded=False).count(),
+    })
+
+
+@staff_required
+@permission_required("payments.change_paypalsettings", raise_exception=True)
+def paypal_settings(request):
+    """
+    PayPal credentials, editable by a Manager.
+
+    The checkout flow is not wired up -- Stripe is the working gateway. These
+    credentials are stored and verifiable so PayPal can be enabled without a
+    deployment when the integration lands.
+    """
+    if not is_manager(request.user):
+        raise PermissionDenied("Only managers can change payment settings.")
+
+    instance = PayPalSettings.load()
+
+    if request.method == "POST" and request.POST.get("action") == "test":
+        ok, message = paypal.verify_credentials(instance)
+        if ok:
+            messages.success(request, message)
+        else:
+            messages.error(request, message)
+        return redirect("dashboard:paypal_settings")
+
+    if request.method == "POST":
+        form = PayPalSettingsForm(request.POST, instance=instance)
+        if form.is_valid():
+            updated = form.save(commit=False)
+            updated.updated_by = request.user
+            updated.save()
+            logger.info(
+                "PayPal settings updated by %s (fields: %s)",
+                request.user.email, ", ".join(form.changed_data) or "none",
+            )
+            messages.success(request, "PayPal settings saved.")
+            return redirect("dashboard:paypal_settings")
+        messages.error(request, "Please correct the errors below.")
+    else:
+        form = PayPalSettingsForm(instance=instance)
+
+    return render(request, "dashboard/paypal_settings.html", {
+        "form": form,
+        "settings_obj": instance,
+        "webhook_url": request.build_absolute_uri("/api/payments/paypal/webhook/"),
     })

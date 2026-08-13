@@ -42,6 +42,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         # Stripe credentials. Manager only -- these authorise charges and
         # refunds against the real account.
         "payments.paymentsettings": ["view", "change"],
+        "payments.paypalsettings": ["view", "change"],
         "notifications.emailsettings": ["view", "change"],
         "notifications.emaillog": ["view"],
         "enquiries.contactmessage": ["view", "change"],

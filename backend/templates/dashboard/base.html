@@ -169,7 +169,11 @@
         <div class="nav-label">Configuration</div>
         <a class="nav-link {% if request.resolver_match.url_name == 'payment_settings' %}active{% endif %}"
            href="{% url 'dashboard:payment_settings' %}">
-          <i class="bi bi-credit-card"></i><span>Payments</span>
+          <i class="bi bi-credit-card"></i><span>Stripe</span>
+        </a>
+        <a class="nav-link {% if request.resolver_match.url_name == 'paypal_settings' %}active{% endif %}"
+           href="{% url 'dashboard:paypal_settings' %}">
+          <i class="bi bi-paypal"></i><span>PayPal</span>
         </a>
         <a class="nav-link {% if request.resolver_match.url_name == 'email_settings' %}active{% endif %}"
            href="{% url 'dashboard:email_settings' %}">

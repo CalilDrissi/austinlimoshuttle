@@ -3,7 +3,7 @@
 from django import forms
 
 from notifications.models import EmailSettings
-from payments.models import PaymentSettings
+from payments.models import PaymentSettings, PayPalSettings
 
 
 class BootstrapFormMixin:
@@ -217,6 +217,82 @@ class EmailSettingsForm(BootstrapFormMixin, forms.ModelForm):
         instance = super().save(commit=False)
         if password := self.cleaned_data.get("password"):
             instance.password = password
+        if commit:
+            instance.save()
+        return instance
+
+
+class PayPalSettingsForm(BootstrapFormMixin, forms.ModelForm):
+    """
+    PayPal REST credentials.
+
+    The client secret is write-only, as with the Stripe key and the SMTP
+    password: a form that echoes a secret back puts it into page HTML, the
+    browser cache, and any screen recording.
+
+    Unlike Stripe, PayPal credentials carry no sandbox/live prefix, so the mode
+    cannot be cross-checked against the strings. The "Test connection" action on
+    the page covers that instead.
+    """
+
+    client_secret = forms.CharField(
+        required=False,
+        widget=forms.PasswordInput(
+            render_value=False,
+            attrs={"autocomplete": "off", "placeholder": "PayPal client secret"},
+        ),
+        help_text="Leave blank to keep the current secret. Encrypted at rest.",
+    )
+
+    class Meta:
+        model = PayPalSettings
+        fields = ["mode", "is_enabled", "client_id", "webhook_id", "brand_name"]
+        widgets = {
+            "client_id": forms.TextInput(attrs={"placeholder": "AY…", "size": 50}),
+            "webhook_id": forms.TextInput(attrs={"placeholder": "8SW…"}),
+            "brand_name": forms.TextInput(attrs={"placeholder": "Austin Limo Shuttle"}),
+        }
+
+    def clean_client_id(self):
+        value = (self.cleaned_data.get("client_id") or "").strip()
+        if value and value.startswith(("sk_", "pk_", "whsec_")):
+            raise forms.ValidationError(
+                "That looks like a Stripe key. PayPal credentials belong on this "
+                "page; Stripe keys belong on the Payments page."
+            )
+        return value
+
+    def clean_client_secret(self):
+        return (self.cleaned_data.get("client_secret") or "").strip()
+
+    def clean(self):
+        cleaned = super().clean()
+        secret = cleaned.get("client_secret") or (self.instance.client_secret or "")
+
+        if cleaned.get("is_enabled"):
+            if not cleaned.get("client_id"):
+                self.add_error(
+                    "is_enabled", "A client ID is required before enabling PayPal.",
+                )
+            if not secret:
+                self.add_error(
+                    "is_enabled", "A client secret is required before enabling PayPal.",
+                )
+            if not cleaned.get("webhook_id"):
+                # Not fatal: a webhook id is only needed once payments are taken,
+                # and enabling without one is a legitimate intermediate state.
+                self.add_error(
+                    "webhook_id",
+                    "A webhook ID is needed to verify PayPal events. Add it before "
+                    "taking live payments.",
+                )
+
+        return cleaned
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if secret := self.cleaned_data.get("client_secret"):
+            instance.client_secret = secret
         if commit:
             instance.save()
         return instance
