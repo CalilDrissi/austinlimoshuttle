@@ -157,14 +157,19 @@ admin login, so no action could be attributed to anyone.
 
 ## Known gaps
 
-- **Stripe is not wired up.** Models exist; `POST /api/bookings/` leaves the
-  booking `pending`. This is the next piece of work.
-- **No password-reset flow yet.** Required at launch for the imported accounts.
+- **The Next.js frontend does not exist yet.** The API and its schema are ready
+  for it.
+- **Production SMTP has never sent a real message.** Dashboard → Email has a
+  test-send button for exactly this; until it runs against the live mailbox,
+  deliverability, SPF and DKIM are unverified.
 - **Two vehicles cannot be priced** — Chrysler 300 Limousine and Lincoln
   Limousine have all-zero rates in the legacy data. On the old site they would
   quote $0.00. Needs a client decision: deactivate, or supply rates.
-- **This project is not under version control.** `.gitignore` is prepared and
-  excludes `.env`, `.secrets/`, `legacy/` and `dumps/`.
+- **The Google Maps key came from the legacy site's public JavaScript.** It has
+  been world-readable for nine years and appears unrestricted. Replace it with
+  a new IP-restricted key before launch; only the value in `.env` changes.
+
+See `outstanding-notes.html` for the full list of carried-forward items.
 
 ## API documentation
 

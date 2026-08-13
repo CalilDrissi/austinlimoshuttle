@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Outstanding Notes — austinlimoshuttle.com</title>
+<style>
+  :root{
+    --ink:#15181c; --muted:#59626c; --line:#e1e6ea; --bg:#fff; --panel:#f6f8fa;
+    --accent:#0f6b4f; --accent-bg:#e8f4ef;
+    --crit:#b3261e; --crit-bg:#fdecea;
+    --warn:#8a6320; --warn-bg:#fbf4e5;
+    --info:#1f4e8c; --info-bg:#eaf1fa;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.62 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:44px 24px 96px}
+  header{border-bottom:3px solid var(--ink);padding-bottom:18px;margin-bottom:26px}
+  h1{font-size:31px;line-height:1.2;margin:0 0 8px;letter-spacing:-.022em}
+  .sub{color:var(--muted);font-size:15px;margin:0}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 24px;color:var(--muted);font-size:13.5px;margin-top:12px}
+  h2{font-size:22px;margin:46px 0 6px;letter-spacing:-.015em;padding-bottom:8px;
+     border-bottom:2px solid var(--line)}
+  h3{font-size:17px;margin:26px 0 8px;letter-spacing:-.01em}
+  p{margin:0 0 12px}
+  .lede{font-size:16.5px;background:var(--panel);border-left:4px solid var(--accent);
+        padding:16px 20px;border-radius:0 6px 6px 0;margin:0 0 8px}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--panel);font-weight:600;font-size:11.5px;text-transform:uppercase;
+     letter-spacing:.05em;color:var(--muted)}
+  td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:14px 0}
+  .scroll table{margin:0}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;
+       background:var(--panel);padding:1px 5px;border-radius:4px;border:1px solid var(--line);
+       white-space:nowrap}
+  td code{background:none;border:none;padding:0}
+  pre{background:#1d2126;color:#e4e8ec;padding:13px 15px;border-radius:6px;overflow-x:auto;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.7px;
+      line-height:1.55;margin:12px 0}
+  pre code{background:none;border:none;padding:0;color:inherit;white-space:pre}
+  .item{border:1px solid var(--line);border-radius:9px;padding:17px 20px;margin:14px 0;background:#fff}
+  .item.crit{border-left:5px solid var(--crit)}
+  .item.warn{border-left:5px solid var(--warn)}
+  .item.info{border-left:5px solid var(--info)}
+  .item.done{border-left:5px solid var(--accent);background:var(--panel)}
+  .item h3{margin-top:0}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.06em;
+       text-transform:uppercase;padding:2px 8px;border-radius:3px;margin-bottom:8px}
+  .tag.crit{background:var(--crit-bg);color:var(--crit)}
+  .tag.warn{background:var(--warn-bg);color:var(--warn)}
+  .tag.info{background:var(--info-bg);color:var(--info)}
+  .tag.done{background:var(--accent-bg);color:var(--accent)}
+  .who{float:right;font-size:12.5px;color:var(--muted);font-weight:600;
+       text-transform:uppercase;letter-spacing:.04em}
+  ol,ul{margin:0 0 12px;padding-left:22px}
+  li{margin-bottom:6px}
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:9px;
+       padding:16px 22px;margin:20px 0}
+  .toc ul{margin:0;padding-left:18px;columns:2;column-gap:30px}
+  .toc li{margin-bottom:4px;font-size:14.5px;break-inside:avoid}
+  .toc a{color:var(--accent);text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+  footer{margin-top:52px;padding-top:18px;border-top:1px solid var(--line);
+         color:var(--muted);font-size:13px}
+  @media print{
+    body{font-size:10.5pt}.wrap{padding:0;max-width:none}
+    .item,table{break-inside:avoid} h2,h3{break-after:avoid} .toc{display:none}
+    pre{white-space:pre-wrap}
+  }
+  @media (max-width:720px){.toc ul{columns:1}.who{float:none;display:block;margin-bottom:4px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Outstanding Notes</h1>
+  <p class="sub">austinlimoshuttle.com — everything flagged during the audit and rebuild</p>
+  <div class="meta">
+    <span><strong>Updated:</strong> 13 August 2026</span>
+    <span><strong>Covers:</strong> phases 0–13 plus the legacy audit</span>
+    <span><strong>Tests passing:</strong> 342 unit · 37 legacy-replica</span>
+  </div>
+</header>
+
+<p class="lede">
+  A single list of every note, warning and decision carried forward. Items are
+  grouped by who has to act. Nothing here is a surprise — each one was raised
+  when it was found — but they are scattered across thirteen QA reports and this
+  puts them in one place.
+</p>
+
+<div class="toc">
+  <strong>Contents</strong>
+  <ul>
+    <li><a href="#urgent">1. Urgent — the live site</a></li>
+    <li><a href="#client">2. Client decisions needed</a></li>
+    <li><a href="#launch">3. Before launch</a></li>
+    <li><a href="#ops">4. Operational notes</a></li>
+    <li><a href="#data">5. Legacy data facts</a></li>
+    <li><a href="#corrections">6. Corrections to earlier documents</a></li>
+    <li><a href="#decisions">7. Decisions worth remembering</a></li>
+    <li><a href="#remaining">8. Not built yet</a></li>
+  </ul>
+</div>
+
+<h2 id="urgent">1. Urgent — the live site</h2>
+
+<p>
+  These concern the <strong>legacy production site</strong>, which is still
+  taking card payments today. They are independent of the rebuild and do not
+  wait for it. You have said the live site is not our concern; they are recorded
+  here so the client can be told.
+</p>
+
+<div class="item crit">
+  <span class="who">Client</span>
+  <span class="tag crit">Critical</span>
+  <h3>Cardholder data is being stored in plaintext, right now</h3>
+  <p>
+    <strong>3,416 full card numbers</strong> across two tables, with expiry dates
+    and cardholder names, plus <strong>68 CVV codes</strong>. Storing a CVV after
+    authorisation is prohibited outright by PCI-DSS — there is no permitted form,
+    encrypted or otherwise.
+  </p>
+  <p>
+    It is ongoing, not historical: 85 cards captured in 2026, 129 in 2025, 184 in
+    2024. The client's payment processor needs to be told, and that obligation is
+    time-sensitive.
+  </p>
+</div>
+
+<div class="item crit">
+  <span class="who">Client</span>
+  <span class="tag crit">Critical</span>
+  <h3>Four actions on the live site</h3>
+  <ol style="margin-bottom:0">
+    <li><strong>Rotate the Stripe live secret key.</strong> It is hardcoded in a
+        PHP file inside the web root. Treat it as compromised.</li>
+    <li><strong>Remove <code>admin.zip</code> (180 MB) and
+        <code>backup_download.zip</code> from <code>public_html</code>.</strong>
+        Both are downloadable by anyone — confirmed HTTP 206. Move them out; do
+        not merely rename.</li>
+    <li><strong>Take <code>direct-payment.php</code> offline.</strong> It has
+        unauthenticated SQL injection against the orders table — the same table
+        holding the card data.</li>
+    <li><strong>Contact the payment processor.</strong></li>
+  </ol>
+</div>
+
+<h2 id="client">2. Client decisions needed</h2>
+
+<div class="item warn">
+  <span class="who">Client</span>
+  <span class="tag warn">Blocks quoting</span>
+  <h3>Two vehicles have no usable rates</h3>
+  <p>
+    <strong>Chrysler 300 Limousine</strong> and <strong>Lincoln Limousine</strong>
+    carry all-zero rates in the legacy data. On the old site they would quote
+    <strong>$0.00</strong> for a real journey. The new engine refuses to price
+    them rather than returning zero, so they are effectively unbookable.
+  </p>
+  <p style="margin-bottom:0">Either deactivate them, or supply rates.</p>
+</div>
+
+<div class="item warn">
+  <span class="who">Client</span>
+  <span class="tag warn">Decision</span>
+  <h3>Driver assignment — is there more to it?</h3>
+  <p style="margin-bottom:0">
+    The legacy CMS references <code>lead_driver</code>,
+    <code>confirm_driver_details</code> and <code>add_driver_details</code>
+    templates that no longer exist, and driver names were typed free-text onto
+    each booking. We built a proper <code>Driver</code> table and dispatch
+    assignment. If the client wants a driver-facing portal, that is additional
+    scope.
+  </p>
+</div>
+
+<div class="item info">
+  <span class="who">Client</span>
+  <span class="tag info">Awareness</span>
+  <h3>Three legacy bookings will flip to cancelled</h3>
+  <p style="margin-bottom:0">
+    The weekly cleanup job closes bookings still unpaid after their pickup time.
+    Three imported records (references 257563, 885979, 148612) match: they were
+    left <code>pending</code> and their dates have passed. Correct behaviour, but
+    it changes three historical rows on the first run.
+  </p>
+</div>
+
+<h2 id="launch">3. Before launch</h2>
+
+<div class="item warn">
+  <span class="who">Us</span>
+  <span class="tag warn">Unverified</span>
+  <h3>Production email has never sent a real message</h3>
+  <p>
+    SMTP is configured against <code>mail.austinlimoshuttle.com</code> and there
+    is a test-send button at <strong>Dashboard → Email</strong>, but it has never
+    run against the live mailbox. Until it does, deliverability, SPF and DKIM are
+    all unverified — and booking confirmations are the one email a customer
+    genuinely needs.
+  </p>
+  <p style="margin-bottom:0">
+    Do this early. Mail deliverability problems take days to diagnose, not hours.
+  </p>
+</div>
+
+<div class="item warn">
+  <span class="who">Client</span>
+  <span class="tag warn">Security</span>
+  <h3>The Google Maps key is nine years old and public</h3>
+  <p>
+    We are using the key found in the legacy site's client-side JavaScript, as
+    instructed. Two facts about it:
+  </p>
+  <ul>
+    <li>It has been world-readable in page source for nine years. Anyone who
+        viewed source has it.</li>
+    <li>It appears <strong>unrestricted</strong> — which is exactly why it works
+        server-side, but also means anyone who scraped it can bill Google to the
+        client's account.</li>
+  </ul>
+  <p style="margin-bottom:0">
+    Create a new key restricted to the server's IP with only Distance Matrix
+    enabled, and delete the old one. Nothing in our code changes except the value
+    in <code>.env</code>.
+  </p>
+</div>
+
+<div class="item warn">
+  <span class="who">Us</span>
+  <span class="tag warn">Launch step</span>
+  <h3>Stripe webhook must be registered before go-live</h3>
+  <p style="margin-bottom:0">
+    Until the endpoint is added in Stripe (Developers → Webhooks) and its signing
+    secret pasted into <strong>Dashboard → Payments</strong>, incoming events are
+    refused with 503 and <strong>bookings will never confirm</strong> — customers
+    would be charged and left looking at a pending booking. The URL is displayed
+    on the settings page. Events required: <code>payment_intent.succeeded</code>,
+    <code>payment_intent.payment_failed</code>, <code>charge.refunded</code>.
+  </p>
+</div>
+
+<div class="item info">
+  <span class="who">Us</span>
+  <span class="tag info">Deployment</span>
+  <h3>cPanel steps, in order</h3>
+  <ol style="margin-bottom:0">
+    <li>Create the Python app (Python 3.12, root <code>backend/</code>, startup
+        <code>passenger_wsgi.py</code>, entry point <code>application</code>).</li>
+    <li>Set environment variables — or a <code>.env</code> <strong>outside</strong>
+        <code>public_html</code>.</li>
+    <li>Create the MySQL database and user.</li>
+    <li><code>pip install -r requirements/prod.txt</code>, then
+        <code>migrate</code>, <code>collectstatic</code>,
+        <code>createcachetable</code>, <code>sync_roles</code>.</li>
+    <li>Add the two cron jobs — <strong>after</strong> the app exists, because the
+        virtualenv path does not exist before then. See
+        <code>ops/crontab.example</code>.</li>
+  </ol>
+</div>
+
+<div class="item info">
+  <span class="who">Us</span>
+  <span class="tag info">Gotcha</span>
+  <h3>Clear cPanel's cron email field</h3>
+  <p style="margin-bottom:0">
+    cPanel emails cron output to the account owner by default. The reminder job
+    runs hourly. Our entries redirect output to log files, but the "Email" field
+    on the Cron Jobs screen must also be cleared — otherwise the client gets an
+    email every hour, for ever.
+  </p>
+</div>
+
+<h2 id="ops">4. Operational notes</h2>
+
+<div class="item crit">
+  <span class="who">Us</span>
+  <span class="tag crit">Data loss risk</span>
+  <h3>Rotating <code>DJANGO_SECRET_KEY</code> destroys the stored credentials</h3>
+  <p>
+    The Stripe secret key, the Stripe webhook secret and the SMTP password are
+    encrypted at rest with a key derived from <code>DJANGO_SECRET_KEY</code>.
+    Change it and all three become unreadable and must be re-entered through the
+    dashboard.
+  </p>
+  <p style="margin-bottom:0">
+    It degrades rather than crashes — decryption returns "not configured" instead
+    of raising — so the symptom is <strong>payments and email quietly stopping</strong>,
+    not an error page. Worth a line in whatever runbook the client keeps.
+  </p>
+</div>
+
+<div class="item info">
+  <span class="who">Us</span>
+  <span class="tag info">Housekeeping</span>
+  <h3>Re-run the wheel check after any dependency change</h3>
+  <p style="margin-bottom:0">
+    <code>./ops/check-wheels.sh</code>. The target host has no C compiler, so a
+    package that only ships a source distribution fails at deploy time — long
+    after it was added. This is why the project uses PyMySQL rather than
+    <code>mysqlclient</code>, and xhtml2pdf rather than WeasyPrint.
+  </p>
+</div>
+
+<div class="item info">
+  <span class="who">Us</span>
+  <span class="tag info">Housekeeping</span>
+  <h3>Re-run the fare replay after any rate change</h3>
+  <p style="margin-bottom:0">
+    <code>manage.py replay_fares --report</code>. The 2025–2026 cohort should stay
+    at or near 100% agreement; a drop there means the engine changed behaviour.
+    Older years will not agree and that is expected — see §5.
+  </p>
+</div>
+
+<div class="item info">
+  <span class="who">Us</span>
+  <span class="tag info">Note</span>
+  <h3>The sanitised dump on this machine still contains real customer PII</h3>
+  <p style="margin-bottom:0">
+    Card numbers, CVVs and passwords were removed, but <code>dumps/</code> holds
+    the names, email addresses, phone numbers and addresses of 1,251 real people.
+    It is gitignored and never leaves the machine, but it is not anonymous data.
+  </p>
+</div>
+
+<h2 id="data">5. Legacy data facts</h2>
+
+<div class="item info">
+  <span class="tag info">Explains a surprising number</span>
+  <h3>Fare replay agrees on 2026 and disagrees on 2016</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Pickup year</th><th>Agreement</th></tr></thead>
+      <tbody>
+        <tr><td class="num">2026</td><td class="num"><strong>100.0%</strong> (89/89)</td></tr>
+        <tr><td class="num">2025</td><td class="num">92.0%</td></tr>
+        <tr><td class="num">2024</td><td class="num">68.3%</td></tr>
+        <tr><td class="num">2023</td><td class="num">22.7%</td></tr>
+        <tr><td class="num">2021 and earlier</td><td class="num">~0%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    <strong>This is not an engine bug.</strong> An arithmetic or ordering error
+    would fail uniformly across time and would fail 2026 exactly as hard as 2016.
+    The legacy database stores only the <em>current</em> rate card, with no
+    history, so bookings priced under older rates cannot be reproduced from data
+    that no longer exists.
+  </p>
+  <p style="margin-bottom:0">
+    Evidence: Business SUV hourly rates were $95 (2021), then $105 (2021–2025),
+    now $125. And 659 bookings reference vehicle classes deleted years ago —
+    "Executive Sedans", "VAN/SUV", "VIP Class" — whose rate cards are gone
+    entirely.
+  </p>
+</div>
+
+<div class="item info">
+  <span class="tag info">Expected</span>
+  <h3>271 orphaned payment rows in the legacy data</h3>
+  <p style="margin-bottom:0">
+    <code>limousin_orderdetails</code> references order ids from 23 upward, but
+    <code>limousin_order</code> starts at 494. The old system deleted bookings and
+    left their payment rows behind. That is exactly the 2,488 − 2,217 gap. The
+    importer reports each and refuses to invent a booking. Nothing to fix — the
+    data is genuinely gone.
+  </p>
+</div>
+
+<div class="item info">
+  <span class="tag info">Expected</span>
+  <h3>A third of the legacy admin panel never worked</h3>
+  <p style="margin-bottom:0">
+    Eight modules — blog, FAQ, news, classifieds, careers, newsletter, events,
+    add-user — query tables that do not exist in the database. Roughly 4,400 lines
+    that have never functioned in this installation. Not migrated, and nothing was
+    lost by that.
+  </p>
+</div>
+
+<h2 id="corrections">6. Corrections to earlier documents</h2>
+
+<p>
+  Three figures I gave early on were wrong and were corrected once verified. The
+  client-facing HTML documents have been updated; these are recorded so nobody
+  works from an old copy.
+</p>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>Where</th><th>I said</th><th>Actually</th><th>Why the first number was wrong</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Database engine</td><td>MySQL 8</td><td><strong>MariaDB 10.11.18</strong></td>
+      <td>Assumed rather than checked. Local dev now matches the server exactly.</td>
+    </tr>
+    <tr>
+      <td>Encoding damage</td><td>29 of 36 pages</td><td><strong>3 of 36</strong></td>
+      <td>My query used <code>LIKE '%â%'</code> against an accent-insensitive
+          collation, so it matched every row containing the letter <em>a</em>.</td>
+    </tr>
+    <tr>
+      <td>SQL injection</td><td>37 sites</td><td><strong>27 sites, 16 files</strong></td>
+      <td>My pattern matched <code>ISSET(</code> as SQL <code>SET</code>.</td>
+    </tr>
+    <tr>
+      <td>CVV storage</td><td>"No CVV column exists"</td><td><strong>68 CVVs stored</strong></td>
+      <td>I checked only one of the two tables holding card data.</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="decisions">7. Decisions worth remembering</h2>
+
+<p>These are settled, but each is the kind of thing a future change could undo by accident.</p>
+
+<div class="item done">
+  <span class="tag done">Do not undo</span>
+  <h3>Surcharges are added, never compounded</h3>
+  <p style="margin-bottom:0">
+    A 40% event date at 22:00 is <strong>+60%</strong>, not +68%. Legacy sums the
+    percentages and applies the total once. Compounding would overcharge every
+    surcharged booking by about 5%. A test asserts the correct value <em>and</em>
+    that the compounded value is not produced.
+  </p>
+</div>
+
+<div class="item done">
+  <span class="tag done">Do not undo</span>
+  <h3>Surcharge windows are exclusive at both ends</h3>
+  <p style="margin-bottom:0">
+    A pickup at exactly 21:00:00 is <strong>not</strong> surcharged, matching the
+    legacy condition <code>&gt; 21:00:00</code>. Shifting either boundary by a
+    second silently reprices every booking near it.
+  </p>
+</div>
+
+<div class="item done">
+  <span class="tag done">Do not undo</span>
+  <h3>Migrated accounts need a non-standard password reset</h3>
+  <p style="margin-bottom:0">
+    Django's stock <code>PasswordResetForm</code> filters out accounts with an
+    unusable password. All 1,251 migrated customers have one by design, so under
+    the default form "forgot password" would send <strong>nothing, for ever</strong>,
+    with no error and no log. <code>MigrationPasswordResetForm</code> drops that
+    one filter. There is a test asserting what stock Django does, specifically so
+    nobody "simplifies" it back.
+  </p>
+</div>
+
+<div class="item done">
+  <span class="tag done">Do not undo</span>
+  <h3>Prices and distances are server-derived, always</h3>
+  <p style="margin-bottom:0">
+    The API has no field that can carry either. A client that could declare a
+    1-mile distance for a 40-mile airport run would get a legitimately signed
+    quote at the minimum fare, and every downstream check would pass. Distance is
+    measured from the two addresses; the fare is recomputed from a signed token
+    before anything is stored.
+  </p>
+</div>
+
+<div class="item done">
+  <span class="tag done">Do not undo</span>
+  <h3>Payment is confirmed by webhook, not by the browser</h3>
+  <p style="margin-bottom:0">
+    A card confirmation client-side does not mark a booking paid — it can be
+    forged, and it simply does not arrive when a customer closes the tab. The
+    legacy system trusted the browser. The frontend should show a pending state
+    and poll.
+  </p>
+</div>
+
+<div class="item done">
+  <span class="tag done">Do not undo</span>
+  <h3>Bookings are never auto-completed</h3>
+  <p style="margin-bottom:0">
+    A confirmed booking whose pickup has passed is <em>probably</em> completed —
+    but it might be a no-show, or a cancellation nobody recorded. Guessing hides
+    both. Staff mark completion on the dispatch board.
+  </p>
+</div>
+
+<h2 id="remaining">8. Not built yet</h2>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>Item</th><th>State</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Next.js frontend</strong></td>
+        <td>Not started. The API, its OpenAPI schema and a checked-in
+            <code>docs/openapi.yaml</code> are ready for it.</td></tr>
+    <tr><td><strong>Blog redirects</strong></td>
+        <td>Dropping WordPress removes 195 files and every <code>/blog/*</code>
+            URL. Before switch-over, export the URL list and 301 anything with
+            inbound links or traffic — otherwise Google gets 404s on pages it may
+            still rank.</td></tr>
+    <tr><td><strong>Saved cards</strong></td>
+        <td>Not implemented. If wanted, it uses Stripe's customer vault — we
+            store a customer id, never a card. Legacy implemented "save my card"
+            by writing the number to its own database.</td></tr>
+    <tr><td><strong>Load testing</strong></td>
+        <td>The deployment rehearsal proves the app installs and boots. It says
+            nothing about throughput under concurrent load on shared hosting.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Open questions from the legacy audit, still unanswered</h3>
+<p>None of these block anything; they would tidy up the last loose ends.</p>
+<ul>
+  <li>Which payment page did live traffic actually use — <code>payment.php</code>
+      or <code>/card-payment</code>? The access logs would settle it.</li>
+  <li>Is PayPal live? No PayPal transactions are identifiable in 2,217 orders,
+      yet a 6,685-line PayPal class is loaded by every payment page.</li>
+  <li>What is <code>limousin_member.hundred</code>?</li>
+  <li>Are the <code>plan_*</code> subscription columns entirely empty? If so they
+      drop out of scope formally.</li>
+</ul>
+
+<footer>
+  Compiled 13 August 2026 from the QA reports in <code>docs/qa/</code>, phases
+  0–13. Companion documents: <em>Security Issue Report</em>,
+  <em>Legacy Application Brief</em>, <em>Build Brief</em>.
+</footer>
+
+</div>
+</body>
+</html>
