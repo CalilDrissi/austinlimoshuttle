@@ -25,7 +25,13 @@ export default function RootLayout({
         <link rel="stylesheet" href="/styles/luxride.css" />
         <link rel="stylesheet" href="/styles/luxride-extra.css" />
       </head>
-      <body>{children}</body>
+      {/*
+        The template's font is delivered through a CSS variable that is only
+        defined on this class -- next/font generated both. Without it the page
+        silently falls back to Bootstrap's system stack and looks subtly wrong
+        rather than broken, which is the hardest kind of bug to notice.
+      */}
+      <body className="__variable_8a1573">{children}</body>
     </html>
   );
 }

@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "api:types": "openapi-typescript ../docs/openapi.yaml -o lib/api-types.ts"
+    "api:types": "openapi-typescript ../docs/openapi.yaml -o lib/api-types.ts",
+    "e2e": "playwright test",
+    "e2e:headed": "HEADED=1 playwright test --headed"
   },
   "dependencies": {
     "next": "16.3.0",
@@ -15,6 +17,7 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

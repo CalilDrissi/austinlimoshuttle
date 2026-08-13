@@ -10,4 +10,13 @@
   --brand: #0d5c46;
 }
 
-/* Nothing yet — the template CSS supplies the design. */
+/*
+ * Apply the template's font.
+ *
+ * luxride.css defines --dm-saans-font on .__variable_8a1573 but leaves
+ * Bootstrap's --bs-font-sans-serif as the body default; the original site
+ * closed that gap in its own component styles, which we do not have.
+ */
+body {
+  font-family: var(--dm-saans-font), var(--bs-font-sans-serif);
+}

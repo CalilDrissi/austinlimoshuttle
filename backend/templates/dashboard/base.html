@@ -5,11 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}Dashboard{% endblock %} · Austin Limo Shuttle</title>
 
-{# Bootstrap is served from this project's own static files, never a CDN.
-   The Content-Security-Policy in config/middleware.py sets script-src 'self'
-   and font-src 'self', so an external <script> or @font-face would be blocked
-   by the browser and the page would render as unstyled HTML with no server-side
-   error. Versions and upgrade steps: ops/VENDORED-ASSETS.md #}
+{% comment %}
+  Bootstrap is served from this project's own static files, never a CDN.
+  The Content-Security-Policy in config/middleware.py sets script-src 'self'
+  and font-src 'self', so an external <script> or @font-face would be blocked
+  by the browser and the page would render as unstyled HTML with no server-side
+  error. Versions and upgrade steps: ops/VENDORED-ASSETS.md
+
+  Note: {# #} is single-line only in Django. A multi-line one is emitted as
+  literal text -- which is exactly what happened here once.
+{% endcomment %}
 <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
 <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap-icons.min.css' %}">
 

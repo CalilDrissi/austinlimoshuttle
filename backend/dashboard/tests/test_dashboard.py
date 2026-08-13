@@ -255,3 +255,40 @@ class TestRoleSync:
         user = staff_in(MANAGER, roles)
         assert user.has_perm("fleet.change_vehicle")
         assert user.has_perm("payments.add_refund")
+
+
+@pytest.mark.django_db
+class TestNoRawTemplateSyntaxLeaks:
+    """
+    Guard against unrendered template syntax reaching the browser.
+
+    Django's `{# #}` comment is single-line only. A multi-line one is emitted
+    as literal text, which produced a page of raw template source above the
+    real content -- and every status check still returned 200, because the page
+    "worked". Only a human looking at it, or this test, catches that.
+    """
+
+    @pytest.fixture
+    def staff_client(self, client, roles):
+        staff_in(MANAGER, roles)
+        client.login(username="manager@example.com", password="DashLocal!2026")
+        return client
+
+    @pytest.mark.parametrize(
+        "url_name",
+        ["dashboard:home", "dashboard:dispatch", "dashboard:bookings",
+         "dashboard:enquiries", "dashboard:payment_settings",
+         "dashboard:email_settings", "dashboard:paypal_settings"],
+    )
+    def test_page_contains_no_unrendered_template_syntax(self, staff_client, url_name):
+        body = staff_client.get(reverse(url_name)).content.decode()
+
+        # Only the opening delimiters are checked. Inline CSS legitimately
+        # produces "%}" (from `width:100%}`) and "}}" (from adjacent rule
+        # closes), so those would false-positive. "{#" and "{%" cannot occur in
+        # valid CSS or HTML, which makes them reliable evidence of a tag that
+        # was never parsed.
+        for marker in ("{#", "{%"):
+            assert marker not in body, (
+                f"{url_name} leaked raw template syntax {marker!r} into the page"
+            )
