@@ -43,16 +43,25 @@
   .sidebar{
     width:236px;flex:0 0 236px;background:var(--sidebar);
     position:sticky;top:0;height:100vh;display:flex;flex-direction:column;
+    /* The nav is now long enough to exceed the viewport. Without this it
+       overflows past the fixed 100vh height and the items below simply have no
+       background behind them, which reads as broken styling rather than as a
+       list that is too long. */
+    overflow-y:auto;
+    scrollbar-width:thin;
+    scrollbar-color:#3a4b56 var(--sidebar);
   }
+  .sidebar::-webkit-scrollbar{width:8px}
+  .sidebar::-webkit-scrollbar-track{background:var(--sidebar)}
+  .sidebar::-webkit-scrollbar-thumb{background:#3a4b56;border-radius:4px}
+  .sidebar::-webkit-scrollbar-thumb:hover{background:#4c606d}
+  /* The footer must not scroll away from the bottom when the nav is short. */
+  .sidebar .nav{flex:1 0 auto}
   .sidebar .brand{
     display:flex;align-items:center;gap:.65rem;padding:1.05rem 1.1rem;
     border-bottom:1px solid rgba(255,255,255,.08);color:#fff;text-decoration:none;
   }
   .sidebar .brand:hover{color:#fff}
-  .sidebar .brand .mark{
-    width:32px;height:32px;border-radius:.5rem;background:var(--brand);
-    display:grid;place-items:center;flex:0 0 32px;font-size:1.05rem;
-  }
   .sidebar .brand .name{font-weight:650;font-size:.95rem;line-height:1.15}
   .sidebar .brand .sub{font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:#8fa0ac}
   .sidebar .nav-label{
@@ -123,9 +132,12 @@
 
   @media (max-width:991.98px){
     .sidebar{width:60px;flex:0 0 60px}
-    .sidebar .brand .name,.sidebar .brand .sub,.sidebar .nav-link span,
+    .sidebar .nav-link span,
     .sidebar .nav-label,.sidebar-foot .who,.sidebar-foot .badge{display:none}
-    .sidebar .brand{justify-content:center;padding:1rem .5rem}
+    /* The brand was the mark plus two lines of text. With the mark gone there
+       is nothing left that fits 60px, and an empty link is still clickable —
+       so hide it entirely. Overview is the first nav item and goes home. */
+    .sidebar .brand{display:none}
     .sidebar .nav-link{justify-content:center;padding:.55rem}
     .sidebar-foot{text-align:center;padding:.7rem .3rem}
     .content,.topbar{padding-left:1rem;padding-right:1rem}
@@ -140,7 +152,6 @@
 
   <aside class="sidebar">
     <a class="brand" href="{% url 'dashboard:home' %}">
-      <span class="mark"><i class="bi bi-truck-front-fill text-white"></i></span>
       <span>
         <span class="name d-block">Austin Limo</span>
         <span class="sub">Operations</span>
@@ -159,6 +170,11 @@
         {% if nav_dispatch_count %}<span class="badge rounded-pill text-bg-light">{{ nav_dispatch_count }}</span>{% endif %}
       </a>
 
+      <a class="nav-link {% if request.resolver_match.url_name == 'calendar' %}active{% endif %}"
+         href="{% url 'dashboard:calendar' %}">
+        <i class="bi bi-calendar3"></i><span>Calendar</span>
+      </a>
+
       <div class="nav-label">Records</div>
       <a class="nav-link {% if request.resolver_match.url_name in 'bookings booking_detail' %}active{% endif %}"
          href="{% url 'dashboard:bookings' %}">
@@ -170,8 +186,26 @@
         {% if nav_unread_enquiries %}<span class="badge rounded-pill text-bg-warning">{{ nav_unread_enquiries }}</span>{% endif %}
       </a>
 
+      {% for group in nav_managed %}
+        <div class="nav-label">{{ group.label }}</div>
+        {% for item in group.items %}
+          <a class="nav-link {% if entry.slug == item.slug %}active{% endif %}"
+             href="{% url 'dashboard:managed_list' item.slug %}">
+            <i class="bi {{ item.icon }}"></i><span>{{ item.title }}</span>
+          </a>
+        {% endfor %}
+      {% endfor %}
+
       {% if is_manager %}
         <div class="nav-label">Configuration</div>
+        <a class="nav-link {% if request.resolver_match.url_name == 'pricing_settings' %}active{% endif %}"
+           href="{% url 'dashboard:pricing_settings' %}">
+          <i class="bi bi-percent"></i><span>Tax &amp; rules</span>
+        </a>
+        <a class="nav-link {% if request.resolver_match.url_name == 'site_settings' %}active{% endif %}"
+           href="{% url 'dashboard:site_settings' %}">
+          <i class="bi bi-globe2"></i><span>Site details</span>
+        </a>
         <a class="nav-link {% if request.resolver_match.url_name == 'payment_settings' %}active{% endif %}"
            href="{% url 'dashboard:payment_settings' %}">
           <i class="bi bi-credit-card"></i><span>Stripe</span>
@@ -186,9 +220,17 @@
         </a>
       {% endif %}
 
-      <div class="nav-label">System</div>
-      <a class="nav-link" href="/admin/"><i class="bi bi-sliders"></i><span>Django admin</span></a>
-      <a class="nav-link" href="/api/docs/"><i class="bi bi-code-slash"></i><span>API docs</span></a>
+      {% comment %}
+        Developer-only escape hatches. Staff — including the account the client
+        uses — should never need Django's admin, so it is not advertised to
+        them. Hiding the link is not access control on its own; the lockdown is
+        tracked separately.
+      {% endcomment %}
+      {% if request.user.is_superuser %}
+        <div class="nav-label">System</div>
+        <a class="nav-link" href="/admin/"><i class="bi bi-sliders"></i><span>Django admin</span></a>
+        <a class="nav-link" href="/api/docs/"><i class="bi bi-code-slash"></i><span>API docs</span></a>
+      {% endif %}
     </nav>
 
     <div class="sidebar-foot">
@@ -196,7 +238,14 @@
       <div class="my-1">
         {% for role in roles %}<span class="badge rounded-pill">{{ role }}</span>{% empty %}<span class="badge rounded-pill">Staff</span>{% endfor %}
       </div>
-      <a href="/admin/logout/"><i class="bi bi-box-arrow-right"></i> Sign out</a>
+      {# POST, because LogoutView refuses GET from Django 5 onwards. #}
+      <form method="post" action="{% url 'dashboard:logout' %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-link p-0 border-0 align-baseline"
+                style="color:#8fa0ac;font-size:.8rem;text-decoration:none">
+          <i class="bi bi-box-arrow-right"></i> Sign out
+        </button>
+      </form>
     </div>
   </aside>
 

@@ -9,11 +9,16 @@ warrant a bespoke screen.
 from django.contrib import admin
 from django.urls import include, path
 
+from dashboard.views import admin_login_redirect
+
 admin.site.site_header = "Austin Limo Shuttle"
 admin.site.site_title = "Austin Limo Shuttle"
 admin.site.index_title = "Administration"
 
 urlpatterns = [
+    # Ahead of admin.site.urls so it wins: the admin's own login screen is
+    # never reached, and staff see one sign-in page rather than two.
+    path("admin/login/", admin_login_redirect),
     path("admin/", admin.site.urls),
     path("accounts/", include("accounts.urls")),
     path("dashboard/", include("dashboard.urls")),

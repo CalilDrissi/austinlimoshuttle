@@ -28,6 +28,7 @@ class Payment(models.Model):
 
     class Provider(models.TextChoices):
         STRIPE = "stripe", "Stripe"
+        CASH = "cash", "Cash (pay the driver)"
         LEGACY = "legacy", "Legacy (pre-migration)"
 
     class Status(models.TextChoices):

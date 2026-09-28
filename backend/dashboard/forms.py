@@ -1,9 +1,18 @@
 """Dashboard forms."""
 
 from django import forms
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
+from django.contrib.auth.password_validation import validate_password
 
+from bookings.models import Driver
+from content.models import Banner, GalleryImage, Page, SiteSettings, Testimonial
+from fleet.models import DistanceBand, Vehicle
 from notifications.models import EmailSettings
 from payments.models import PaymentSettings, PayPalSettings
+from pricing.models import BlackoutDate, PricingSettings, TimeSurcharge
+
+User = get_user_model()
 
 
 class BootstrapFormMixin:
@@ -296,3 +305,257 @@ class PayPalSettingsForm(BootstrapFormMixin, forms.ModelForm):
         if commit:
             instance.save()
         return instance
+
+
+# ---------------------------------------------------------------------------
+# Managed records
+#
+# These back the screens that replace Django's admin. Validation that protects
+# money or search rankings lives here rather than in the template, so it holds
+# whichever screen the edit arrives from.
+# ---------------------------------------------------------------------------
+
+
+class DriverForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = Driver
+        fields = ["full_name", "phone", "email", "is_active", "notes"]
+        widgets = {"notes": forms.Textarea(attrs={"rows": 3})}
+        help_texts = {
+            "is_active": "Deactivate rather than delete — past bookings name this driver.",
+        }
+
+
+class VehicleForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = Vehicle
+        fields = [
+            "name", "slug", "description", "features", "photo",
+            "passenger_capacity", "luggage_capacity",
+            "hourly_rate", "meet_greet_fee", "minimum_fare",
+            "display_order", "is_active",
+        ]
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 3}),
+            "features": forms.Textarea(attrs={"rows": 3}),
+        }
+
+
+class DistanceBandForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = DistanceBand
+        fields = ["from_miles", "to_miles", "rate_per_mile"]
+
+
+class BaseDistanceBandFormSet(forms.BaseInlineFormSet):
+    """
+    A vehicle's rate card, validated as a set.
+
+    Bands are cumulative, so the individual rows can each be valid while the
+    card as a whole is wrong: a gap between 6 and 10 miles silently prices those
+    four miles at zero, and an overlap charges them twice. Neither is visible
+    when checking one row at a time, and both misprice every future quote for
+    that vehicle.
+    """
+
+    def clean(self):
+        super().clean()
+        if any(self.errors):
+            return
+
+        bands = sorted(
+            (
+                form.cleaned_data for form in self.forms
+                if form.cleaned_data and not form.cleaned_data.get("DELETE")
+            ),
+            key=lambda row: row["from_miles"],
+        )
+        if not bands:
+            return
+
+        if bands[0]["from_miles"] != 0:
+            raise forms.ValidationError(
+                "The first band must start at 0 miles, or the opening miles of "
+                "every journey are unpriced."
+            )
+
+        unbounded = [b for b in bands if b.get("to_miles") is None]
+        if len(unbounded) > 1:
+            raise forms.ValidationError(
+                "Only the final band may be left open-ended."
+            )
+        if unbounded and unbounded[0] is not bands[-1]:
+            raise forms.ValidationError(
+                "Only the final band may be left open-ended."
+            )
+
+        for lower, higher in zip(bands, bands[1:], strict=False):
+            if lower.get("to_miles") is None:
+                continue
+            if lower["to_miles"] < higher["from_miles"]:
+                raise forms.ValidationError(
+                    f"Nothing prices the miles between {lower['to_miles']:g} and "
+                    f"{higher['from_miles']:g}. Bands must be continuous."
+                )
+            if lower["to_miles"] > higher["from_miles"]:
+                raise forms.ValidationError(
+                    f"Bands overlap between {higher['from_miles']:g} and "
+                    f"{lower['to_miles']:g}. Those miles would be charged twice."
+                )
+
+
+DistanceBandFormSet = forms.inlineformset_factory(
+    Vehicle, DistanceBand, form=DistanceBandForm, formset=BaseDistanceBandFormSet,
+    extra=2, can_delete=True,
+)
+
+
+class TimeSurchargeForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = TimeSurcharge
+        fields = ["name", "start_time", "end_time", "percentage", "is_active"]
+        widgets = {
+            "start_time": forms.TimeInput(attrs={"type": "time"}),
+            "end_time": forms.TimeInput(attrs={"type": "time"}),
+        }
+        help_texts = {
+            "percentage": "Added, not compounded. 40% and 20% together make 60%.",
+        }
+
+
+class BlackoutDateForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = BlackoutDate
+        fields = ["name", "date", "description", "percentage", "is_active"]
+        widgets = {"date": forms.DateInput(attrs={"type": "date"})}
+
+
+class PricingSettingsForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = PricingSettings
+        fields = [
+            "tax_rate", "currency", "cancellation_window_hours", "quote_ttl_minutes",
+        ]
+        help_texts = {
+            "tax_rate": "Applied to every quote. Changing it changes every future fare.",
+        }
+
+
+class PageForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = Page
+        fields = [
+            "title", "slug", "page_type", "is_published", "body", "hero_image",
+            "meta_title", "meta_description", "meta_keywords",
+            "parent", "menu_placement", "display_order",
+        ]
+        widgets = {
+            "body": forms.Textarea(attrs={"rows": 14}),
+            "meta_description": forms.Textarea(attrs={"rows": 2}),
+            "meta_keywords": forms.Textarea(attrs={"rows": 2}),
+        }
+        help_texts = {
+            "slug": "The page's address. Changing it breaks search rankings and "
+                    "every existing link — treat it as permanent.",
+        }
+
+
+class BannerForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = Banner
+        fields = ["title", "description", "image", "link_url", "page",
+                  "display_order", "is_active"]
+        widgets = {"description": forms.Textarea(attrs={"rows": 3})}
+
+
+class TestimonialForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = Testimonial
+        fields = ["customer_name", "quote", "rating", "photo",
+                  "is_published", "display_order"]
+        widgets = {"quote": forms.Textarea(attrs={"rows": 4})}
+
+
+class GalleryImageForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = GalleryImage
+        fields = ["title", "description", "image", "category",
+                  "display_order", "is_active"]
+        widgets = {"description": forms.Textarea(attrs={"rows": 2})}
+
+
+class SiteSettingsForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = SiteSettings
+        fields = [
+            "contact_phone", "contact_email", "ops_notification_email",
+            "facebook", "instagram", "twitter", "linkedin",
+        ]
+        help_texts = {
+            "contact_phone": "Shown in the header and footer of the public site.",
+            "ops_notification_email": "Where new-booking alerts go. Never shown publicly.",
+        }
+
+
+class StaffUserForm(BootstrapFormMixin, forms.ModelForm):
+    """
+    A staff account and its role.
+
+    The password is set through a separate write-only field: rendering the
+    stored hash, or echoing a password back, puts a working credential into
+    page source. Leaving it blank on an existing account keeps the current one.
+    """
+
+    role = forms.ModelChoiceField(
+        queryset=Group.objects.all(), required=False,
+        help_text="Dispatcher runs the day. Manager adds rates, refunds and "
+                  "credentials. Editor is website content only.",
+    )
+    new_password = forms.CharField(
+        required=False, label="Password",
+        widget=forms.PasswordInput(render_value=False, attrs={"autocomplete": "new-password"}),
+        help_text="Leave blank to keep the existing password.",
+    )
+
+    class Meta:
+        model = User
+        fields = ["email", "first_name", "last_name", "phone", "is_active"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields["role"].initial = self.instance.groups.first()
+
+    def clean_new_password(self):
+        password = self.cleaned_data.get("new_password")
+        if password:
+            validate_password(password)
+        elif not self.instance.pk:
+            raise forms.ValidationError("Set a password for the new account.")
+        return password
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.is_staff = True  # every account on this screen is a staff account
+        if password := self.cleaned_data.get("new_password"):
+            user.set_password(password)
+        if commit:
+            user.save()
+            user.groups.set([self.cleaned_data["role"]] if self.cleaned_data.get("role") else [])
+        return user
+
+
+class CustomerForm(BootstrapFormMixin, forms.ModelForm):
+    """
+    A customer record.
+
+    No password field and no staff flag: this screen exists to correct a name
+    or a phone number, not to grant anyone access. A customer who cannot sign
+    in uses the reset link, which is the only path that proves they own the
+    address.
+    """
+
+    class Meta:
+        model = User
+        fields = ["email", "title", "first_name", "last_name", "phone",
+                  "marketing_opt_in", "is_active"]

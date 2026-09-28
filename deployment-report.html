@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deployment Report — app.austinlimoshuttle.com</title>
+<style>
+  :root{
+    --ink:#15181c; --muted:#59626c; --line:#e1e6ea; --bg:#fff; --panel:#f6f8fa;
+    --accent:#0f6b4f; --accent-bg:#e8f4ef;
+    --blue:#1f4e8c; --blue-bg:#eaf1fa;
+    --warn:#8a6320; --warn-bg:#fbf4e5;
+    --crit:#b3261e; --crit-bg:#fdecea;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.62 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1020px;margin:0 auto;padding:44px 24px 96px}
+  header{border-bottom:3px solid var(--ink);padding-bottom:18px;margin-bottom:26px}
+  h1{font-size:31px;line-height:1.2;margin:0 0 8px;letter-spacing:-.022em}
+  .sub{color:var(--muted);font-size:15px;margin:0}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 24px;color:var(--muted);font-size:13.5px;margin-top:12px}
+  h2{font-size:22px;margin:46px 0 6px;letter-spacing:-.015em;padding-bottom:8px;
+     border-bottom:2px solid var(--line)}
+  h3{font-size:17.5px;margin:28px 0 8px;letter-spacing:-.01em}
+  h4{font-size:14.5px;margin:20px 0 6px;color:var(--accent);text-transform:uppercase;
+     letter-spacing:.05em}
+  p{margin:0 0 12px}
+  .lede{font-size:16.5px;background:var(--accent-bg);border-left:4px solid var(--accent);
+        padding:16px 20px;border-radius:0 6px 6px 0;margin:0 0 8px}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--panel);font-weight:600;font-size:11.5px;text-transform:uppercase;
+     letter-spacing:.05em;color:var(--muted)}
+  td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:14px 0}
+  .scroll table{margin:0}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;
+       background:var(--panel);padding:1px 5px;border-radius:4px;border:1px solid var(--line);
+       white-space:nowrap}
+  td code{background:none;border:none;padding:0}
+  pre{background:#1d2126;color:#e4e8ec;padding:14px 16px;border-radius:6px;overflow-x:auto;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.7px;
+      line-height:1.6;margin:12px 0}
+  pre code{background:none;border:none;padding:0;color:inherit;white-space:pre}
+  .note{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--blue);
+        border-radius:0 7px 7px 0;padding:15px 18px;margin:16px 0;font-size:14.8px}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-bg);border-color:#eddfba}
+  .note.crit{border-left-color:var(--crit);background:var(--crit-bg);border-color:#f3c9c4}
+  .note strong:first-child{display:block;margin-bottom:4px}
+  .grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin:16px 0}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:13px 15px}
+  .stat .n{font-size:23px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .stat .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+  ol,ul{margin:0 0 12px;padding-left:22px}
+  li{margin-bottom:6px}
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:16px 22px;margin:20px 0}
+  .toc ul{margin:0;padding-left:18px;columns:2;column-gap:30px}
+  .toc li{margin-bottom:4px;font-size:14.5px;break-inside:avoid}
+  .toc a{color:var(--accent);text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+  .flow{background:var(--panel);border:1px solid var(--line);border-radius:9px;
+        padding:16px 20px;margin:14px 0;font-size:14.5px}
+  footer{margin-top:52px;padding-top:18px;border-top:1px solid var(--line);
+         color:var(--muted);font-size:13px}
+  @media print{
+    body{font-size:10.5pt}.wrap{padding:0;max-width:none}
+    .note,table,.flow{break-inside:avoid} h2,h3{break-after:avoid} .toc{display:none}
+    pre{white-space:pre-wrap}
+  }
+  @media (max-width:720px){.toc ul{columns:1}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Deployment Report</h1>
+  <p class="sub">Django backend deployed to InMotion shared hosting, on a new subdomain, alongside the untouched live site</p>
+  <div class="meta">
+    <span><strong>Date:</strong> 14 August 2026</span>
+    <span><strong>Host:</strong> ecbiz289.inmotionhosting.com</span>
+    <span><strong>URL:</strong> https://app.austinlimoshuttle.com</span>
+    <span><strong>Status:</strong> Live</span>
+  </div>
+</header>
+
+<p class="lede">
+  The Django backend, staff dashboard and REST API are now running on the client's
+  existing InMotion account at <code>app.austinlimoshuttle.com</code>. Every resource
+  created is new. Nothing that was already on the account was modified, moved or
+  deleted &mdash; the legacy PHP site, the staging subdomain, ridecarservice.com, the
+  nine existing databases and the mailboxes are all exactly as they were.
+</p>
+
+<div class="grid">
+  <div class="stat"><div class="n">1</div><div class="l">subdomain added</div></div>
+  <div class="stat"><div class="n">1</div><div class="l">database added</div></div>
+  <div class="stat"><div class="n">2,217</div><div class="l">bookings migrated</div></div>
+  <div class="stat"><div class="n">1,252</div><div class="l">customers migrated</div></div>
+  <div class="stat"><div class="n">0</div><div class="l">existing files touched</div></div>
+</div>
+
+<div class="toc">
+  <strong>Contents</strong>
+  <ul>
+    <li><a href="#what">What is live</a></li>
+    <li><a href="#steps">How it was deployed</a></li>
+    <li><a href="#blocker">The blocker, and how it was solved</a></li>
+    <li><a href="#isolation">Proof the live site was untouched</a></li>
+    <li><a href="#secrets">Credentials and where they live</a></li>
+    <li><a href="#state">What is not there yet</a></li>
+    <li><a href="#next">Next steps</a></li>
+  </ul>
+</div>
+
+<h2 id="what">What is live</h2>
+
+<div class="scroll">
+<table>
+  <tr><th>URL</th><th>What it serves</th><th>Verified</th></tr>
+  <tr><td><code>/admin/</code></td><td>Django admin &mdash; fleet, rates, CMS pages, users</td><td class="num">200</td></tr>
+  <tr><td><code>/dashboard/</code></td><td>Staff dashboard &mdash; dispatch, bookings, enquiries</td><td class="num">302 &rarr; login</td></tr>
+  <tr><td><code>/api/</code></td><td>REST API &mdash; quotes, bookings, payments, auth</td><td class="num">200</td></tr>
+  <tr><td><code>/accounts/</code></td><td>Customer password reset flow</td><td class="num">200</td></tr>
+  <tr><td><code>/</code></td><td>Nothing &mdash; there is no public site yet</td><td class="num">404</td></tr>
+</table>
+</div>
+
+<p>
+  TLS is live. AutoSSL issued a certificate for <code>app.austinlimoshuttle.com</code>
+  during the deploy, valid 14 August &rarr; 12 November 2026. Django's
+  <code>SECURE_SSL_REDIRECT</code> sends any plain HTTP request to HTTPS, and HSTS is
+  set with a one-year max-age.
+</p>
+
+<h4>Stack as deployed</h4>
+<div class="scroll">
+<table>
+  <tr><th>Component</th><th>Version</th><th>Note</th></tr>
+  <tr><td>Python</td><td>3.12.13</td><td><code>/opt/alt/python312</code>, matches local</td></tr>
+  <tr><td>Django</td><td>5.2.17</td><td></td></tr>
+  <tr><td>MariaDB</td><td>10.11.18</td><td>Identical to the local Docker database &mdash; no version drift</td></tr>
+  <tr><td>Web</td><td>Apache + Phusion Passenger</td><td>WSGI via <code>passenger_wsgi.py</code></td></tr>
+  <tr><td>Driver</td><td>PyMySQL</td><td>Pure Python; the host has no C compiler</td></tr>
+</table>
+</div>
+
+<h2 id="steps">How it was deployed</h2>
+
+<p>
+  Every step was run over SSH as <code>austi118</code>. Each one only ever
+  <em>added</em> something.
+</p>
+
+<h3>1. Subdomain</h3>
+<pre><code>uapi SubDomain addsubdomain domain=app rootdomain=austinlimoshuttle.com \
+     dir=app.austinlimoshuttle.com</code></pre>
+<p>
+  Created <code>~/app.austinlimoshuttle.com/</code> as its own document root and added
+  the DNS record. DNS is hosted on InMotion's own nameservers
+  (<code>ns1/ns2.inmotionhosting.com</code>), so the record resolved immediately with
+  no external DNS change required.
+</p>
+
+<h3>2. Database</h3>
+<pre><code>uapi Mysql create_database  name=austi118_limo
+uapi Mysql create_user      name=austi118_limo password=&lt;generated&gt;
+uapi Mysql set_privileges_on_database user=austi118_limo \
+     database=austi118_limo privileges=ALL%20PRIVILEGES</code></pre>
+<p>
+  A tenth database beside the nine that already existed. The legacy database
+  <code>austi118_austinlimo</code> was never opened, read or connected to during this
+  deploy.
+</p>
+
+<h3>3. Code upload</h3>
+<pre><code>rsync -az --delete \
+  --exclude .venv --exclude __pycache__ --exclude .env \
+  --exclude staticfiles --exclude media \
+  ./backend/ austi118@&lt;host&gt;:~/backend/</code></pre>
+<p>
+  2.8 MB to <code>~/backend</code> &mdash; outside every document root, so no part of the
+  source is web-servable. This is the specific failure the legacy site suffered:
+  <code>admin.zip</code> and <code>backup_download.zip</code> sit in <code>public_html</code>
+  to this day and are downloadable by anyone.
+</p>
+
+<h3>4. Virtualenv and dependencies</h3>
+<pre><code>/opt/alt/python312/bin/python3.12 -m venv ~/venv-limo
+~/venv-limo/bin/pip install -r ~/backend/requirements/prod.txt</code></pre>
+<p>
+  All 44 packages installed from prebuilt manylinux wheels &mdash; nothing compiled.
+  That is the payoff from two earlier dependency choices: PyMySQL instead of
+  <code>mysqlclient</code>, and xhtml2pdf instead of WeasyPrint. Both were picked
+  precisely because shared cPanel hosting has no C compiler, and this deploy is the
+  proof they were the right calls.
+</p>
+
+<h3>5. Environment</h3>
+<p>
+  Written to <code>~/backend/.env</code>, <code>chmod 600</code>, outside the web root.
+  One value mattered more than the rest:
+</p>
+<div class="note warn">
+  <strong>DJANGO_STATIC_ROOT had to be overridden</strong>
+  <code>config/settings/prod.py</code> defaults it to
+  <code>/home/austi118/public_html/static</code> &mdash; the <em>live site's</em> web root.
+  Left alone, <code>collectstatic</code> would have written 176 files directly into the
+  running legacy site. It was pointed at the new subdomain's document root instead,
+  and <code>public_html</code> was checked afterwards to confirm no <code>static/</code>
+  directory appeared there.
+</div>
+
+<h3>6. Database setup</h3>
+<pre><code>manage.py migrate            # all apps, clean
+manage.py createcachetable   # production uses the database cache backend
+manage.py sync_roles         # Dispatcher 13 · Manager 47 · Editor 18 permissions
+manage.py collectstatic      # 176 files
+manage.py check --deploy     # no issues (0 silenced)</code></pre>
+<div class="note">
+  <strong>createcachetable is easy to miss</strong>
+  Production uses Django's database cache backend, so this table must exist or
+  distance lookups fail at runtime rather than at boot. The Phase 7 procedure list
+  omitted it; Phase 9 had flagged it. It is included above so the runbook is correct.
+</div>
+
+<h2 id="blocker">The blocker, and how it was solved</h2>
+
+<p>
+  The documented approach was to create the app through cPanel's <em>Setup Python
+  App</em>. That failed:
+</p>
+
+<pre><code>$ cloudlinux-selector create --interpreter python --version 3.12 ...
+{"result": "Selector is disabled"}</code></pre>
+
+<p>The account's cPanel feature list explains why:</p>
+
+<div class="scroll">
+<table>
+  <tr><th>Flag</th><th>Value</th><th>Meaning</th></tr>
+  <tr><td><code>lvepythonsel</code></td><td class="num">0</td><td>Python Selector disabled for this account</td></tr>
+  <tr><td><code>passengerapps</code></td><td class="num">0</td><td>&ldquo;Setup Python App&rdquo; not available in cPanel</td></tr>
+  <tr><td><code>passenger_active</code></td><td class="num">true</td><td>But Passenger itself <em>is</em> running on the server</td></tr>
+</table>
+</div>
+
+<p>
+  So the interpreters were all present and enabled, Passenger was active, but the
+  cPanel UI for wiring the two together was switched off for this plan. Phase 7
+  recorded the selector binary as &ldquo;present&rdquo;, which turned out to mean the
+  file existed, not that the feature was enabled.
+</p>
+
+<p>
+  Since Passenger was active, it was configured directly instead, via an
+  <code>.htaccess</code> in the subdomain's own document root:
+</p>
+
+<pre><code>PassengerAppRoot     /home/austi118/backend
+PassengerBaseURI     /
+PassengerPython      /home/austi118/venv-limo/bin/python
+PassengerAppType     wsgi
+PassengerStartupFile passenger_wsgi.py</code></pre>
+
+<p>
+  This works, and it is contained: <code>.htaccess</code> applies per-directory, so a
+  mistake here could only ever have affected the new subdomain. The first request
+  afterwards returned a 301 to HTTPS &mdash; Django's own redirect, which was the
+  signal the application had started.
+</p>
+
+<div class="note">
+  <strong>Worth asking InMotion to enable the feature anyway</strong>
+  The manual wiring is sound, but the cPanel UI is where a non-developer would go to
+  restart the app or change its Python version. Ask support to enable
+  <code>passengerapps</code> for the account and that route opens up. Until then,
+  restarting means <code>touch ~/backend/tmp/restart.txt</code> over SSH.
+</div>
+
+<h2 id="isolation">Proof the live site was untouched</h2>
+
+<p>Checked after the deploy finished, not assumed:</p>
+
+<div class="scroll">
+<table>
+  <tr><th>Check</th><th>Result</th></tr>
+  <tr><td><code>public_html/static</code> created?</td><td>No &mdash; nothing written to the live web root</td></tr>
+  <tr><td>Files in <code>public_html</code></td><td>69, unchanged</td></tr>
+  <tr><td><code>austinlimoshuttle.com</code></td><td>302, serving normally</td></tr>
+  <tr><td><code>staging.austinlimoshuttle.com</code></td><td>200, serving normally</td></tr>
+  <tr><td><code>ridecarservice.com</code></td><td>302, serving normally</td></tr>
+  <tr><td>Existing databases</td><td>All 9 present and unmodified</td></tr>
+  <tr><td>Legacy database connections</td><td>None &mdash; never opened</td></tr>
+  <tr><td>Existing cron jobs</td><td>None added; crontab still empty</td></tr>
+  <tr><td>Mailboxes / email</td><td>Untouched; no mail sent from the new app</td></tr>
+</table>
+</div>
+
+<div class="note">
+  <strong>One false alarm worth recording</strong>
+  A health check against the live site returned <code>406 Not Acceptable</code>, which
+  looked alarming mid-deploy. It was mod_security rejecting <code>curl</code>'s default
+  user agent. The same request with a browser user agent returned 302 with 29 KB of
+  content. The live site was never affected.
+</div>
+
+<h2 id="secrets">Credentials and where they live</h2>
+
+<p>
+  <strong>No secret appears in this file.</strong> That is deliberate &mdash; this report
+  sits in the repository, and the legacy system's worst breach came from credentials
+  stored in a web-readable file.
+</p>
+
+<div class="scroll">
+<table>
+  <tr><th>Secret</th><th>Where it lives</th></tr>
+  <tr><td>Django <code>SECRET_KEY</code></td><td><code>~/backend/.env</code> on the server, mode 600</td></tr>
+  <tr><td>Database password</td><td>Same file. Also recoverable via cPanel</td></tr>
+  <tr><td>Superuser password</td><td>Given separately &mdash; <strong>change it on first sign-in</strong></td></tr>
+  <tr><td>SSH key</td><td><code>.secrets/</code> locally, git-ignored</td></tr>
+</table>
+</div>
+
+<p>
+  The superuser created is <code>cal@austinlimoshuttle.com</code>. Change its password
+  with:
+</p>
+<pre><code>cd ~/backend &amp;&amp; DJANGO_SETTINGS_MODULE=config.settings.prod \
+  ~/venv-limo/bin/python manage.py changepassword cal@austinlimoshuttle.com</code></pre>
+
+<h2 id="records">The client's records</h2>
+
+<p>
+  The nine years of legacy data are on the server. Rather than re-running the five
+  importers against a restored dump, the <em>already-imported and already-repaired</em>
+  local database was transferred directly &mdash; the encoding repair, the
+  <code>replay_fares</code> verification and every QA gate had already been applied to
+  it, so re-importing would have meant redoing work whose output was known good.
+</p>
+
+<div class="scroll">
+<table>
+  <tr><th>Records</th><th>Count</th><th>Note</th></tr>
+  <tr><td>Bookings</td><td class="num">2,217</td><td>Every legacy order, 2016&ndash;2026</td></tr>
+  <tr><td>Payments</td><td class="num">2,217</td><td>References only &mdash; no cardholder data exists in the schema</td></tr>
+  <tr><td>Customers</td><td class="num">1,252</td><td>All with unusable passwords; each must reset before signing in</td></tr>
+  <tr><td>Enquiries</td><td class="num">928</td><td>Contact-form history</td></tr>
+  <tr><td>Drivers</td><td class="num">40</td><td></td></tr>
+  <tr><td>Vehicles</td><td class="num">7</td><td>With 20 distance bands</td></tr>
+  <tr><td>CMS pages</td><td class="num">17</td><td></td></tr>
+</table>
+</div>
+
+<h4>How it was moved</h4>
+<pre><code>mysqldump --single-transaction --default-character-set=utf8mb4 \
+  --ignore-table=austinlimo.django_session \
+  --ignore-table=austinlimo.payments_paymentsettings \
+  --ignore-table=austinlimo.payments_paypalsettings \
+  --ignore-table=austinlimo.notifications_emailsettings \
+  austinlimo | gzip &gt; limo-data.sql.gz        # 579 KB</code></pre>
+
+<p>
+  The credential tables were excluded deliberately, so no development Stripe, PayPal
+  or SMTP settings could travel to a production server. The existing production
+  database was dumped to <code>~/backups/limo-before-import.sql</code> before the
+  import ran.
+</p>
+
+<h4>Test artefacts removed after import</h4>
+<p>
+  The local database had been used for development, so it carried rows the local test
+  suite had created. Those are not the client's records and were deleted once the
+  import landed:
+</p>
+<div class="scroll">
+<table>
+  <tr><th>Removed</th><th>Count</th><th>How they were identified</th></tr>
+  <tr><td>Bookings</td><td class="num">20</td><td>No <code>legacy_order_id</code>, and tied to an <code>@example.com</code> address</td></tr>
+  <tr><td>Enquiries</td><td class="num">7</td><td><code>@example.com</code> sender</td></tr>
+  <tr><td>Accounts</td><td class="num">11</td><td>Development and test logins, including <code>pw-&lt;timestamp&gt;@example.com</code> rows left by password-reset tests</td></tr>
+</table>
+</div>
+<p>
+  Deleting an account cannot erase a booking &mdash; <code>Booking.customer</code> is
+  <code>on_delete=SET_NULL</code> precisely so that a customer record can be removed
+  without destroying the financial history attached to it.
+</p>
+
+<h4>Verified after transfer</h4>
+<ul>
+  <li><strong>Counts match the legacy import exactly</strong> &mdash; 2,217 bookings, the same figure Phase 3 replayed through the fare engine.</li>
+  <li><strong>Character encoding survived</strong> &mdash; accented names such as <code>D&aacute;ire</code> are intact, and zero mojibake markers remain. The encoding repair was the fiddliest part of the import and it crossed the wire unharmed.</li>
+  <li><strong>No pending migrations</strong> &mdash; the transferred schema matches the deployed code.</li>
+  <li><strong>Price lines intact</strong> &mdash; sampled bookings still carry their itemised fare breakdown.</li>
+</ul>
+
+<h2 id="signin">Staff sign-in</h2>
+
+<p>
+  The gate was Django's admin login, which meant the first screen any staff member saw
+  belonged to a different product than the dashboard behind it. It is now a branded
+  page at <code>/dashboard/login/</code>, using the same vendored Bootstrap and the same
+  brand tokens as the signed-in screens.
+</p>
+
+<div class="note">
+  <strong>A bug worth recording, because it leaves no trace</strong>
+  The password-reveal toggle shipped as an inline <code>&lt;script&gt;</code>. The
+  Content-Security-Policy sets <code>script-src 'self'</code>, so the browser dropped it
+  silently: the page rendered perfectly, the button did nothing, and nothing appeared in
+  any log. It was caught by a browser test, not by the server. The script now lives in
+  <code>static/js/login.js</code>, and a test asserts the login page contains no inline
+  script at all.
+</div>
+
+<h2 id="state">What is not there yet</h2>
+
+<div class="note warn">
+  <strong>Email is not configured, on purpose</strong>
+  No SMTP credentials were set and no cron jobs were added. This matters: the hourly
+  <code>send_pickup_reminders</code> job emails real customers about upcoming pickups.
+  Enabling it against imported legacy data would email real people about a system
+  that is not live. It stays off until that is a deliberate choice.
+</div>
+
+<div class="note warn">
+  <strong>Stripe is not configured</strong>
+  No keys were entered, so nothing on this subdomain can charge a card. Configure
+  test keys first, in Dashboard &rarr; Settings &rarr; Payments.
+</div>
+
+<div class="note crit">
+  <strong>Unrelated, still open, and worth acting on</strong>
+  <code>public_html</code> contains <code>admin.zip</code>,
+  <code>backup_download.zip</code> and <code>backupsite20.03.2017/</code>, all publicly
+  downloadable. This is how the legacy admin source and Stripe key leaked, as
+  documented in <code>security-issue.html</code>. It predates this deployment and was
+  left alone, but it is a one-command fix: move them outside the web root.
+</div>
+
+<h2 id="next">Next steps</h2>
+
+<ol>
+  <li><strong>Sign in</strong> at <code>https://app.austinlimoshuttle.com/dashboard/</code> and change the superuser password.</li>
+  <li><strong>Ask InMotion to enable <code>passengerapps</code></strong> so the app is manageable from cPanel.</li>
+  <li><strong>Configure Stripe in test mode</strong> and verify the webhook reaches <code>/api/payments/webhook/</code>.</li>
+  <li><strong>Build the public site</strong> &mdash; <code>/</code> is a 404 today. Nothing customer-facing exists.</li>
+  <li><strong>Leave cron disabled</strong> until email is deliberately switched on.</li>
+  <li><strong>Plan the catch-up import.</strong> The legacy site is still taking real bookings on the main domain, so from the moment of transfer the two databases diverge. Whatever the legacy site records from 14 August onwards is not in this one, and a cutover will need those rows.</li>
+</ol>
+
+<footer>
+  Deployment carried out 14 August 2026 over SSH. Every command was additive; no
+  existing file, database or site was modified. The live legacy site continued
+  serving customers throughout.
+</footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,26 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Site settings{% endblock %}
+{% block page_title %}Site settings{% endblock %}
+{% block lede %}<p class="lede">Contact details and social links shown on the public website.</p>{% endblock %}
+
+{% block content %}
+<form method="post" novalidate>
+  {% csrf_token %}
+  <div class="card mb-3" style="max-width:720px">
+    <div class="card-header"><i class="bi bi-globe2 me-2"></i>Public details</div>
+    <div class="card-body">
+      <div class="row g-3">
+        {% for field in form %}
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<div class="form-text small">{{ field.help_text }}</div>{% endif %}
+            {% for error in field.errors %}<div class="small text-danger mt-1">{{ error }}</div>{% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <button type="submit" class="btn btn-brand"><i class="bi bi-check-lg"></i> Save</button>
+</form>
+{% endblock %}

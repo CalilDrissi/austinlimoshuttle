@@ -17,7 +17,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from bookings.models import Booking
-from content.models import Page
+from content.models import Page, SiteSettings
 from fleet.models import DistanceBand, Vehicle
 from pricing.distance import DistanceLookupError, Journey
 from pricing.models import PricingSettings, TimeSurcharge
@@ -334,6 +334,70 @@ class TestBookingAuthorisation:
 
 
 @pytest.mark.django_db
+class TestPublicBookingStatus:
+    """
+    The confirmation page polls this while waiting for Stripe's webhook, and a
+    guest has no session to authenticate with. The reference is therefore the
+    capability -- so what the endpoint returns has to be safe for anyone who
+    holds one, and that is what these tests pin down.
+    """
+
+    def _guest_booking(self, vehicle):
+        return Booking.objects.create(
+            vehicle=vehicle, pickup_address="Austin-Bergstrom, Gate 4",
+            dropoff_address="1100 Congress Ave",
+            pickup_at=timezone.now() + timedelta(days=2), total=Decimal("95.00"),
+            guest_email="guest@example.com", notes="Ring the bell twice",
+        )
+
+    def test_guest_can_poll_their_own_reference(self, client, vehicle):
+        booking = self._guest_booking(vehicle)
+        response = client.get(reverse("api:booking_status", args=[booking.reference]))
+        assert response.status_code == 200
+        assert response.json()["status"] == booking.status
+
+    def test_response_carries_no_journey_or_passenger_detail(self, client, vehicle):
+        booking = self._guest_booking(vehicle)
+        body = client.get(reverse("api:booking_status", args=[booking.reference])).json()
+
+        assert set(body) == {
+            "reference", "status", "status_display", "pickup_at",
+            "vehicle_name", "total", "currency",
+        }
+        serialised = str(body)
+        for leaked in ("Congress", "Gate 4", "guest@example.com", "Ring the bell"):
+            assert leaked not in serialised
+
+    def test_unknown_reference_is_404(self, client, vehicle):
+        assert client.get(
+            reverse("api:booking_status", args=["ZZZZZZZZ"])
+        ).status_code == 404
+
+    def test_another_customers_booking_is_404(self, client, vehicle):
+        owner = User.objects.create_user(email="statusowner@example.com")
+        booking = Booking.objects.create(
+            customer=owner, vehicle=vehicle, pickup_address="a",
+            pickup_at=timezone.now() + timedelta(days=2), total=Decimal("95.00"),
+        )
+        User.objects.create_user(email="nosy@example.com", password="ApiLocal!2026")
+        client.login(username="nosy@example.com", password="ApiLocal!2026")
+
+        assert client.get(
+            reverse("api:booking_status", args=[booking.reference])
+        ).status_code == 404
+
+    def test_it_is_read_only(self, client, vehicle):
+        booking = self._guest_booking(vehicle)
+        response = client.patch(
+            reverse("api:booking_status", args=[booking.reference]),
+            {"status": "confirmed"}, content_type="application/json",
+        )
+        assert response.status_code == 405
+        booking.refresh_from_db()
+        assert booking.status == Booking.Status.PENDING
+
+
+@pytest.mark.django_db
 class TestAuth:
     def test_login_and_me(self, client):
         User.objects.create_user(email="user@example.com", password="ApiLocal!2026",
@@ -391,6 +455,30 @@ class TestAuth:
         assert response.status_code == 400
         assert not User.objects.filter(email="new@example.com").exists()
 
+    def test_registration_returns_the_same_user_shape_as_login(self, client):
+        """
+        The frontend greets people by name from whatever this returns. When it
+        answered with the address alone, someone who had just typed their name
+        into the form was shown a generic header instead.
+        """
+        registered = client.post(
+            reverse("api:register"),
+            {"email": "shape@example.com", "password": "AnotherStrongPass!99",
+             "first_name": "Pat", "last_name": "Tester", "phone": "5125550134"},
+            content_type="application/json",
+        )
+        assert registered.status_code == 201
+
+        client.post(
+            reverse("api:login"),
+            {"email": "shape@example.com", "password": "AnotherStrongPass!99"},
+            content_type="application/json",
+        )
+        me = client.get(reverse("api:me"))
+
+        assert registered.json() == me.json()
+        assert registered.json()["first_name"] == "Pat"
+
     def test_registering_an_existing_address_does_not_disclose_it(self, client):
         User.objects.create_user(email="taken@example.com", password="ApiLocal!2026")
         response = client.post(
@@ -400,6 +488,45 @@ class TestAuth:
         )
         assert response.status_code == 202
         assert "taken" not in response.json()["detail"].lower()
+
+
+@pytest.mark.django_db
+class TestSiteSettings:
+    def test_returns_the_contact_details_the_footer_shows(self, client):
+        settings_row = SiteSettings.load()
+        settings_row.contact_phone = "+1 (512) 555-0134"
+        settings_row.contact_email = "bookings@austinlimoshuttle.com"
+        settings_row.facebook = "https://facebook.com/austinlimoshuttle"
+        settings_row.save()
+
+        body = client.get(reverse("api:site_settings")).json()
+
+        assert body["contact_phone"] == "+1 (512) 555-0134"
+        assert body["contact_email"] == "bookings@austinlimoshuttle.com"
+        assert body["facebook"] == "https://facebook.com/austinlimoshuttle"
+
+    def test_does_not_publish_the_ops_notification_address(self, client):
+        """
+        The address new-booking alerts land on shares a model with the public
+        one, for legacy reasons. It must not share the response.
+        """
+        settings_row = SiteSettings.load()
+        settings_row.ops_notification_email = "dispatch-internal@austinlimoshuttle.com"
+        settings_row.save()
+
+        body = client.get(reverse("api:site_settings")).json()
+
+        assert "ops_notification_email" not in body
+        assert "dispatch-internal" not in str(body)
+
+    def test_works_before_anyone_has_opened_the_admin_page(self, client):
+        """A fresh install has no settings row. The header still has to render."""
+        SiteSettings.objects.all().delete()
+
+        response = client.get(reverse("api:site_settings"))
+
+        assert response.status_code == 200
+        assert response.json()["contact_phone"] == ""
 
 
 @pytest.mark.django_db

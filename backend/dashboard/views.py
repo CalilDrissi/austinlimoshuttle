@@ -8,40 +8,80 @@ stays in Django's generated admin.
 
 from __future__ import annotations
 
+import calendar
 import csv
 import logging
-from datetime import timedelta
+from collections import defaultdict
+from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
+from urllib.parse import urlencode
 
 from django.contrib import messages
+from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Count, Q, Sum
-from django.http import HttpResponse
+from django.db.models.deletion import ProtectedError
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from bookings.models import Booking, BookingStatusChange, Driver
+from content.models import SiteSettings
 from enquiries.models import ContactMessage
 from notifications import mailer
 from notifications.models import EmailLog, EmailSettings
 from payments import gateway, paypal
 from payments.models import Payment, PaymentSettings, PayPalSettings
+from pricing.models import PricingSettings
 
-from .forms import EmailSettingsForm, PaymentSettingsForm, PayPalSettingsForm
+from . import crud, managed
+from .forms import (
+    EmailSettingsForm,
+    PaymentSettingsForm,
+    PayPalSettingsForm,
+    PricingSettingsForm,
+    SiteSettingsForm,
+)
 from .permissions import is_manager, role_names
 
 logger = logging.getLogger(__name__)
 
 BOOKINGS_PER_PAGE = 50
+ENQUIRIES_PER_PAGE = 50
+
+
+def admin_login_redirect(request):
+    """
+    Send Django's admin login to the branded gate.
+
+    The admin ships its own login view at /admin/login/, so re-pointing
+    LOGIN_URL only moved the dashboard's gate and left a second, unstyled one
+    for anyone who went to /admin/ directly. Two sign-in screens for one set of
+    credentials is confusing on its own, and one of them looks like a different
+    product.
+
+    The ?next= is carried across but validated first: reflecting it unchecked
+    would turn this into an open redirect, which is a phishing primitive.
+    """
+    target = request.GET.get(REDIRECT_FIELD_NAME) or "/admin/"
+    if not url_has_allowed_host_and_scheme(
+        target, allowed_hosts={request.get_host()}, require_https=request.is_secure(),
+    ):
+        target = "/admin/"
+    return redirect(f"{reverse('dashboard:login')}?{urlencode({REDIRECT_FIELD_NAME: target})}")
 
 
 def staff_required(view):
     """Dashboard access requires a staff account, not merely a login."""
     return login_required(
         permission_required("bookings.view_booking", raise_exception=True)(view),
-        login_url="/admin/login/",
+        login_url="dashboard:login",
     )
 
 
@@ -127,19 +167,127 @@ def booking_list(request):
     if date_to:
         bookings = bookings.filter(pickup_at__date__lte=date_to)
 
+    # The export deliberately ignores paging: it is the whole filtered set.
     if request.GET.get("export") == "csv":
         return _export_csv(bookings)
 
-    total = bookings.count()
+    paginator = Paginator(bookings, BOOKINGS_PER_PAGE)
+    page = paginator.get_page(request.GET.get("page"))
+
+    # Quick date filters. Computed server-side in the site's timezone, because
+    # "today" from the browser is whatever timezone the dispatcher's laptop is
+    # set to, which is not necessarily Austin's.
+    today = timezone.localdate()
+    tomorrow = today + timedelta(days=1)
+    quick_ranges = {
+        "today": (today, today),
+        "tomorrow": (tomorrow, tomorrow),
+        "week": (today, today + timedelta(days=7)),
+    }
+    active_quick = next(
+        (
+            name for name, (start, end) in quick_ranges.items()
+            if date_from == start.isoformat() and date_to == end.isoformat()
+        ),
+        None,
+    )
+
+    # Filters have to survive a page change, so they are rebuilt into every
+    # pagination link. `page` itself is dropped or it would accumulate.
+    params = request.GET.copy()
+    params.pop("page", None)
+    querystring = params.urlencode()
+
     context = {
-        "bookings": bookings[:BOOKINGS_PER_PAGE],
-        "total": total,
-        "showing": min(total, BOOKINGS_PER_PAGE),
+        "bookings": page.object_list,
+        "page": page,
+        "paginator": paginator,
+        "page_range": paginator.get_elided_page_range(
+            page.number, on_each_side=2, on_ends=1,
+        ),
+        "total": paginator.count,
+        "showing": len(page.object_list),
+        "querystring": f"&{querystring}" if querystring else "",
         "statuses": Booking.Status.choices,
         "filters": {"q": query, "status": status, "from": date_from, "to": date_to},
+        "quick_ranges": {
+            name: {"from": start.isoformat(), "to": end.isoformat()}
+            for name, (start, end) in quick_ranges.items()
+        },
+        "active_quick": active_quick,
         "roles": role_names(request.user),
     }
     return render(request, "dashboard/booking_list.html", context)
+
+
+@staff_required
+def calendar_view(request):
+    """
+    Bookings as a month grid.
+
+    The dispatch board answers "what is happening next"; this answers "how busy
+    is the 14th", which is the question asked when someone rings up wanting a
+    car on a date three weeks out.
+    """
+    today = timezone.localdate()
+    try:
+        year = int(request.GET.get("year", today.year))
+        month = int(request.GET.get("month", today.month))
+        first_of_month = date(year, month, 1)
+    except (TypeError, ValueError):
+        first_of_month = today.replace(day=1)
+        year, month = first_of_month.year, first_of_month.month
+
+    last_day = calendar.monthrange(year, month)[1]
+    month_end = date(year, month, last_day)
+
+    # The grid shows leading and trailing days from the neighbouring months, so
+    # the query has to cover them or those cells look empty when they are not.
+    grid = calendar.Calendar(firstweekday=6).monthdatescalendar(year, month)
+    span_start, span_end = grid[0][0], grid[-1][-1]
+
+    bookings = (
+        Booking.objects.select_related("vehicle", "driver")
+        .filter(
+            pickup_at__date__gte=span_start,
+            pickup_at__date__lte=span_end,
+        )
+        .exclude(status=Booking.Status.CANCELLED)
+        .order_by("pickup_at")
+    )
+
+    by_day: dict[date, list[Booking]] = defaultdict(list)
+    for booking in bookings:
+        by_day[timezone.localtime(booking.pickup_at).date()].append(booking)
+
+    weeks = [
+        [
+            {
+                "date": day,
+                "bookings": by_day.get(day, []),
+                "in_month": day.month == month,
+                "is_today": day == today,
+            }
+            for day in week
+        ]
+        for week in grid
+    ]
+
+    previous_month = first_of_month - timedelta(days=1)
+    next_month = month_end + timedelta(days=1)
+
+    return render(request, "dashboard/calendar.html", {
+        "weeks": weeks,
+        "month_label": first_of_month.strftime("%B %Y"),
+        "weekday_names": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+        "prev": {"year": previous_month.year, "month": previous_month.month},
+        "next": {"year": next_month.year, "month": next_month.month},
+        "today": today,
+        "month_total": sum(
+            len(v) for k, v in by_day.items() if k.month == month and k.year == year
+        ),
+        "roles": role_names(request.user),
+    })
 
 
 @staff_required
@@ -233,8 +381,22 @@ def enquiry_inbox(request):
     if nature:
         enquiries = enquiries.filter(nature=nature)
 
+    paginator = Paginator(enquiries, ENQUIRIES_PER_PAGE)
+    page = paginator.get_page(request.GET.get("page"))
+
+    params = request.GET.copy()
+    params.pop("page", None)
+    querystring = params.urlencode()
+
     context = {
-        "enquiries": enquiries[:100],
+        "enquiries": page.object_list,
+        "page": page,
+        "paginator": paginator,
+        "page_range": paginator.get_elided_page_range(
+            page.number, on_each_side=2, on_ends=1,
+        ),
+        "total": paginator.count,
+        "querystring": f"&{querystring}" if querystring else "",
         "counts": ContactMessage.objects.aggregate(
             all=Count("id"),
             unread=Count("id", filter=Q(is_read=False)),
@@ -480,4 +642,214 @@ def paypal_settings(request):
         "form": form,
         "settings_obj": instance,
         "webhook_url": request.build_absolute_uri("/api/payments/paypal/webhook/"),
+    })
+
+
+# -- managed records --------------------------------------------------------
+#
+# The generic screens that replace Django's admin. One set of views drives every
+# entry in dashboard.managed, so a new manageable model is a registry entry
+# rather than four more views that can drift out of step.
+
+
+MANAGED_PER_PAGE = 50
+
+
+def _managed_or_404(slug: str) -> crud.Managed:
+    entry = crud.get(slug)
+    if entry is None:
+        raise Http404(f"Nothing manageable is registered as {slug!r}")
+    return entry
+
+
+@staff_required
+def managed_list(request, slug):
+    entry = _managed_or_404(slug)
+    if not (request.user.has_perm(entry.view_permission)
+            or request.user.has_perm(entry.permission)):
+        raise PermissionDenied(f"You do not have access to {entry.label_plural}.")
+
+    query = request.GET.get("q", "").strip()
+    queryset = managed.staff_queryset_filter(slug, entry.queryset())
+    queryset = entry.search(queryset, query)
+
+    paginator = Paginator(queryset, MANAGED_PER_PAGE)
+    page = paginator.get_page(request.GET.get("page"))
+
+    params = request.GET.copy()
+    params.pop("page", None)
+    querystring = params.urlencode()
+
+    rows = [
+        {
+            "instance": instance,
+            "pk": instance.pk,
+            "cells": [
+                {
+                    "value": column.resolve(instance),
+                    "sub": column.resolve_sub(instance),
+                    "align_end": column.align_end,
+                    "boolean": column.boolean,
+                }
+                for column in entry.columns
+            ],
+        }
+        for instance in page.object_list
+    ]
+
+    return render(request, "dashboard/managed_list.html", {
+        "entry": entry,
+        "rows": rows,
+        "page": page,
+        "paginator": paginator,
+        "page_range": paginator.get_elided_page_range(
+            page.number, on_each_side=2, on_ends=1,
+        ),
+        "total": paginator.count,
+        "querystring": f"&{querystring}" if querystring else "",
+        "query": query,
+        "can_edit": request.user.has_perm(entry.permission),
+        "roles": role_names(request.user),
+        "is_manager": is_manager(request.user),
+    })
+
+
+@staff_required
+def managed_edit(request, slug, pk=None):
+    entry = _managed_or_404(slug)
+    if not request.user.has_perm(entry.permission):
+        raise PermissionDenied(f"You cannot change {entry.label_plural}.")
+
+    queryset = managed.staff_queryset_filter(slug, entry.model._default_manager.all())
+    instance = get_object_or_404(queryset, pk=pk) if pk else None
+
+    formset = None
+    if request.method == "POST":
+        form = entry.form_class(request.POST, request.FILES, instance=instance)
+        if entry.inline_formset:
+            formset = entry.inline_formset(
+                request.POST, instance=instance or entry.model(),
+            )
+
+        if form.is_valid() and (formset is None or formset.is_valid()):
+            with transaction.atomic():
+                saved = form.save()
+                if formset is not None:
+                    formset.instance = saved
+                    formset.save()
+
+            logger.info(
+                "%s %s %s by %s",
+                entry.label, saved.pk, "created" if pk is None else "updated",
+                request.user.email,
+            )
+            messages.success(
+                request,
+                f"{entry.label} “{saved}” {'created' if pk is None else 'saved'}.",
+            )
+            return redirect("dashboard:managed_list", slug=slug)
+
+        messages.error(request, "Please correct the errors below.")
+    else:
+        form = entry.form_class(instance=instance)
+        if entry.inline_formset:
+            formset = entry.inline_formset(instance=instance or entry.model())
+
+    return render(request, "dashboard/managed_form.html", {
+        "entry": entry,
+        "form": form,
+        "formset": formset,
+        "instance": instance,
+        "roles": role_names(request.user),
+        "is_manager": is_manager(request.user),
+    })
+
+
+@staff_required
+@require_POST
+def managed_delete(request, slug, pk):
+    entry = _managed_or_404(slug)
+    if not entry.can_delete:
+        raise PermissionDenied(
+            f"{entry.label_plural} are deactivated rather than deleted."
+        )
+    if not request.user.has_perm(entry.permission):
+        raise PermissionDenied(f"You cannot change {entry.label_plural}.")
+
+    instance = get_object_or_404(entry.model._default_manager.all(), pk=pk)
+    label = str(instance)
+
+    try:
+        instance.delete()
+    except ProtectedError:
+        messages.error(
+            request,
+            f"“{label}” is still referenced by existing records and cannot be "
+            f"deleted. Deactivate it instead.",
+        )
+        return redirect("dashboard:managed_list", slug=slug)
+
+    logger.info("%s %s deleted by %s", entry.label, label, request.user.email)
+    messages.success(request, f"{entry.label} “{label}” deleted.")
+    return redirect("dashboard:managed_list", slug=slug)
+
+
+@staff_required
+@permission_required("content.change_sitesettings", raise_exception=True)
+def site_settings(request):
+    """Contact details and social links shown on the public site."""
+    instance = SiteSettings.load()
+
+    if request.method == "POST":
+        form = SiteSettingsForm(request.POST, instance=instance)
+        if form.is_valid():
+            form.save()
+            logger.info("Site settings updated by %s", request.user.email)
+            messages.success(request, "Site settings saved.")
+            return redirect("dashboard:site_settings")
+        messages.error(request, "Please correct the errors below.")
+    else:
+        form = SiteSettingsForm(instance=instance)
+
+    return render(request, "dashboard/site_settings.html", {
+        "form": form,
+        "settings_obj": instance,
+        "roles": role_names(request.user),
+        "is_manager": is_manager(request.user),
+    })
+
+
+@staff_required
+@permission_required("pricing.change_pricingsettings", raise_exception=True)
+def pricing_settings(request):
+    """
+    Tax, currency and the two windows that govern quotes and cancellations.
+
+    Manager only, and worth the extra care: the tax rate applies to every future
+    quote, so a mistyped figure misprices the entire fleet at once.
+    """
+    if not is_manager(request.user):
+        raise PermissionDenied("Only managers can change pricing settings.")
+
+    instance = PricingSettings.load()
+
+    if request.method == "POST":
+        form = PricingSettingsForm(request.POST, instance=instance)
+        if form.is_valid():
+            form.save()
+            logger.info(
+                "Pricing settings updated by %s (fields: %s)",
+                request.user.email, ", ".join(form.changed_data) or "none",
+            )
+            messages.success(request, "Pricing settings saved.")
+            return redirect("dashboard:pricing_settings")
+        messages.error(request, "Please correct the errors below.")
+    else:
+        form = PricingSettingsForm(instance=instance)
+
+    return render(request, "dashboard/pricing_settings.html", {
+        "form": form,
+        "settings_obj": instance,
+        "roles": role_names(request.user),
+        "is_manager": True,
     })

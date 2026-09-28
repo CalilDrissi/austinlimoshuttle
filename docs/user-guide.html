@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M&amp;M Austin Limousine — Staff User Guide</title>
+<style>
+  :root{
+    --ink:#1a1d23; --muted:#6b7280; --line:#e5e7eb; --bg:#f7f8fa; --card:#fff;
+    --brand:#0e5a43; --brand2:#c9a227; --red:#c0392b; --blue:#2563eb;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5}
+  .wrap{max-width:940px;margin:0 auto;padding:0 22px 90px}
+  header.top{background:#0e0e0e;color:#fff;padding:26px 0;margin-bottom:10px}
+  header.top .wrap{display:flex;align-items:center;gap:16px}
+  header.top .logo{font-weight:800;font-size:20px;letter-spacing:.5px}
+  header.top .logo span{color:var(--brand2)}
+  header.top .sub{color:#b9c0cc;font-size:14px;margin-left:auto}
+  .intro{color:var(--muted);font-size:14px;max-width:940px;margin:16px auto 0;padding:0 22px}
+  h2{font-size:22px;margin:42px 0 4px;display:flex;align-items:center;gap:10px}
+  h2 .n{background:var(--brand);color:#fff;width:30px;height:30px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex:0 0 auto}
+  .lead{color:var(--muted);font-size:14px;margin:2px 0 14px 40px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:14px 0;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+  .cap{font-size:13px;color:var(--muted);margin-top:8px;text-align:center}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px}
+  .pill.green{background:#e7f4ee;color:var(--brand)} .pill.amber{background:#fdf3d7;color:#946a00}
+  .pill.grey{background:#eef0f3;color:var(--muted)}
+  .tip{display:flex;gap:10px;align-items:flex-start;background:#fff8e6;border:1px solid #f2e2a8;border-radius:10px;padding:11px 14px;margin:12px 0;font-size:13.5px}
+  .tip b{color:#8a6d00}
+  .tag{font-size:10px;font-weight:800;letter-spacing:.05em;padding:2px 7px;border-radius:5px;background:#f0e2a8;color:#7a5c00;flex:0 0 auto;margin-top:1px}
+  .tag.care{background:#f4c9c2;color:#8a2419}
+  /* flow diagram */
+  .flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;justify-content:center}
+  .step{flex:1;min-width:140px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center}
+  .step .ic{display:flex;justify-content:center;margin-bottom:6px}
+  .step .t{font-weight:700;font-size:14px}.step .d{font-size:12px;color:var(--muted)}
+  .arr{align-self:center;color:#c3c8d0;font-size:22px;padding:0 6px}
+  /* screenshot frame */
+  .shot{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+  .shot .bar{background:#f0f1f4;border-bottom:1px solid var(--line);padding:7px 12px;display:flex;gap:6px;align-items:center}
+  .shot .bar i{width:11px;height:11px;border-radius:50%;background:#d3d6dc;display:inline-block}
+  .shot .bar .url{margin-left:10px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .shot img.realshot{display:block;width:100%;height:auto}
+  .slot{padding:30px 16px;text-align:center;color:#9aa1ac;font-size:12.5px;line-height:1.7;
+    background:repeating-linear-gradient(45deg,#fafafa,#fafafa 10px,#f2f2f2 10px,#f2f2f2 20px)}
+  .slot code{font-family:var(--mono);background:#fff;border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:#556}
+  /* callout pins */
+  .pinrow{display:flex;gap:10px;align-items:flex-start;margin:8px 0}
+  .pin{background:var(--brand);color:#fff;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex:0 0 auto}
+  .pinrow .txt{font-size:13.5px}
+  /* pricing formula */
+  .formula{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;margin:6px 0}
+  .term{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;min-width:96px}
+  .term .t{font-weight:700;font-size:13px}.term .d{font-size:11px;color:var(--muted)}
+  .op{font-size:20px;color:#9aa1ac;font-weight:700}.eq{font-size:20px;color:var(--brand);font-weight:800}
+  .result{background:#e7f4ee;border:1px solid #bfe0d0;border-radius:10px;padding:10px 14px;text-align:center}
+  .result .t{font-weight:800;color:var(--brand)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.two{grid-template-columns:1fr}}
+  ref,.ref{color:var(--blue);font-family:var(--mono)}
+  footer{color:#9aa1ac;font-size:12px;margin-top:50px;border-top:1px solid var(--line);padding-top:14px}
+  svg{display:block}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="logo">M&amp;M <span>Austin Limousine</span></div>
+  <div class="sub">Staff User Guide</div>
+</div></header>
+<p class="intro">Set up your cars and prices first, then surcharges, then handle bookings. Sign in to the dashboard at
+<b>app.austinlimoshuttle.com/dashboard</b>.</p>
+
+<!-- reusable line icons -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <g id="i-car"><path d="M4 13l2-5h12l2 5"/><rect x="3" y="13" width="18" height="4" rx="1"/><circle cx="7.5" cy="18" r="1.4"/><circle cx="16.5" cy="18" r="1.4"/></g>
+  <g id="i-bag"><rect x="6" y="7" width="12" height="13" rx="2"/><path d="M9 7V5.5h6V7M9.5 20v1M14.5 20v1"/></g>
+  <g id="i-user"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></g>
+  <g id="i-card"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></g>
+  <g id="i-check"><circle cx="12" cy="12" r="9"/><path d="M8 12.2l2.6 2.6L16 9"/></g>
+</defs></svg>
+
+<div class="wrap">
+
+  <!-- ========== 1 · CARS & RATES ========== -->
+  <h2><span class="n">1</span>Set up your cars &amp; rates</h2>
+  <div class="lead">Start here. Each car has a rate card that prices every trip automatically.</div>
+
+  <div class="card">
+    <div class="pinrow"><span class="pin">1</span><div class="txt">Menu &rarr; <b>Vehicles &amp; rates</b>. You see every car, its seats, hourly rate and minimum fare.</div></div>
+    <figure style="margin:12px 0 0">
+      <div class="shot">
+        <div class="bar"><i></i><i></i><i></i><span class="url">/dashboard/manage/vehicles/</span></div>
+        <img class="realshot" src="user-guide/img/01-vehicles-list.png" alt="Vehicles &amp; rates list">
+        <div class="slot">Screenshot the <b>Vehicles &amp; rates</b> list<br>save as <code>user-guide/img/01-vehicles-list.png</code></div>
+      </div>
+    </figure>
+  </div>
+
+  <div class="card">
+    <div class="pinrow"><span class="pin">2</span><div class="txt">Click a car to edit its <b>rate card</b> — the per-mile bands, plus hourly rate, minimum fare and meet &amp; greet fee.</div></div>
+    <figure style="margin:12px 0 0">
+      <div class="shot">
+        <div class="bar"><i></i><i></i><i></i><span class="url">/dashboard/manage/vehicles/&hellip;/</span></div>
+        <img class="realshot" src="user-guide/img/02-vehicle-edit.png" alt="Vehicle edit — rate card">
+        <div class="slot">Screenshot a car&rsquo;s <b>edit form</b> showing the rate card (distance bands)<br>save as <code>user-guide/img/02-vehicle-edit.png</code></div>
+      </div>
+    </figure>
+    <div class="tip"><span class="tag care">CARE</span><div>Bands must <b>start at 0</b> and be continuous. Leave the last band&rsquo;s upper limit empty for &ldquo;and onwards.&rdquo; A gap prices those miles at $0; an overlap charges twice.</div></div>
+  </div>
+
+  <div class="card">
+    <div style="font-weight:700;margin-bottom:8px">How a fare is built (you never type a price)</div>
+    <div class="formula">
+      <div class="term"><div class="t">Distance bands</div><div class="d">the rate card</div></div>
+      <div class="op">+</div>
+      <div class="term"><div class="t">Surcharge</div><div class="d">see step 2</div></div>
+      <div class="op">+</div>
+      <div class="term"><div class="t">Meet &amp; Greet</div><div class="d">flat fee</div></div>
+      <div class="op">+</div>
+      <div class="term"><div class="t">Tax</div><div class="d">&nbsp;</div></div>
+      <div class="eq">=</div>
+      <div class="result"><div class="t">Fare</div><div class="d">shown to customer</div></div>
+    </div>
+    <div class="tip"><span class="tag">NOTE</span><div>The customer <b>picks the car</b>; the system reads that car&rsquo;s rate card and does the math. The <b>minimum fare</b> is the floor for very short trips.</div></div>
+  </div>
+
+  <!-- ========== 2 · SURCHARGES & EVENT DATES ========== -->
+  <h2><span class="n">2</span>Surcharges &amp; event dates</h2>
+  <div class="lead">Percentages that are added to the base fare automatically.</div>
+  <div class="two">
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:8px"><span class="pill green">Time surcharges</span></div>
+      <div class="shot">
+        <div class="bar"><i></i><i></i><i></i><span class="url">/dashboard/manage/surcharges/</span></div>
+        <img class="realshot" src="user-guide/img/03-surcharges.png" alt="Time surcharges">
+        <div class="slot">Screenshot <b>Time surcharges</b><br>save as <code>user-guide/img/03-surcharges.png</code></div>
+      </div>
+      <div class="cap">e.g. late-night pickups +20%.</div>
+    </div>
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:8px"><span class="pill green">Event dates</span></div>
+      <div class="shot">
+        <div class="bar"><i></i><i></i><i></i><span class="url">/dashboard/manage/blackout-dates/</span></div>
+        <img class="realshot" src="user-guide/img/04-event-dates.png" alt="Event dates">
+        <div class="slot">Screenshot <b>Event dates</b><br>save as <code>user-guide/img/04-event-dates.png</code></div>
+      </div>
+      <div class="cap">Busy dates that carry a surcharge.</div>
+    </div>
+  </div>
+
+  <!-- ========== 3 · BOOKINGS & DRIVER ========== -->
+  <h2><span class="n">3</span>Bookings come in &amp; assign a driver</h2>
+  <div class="lead">A customer books online; it lands here for you to handle.</div>
+
+  <div class="card">
+    <div style="font-weight:700;margin-bottom:8px">Overview — what needs attention</div>
+    <div class="shot">
+      <div class="bar"><i></i><i></i><i></i><span class="url">/dashboard/</span></div>
+      <img class="realshot" src="user-guide/img/05-overview.png" alt="Dashboard overview">
+      <div class="slot">Screenshot the <b>Overview</b> (KPI tiles + next pickups)<br>save as <code>user-guide/img/05-overview.png</code></div>
+    </div>
+    <div class="cap">The red <b>&ldquo;No driver&rdquo;</b> tile counts bookings still to assign.</div>
+  </div>
+
+  <div class="two">
+    <div class="card">
+      <div class="pinrow"><span class="pin">1</span><div class="txt"><b>Bookings</b> (or Dispatch) &rarr; click the blue <span class="ref">reference</span>.</div></div>
+      <div class="pinrow"><span class="pin">2</span><div class="txt">Open the <b>Driver</b> dropdown and choose a driver.</div></div>
+      <div class="pinrow"><span class="pin">3</span><div class="txt">Click <b>Save changes</b> — the customer is emailed automatically.</div></div>
+      <div class="tip"><span class="tag">NOTE</span><div><b>Drivers aren&rsquo;t tied to cars.</b> Any driver can take any booking — the car was already chosen by the customer.</div></div>
+    </div>
+    <div class="card">
+      <div class="shot">
+        <div class="bar"><i></i><i></i><i></i><span class="url">/dashboard/bookings/&lt;ref&gt;/</span></div>
+        <img class="realshot" src="user-guide/img/06-booking-driver.png" alt="Booking detail — assign driver">
+        <div class="slot">Screenshot a <b>booking detail</b> showing the Driver dropdown + Save<br>save as <code>user-guide/img/06-booking-driver.png</code></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 4 · WHAT THE CUSTOMER SEES ========== -->
+  <h2><span class="n">4</span>What the customer sees</h2>
+  <div class="lead">So you know what&rsquo;s on their end.</div>
+  <div class="card">
+    <div class="flow">
+      <div class="step"><div class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0e5a43" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><use href="#i-car"/></svg></div><div class="t">Vehicle</div><div class="d">picks a car + price</div></div>
+      <div class="arr">&rarr;</div>
+      <div class="step"><div class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0e5a43" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><use href="#i-bag"/></svg></div><div class="t">Extras</div><div class="d">flight, luggage</div></div>
+      <div class="arr">&rarr;</div>
+      <div class="step"><div class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0e5a43" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><use href="#i-user"/></svg></div><div class="t">Details</div><div class="d">name, email</div></div>
+      <div class="arr">&rarr;</div>
+      <div class="step"><div class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0e5a43" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><use href="#i-card"/></svg></div><div class="t">Payment</div><div class="d">cash or card</div></div>
+      <div class="arr">&rarr;</div>
+      <div class="step"><div class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0e5a43" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><use href="#i-check"/></svg></div><div class="t">Confirmation</div><div class="d">+ receipt PDF</div></div>
+    </div>
+  </div>
+  <div class="two">
+    <div class="card">
+      <div class="shot">
+        <div class="bar"><i></i><i></i><i></i><span class="url">localhost:3000/booking/vehicle</span></div>
+        <img class="realshot" src="user-guide/img/07-choose-car.png" alt="Customer chooses a car">
+        <div class="slot">Screenshot the customer <b>vehicle</b> step (priced cars)<br>save as <code>user-guide/img/07-choose-car.png</code></div>
+      </div>
+      <div class="cap">Customer picks a car at its quoted price.</div>
+    </div>
+    <div class="card">
+      <div class="shot">
+        <div class="bar"><i></i><i></i><i></i><span class="url">localhost:3000/booking/confirmation</span></div>
+        <img class="realshot" src="user-guide/img/08-confirmation.png" alt="Customer confirmation + receipt">
+        <div class="slot">Screenshot the <b>confirmation</b> page (with Download receipt)<br>save as <code>user-guide/img/08-confirmation.png</code></div>
+      </div>
+      <div class="cap">Confirmation + receipt PDF. Status updates online.</div>
+    </div>
+  </div>
+  <div class="tip"><span class="tag">NOTE</span><div>On the site the customer sees their booking <b>status</b> (Pending &rarr; Confirmed) and can download a <b>receipt PDF</b>. The assigned <b>driver is sent by email</b> — it is not shown on the website.</div></div>
+
+  <footer>M&amp;M Austin Limousine &middot; Staff User Guide</footer>
+</div>
+
+<script>
+// Show the labelled placeholder only until a real screenshot PNG exists.
+document.querySelectorAll('img.realshot').forEach(function(img){
+  var slot = img.parentElement.querySelector('.slot');
+  function ok(){ if(slot) slot.style.display='none'; img.style.display='block'; }
+  function fail(){ img.style.display='none'; if(slot) slot.style.display='block'; }
+  if(img.complete){ (img.naturalWidth>0?ok:fail)(); }
+  img.addEventListener('load', ok); img.addEventListener('error', fail);
+});
+</script>
+</body>
+</html>

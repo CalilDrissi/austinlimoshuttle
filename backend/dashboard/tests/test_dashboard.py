@@ -10,6 +10,7 @@ from decimal import Decimal
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.urls import reverse
 from django.utils import timezone
 
@@ -56,9 +57,17 @@ def staff_in(role, roles):
 class TestAccessControl:
     @pytest.mark.parametrize("url_name", DASHBOARD_URLS)
     def test_anonymous_is_redirected(self, client, url_name):
+        """
+        To our own sign-in page, not Django's.
+
+        The gate is the first screen anyone sees. Sending staff to the admin
+        login made the product look like Django's admin, which is also the one
+        thing the dashboard exists not to be.
+        """
         response = client.get(reverse(url_name))
         assert response.status_code == 302
-        assert "/admin/login/" in response["Location"]
+        assert "/dashboard/login/" in response["Location"]
+        assert "/admin/login/" not in response["Location"]
 
     @pytest.mark.parametrize("url_name", DASHBOARD_URLS)
     def test_customer_account_is_forbidden(self, client, roles, url_name):
@@ -292,3 +301,536 @@ class TestNoRawTemplateSyntaxLeaks:
             assert marker not in body, (
                 f"{url_name} leaked raw template syntax {marker!r} into the page"
             )
+
+
+@pytest.mark.django_db
+class TestStaffSignIn:
+    """
+    The branded sign-in page that replaced Django's admin login.
+
+    Worth testing beyond "it renders": the page is the authentication boundary,
+    and its error message is deliberately vague for a reason.
+    """
+
+    def test_the_page_renders_our_own_template(self, client):
+        response = client.get(reverse("dashboard:login"))
+        body = response.content.decode()
+
+        assert response.status_code == 200
+        assert "dashboard/login.html" in [t.name for t in response.templates if t.name]
+        assert "Austin Limo Shuttle" in body
+        # Vendored, never a CDN -- the CSP would block an external stylesheet
+        # silently and the page would render unstyled with no server error.
+        assert "vendor/bootstrap/bootstrap.min.css" in body
+        assert "cdn." not in body
+
+    def test_no_inline_script_because_the_csp_forbids_it(self, client):
+        """
+        The CSP sets script-src 'self'. An inline <script> is dropped by the
+        browser with no server-side error -- the page looks perfect and the
+        behaviour silently does not happen. The password reveal shipped inline
+        the first time and did nothing in production while passing locally.
+        """
+        body = client.get(reverse("dashboard:login")).content.decode()
+
+        import re
+        inline = re.findall(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", body, re.S)
+        substantive = [s for s in inline if s.strip()]
+        assert not substantive, f"inline script on the login page: {substantive[:1]}"
+        assert "js/login.js" in body
+
+    def test_correct_credentials_reach_the_dashboard(self, client, roles):
+        User.objects.create_user(
+            email="dispatcher@example.com", password="DashLocal!2026", is_staff=True,
+        )
+        response = client.post(
+            reverse("dashboard:login"),
+            {"username": "dispatcher@example.com", "password": "DashLocal!2026"},
+        )
+        assert response.status_code == 302
+        assert response["Location"] == reverse("dashboard:home")
+
+    def test_a_wrong_password_does_not_say_which_half_was_wrong(self, client):
+        User.objects.create_user(email="real@example.com", password="DashLocal!2026")
+        response = client.post(
+            reverse("dashboard:login"),
+            {"username": "real@example.com", "password": "wrong-password"},
+        )
+        body = response.content.decode().lower()
+
+        assert response.status_code == 200
+        assert "email or password is incorrect" in body
+        # Naming the field would confirm the address exists.
+        assert "password is correct" not in body
+        assert "no account" not in body
+
+    def test_next_is_honoured_so_a_deep_link_still_lands(self, client, roles):
+        User.objects.create_user(
+            email="deep@example.com", password="DashLocal!2026", is_staff=True,
+        )
+        response = client.post(
+            f"{reverse('dashboard:login')}?next={reverse('dashboard:dispatch')}",
+            {"username": "deep@example.com", "password": "DashLocal!2026",
+             "next": reverse("dashboard:dispatch")},
+        )
+        assert response["Location"] == reverse("dashboard:dispatch")
+
+    def test_signing_out_requires_post_and_returns_to_the_gate(self, client, roles):
+        User.objects.create_user(
+            email="out@example.com", password="DashLocal!2026", is_staff=True,
+        )
+        client.login(username="out@example.com", password="DashLocal!2026")
+
+        # GET must not log anyone out -- that would be a CSRF-able side effect.
+        assert client.get(reverse("dashboard:logout")).status_code == 405
+
+        response = client.post(reverse("dashboard:logout"))
+        assert response.status_code == 302
+        assert reverse("dashboard:login") in response["Location"]
+        assert client.get(reverse("dashboard:home")).status_code == 302
+
+
+@pytest.mark.django_db
+class TestAdminLoginIsFunnelled:
+    """
+    The admin ships its own login view. Left alone it is a second sign-in
+    screen for the same credentials, in a different visual language.
+    """
+
+    def test_admin_login_redirects_to_the_branded_gate(self, client):
+        response = client.get("/admin/login/")
+        assert response.status_code == 302
+        assert reverse("dashboard:login") in response["Location"]
+
+    def test_it_carries_the_destination_across(self, client):
+        response = client.get("/admin/login/", {"next": "/admin/fleet/vehicle/"})
+        assert "next=%2Fadmin%2Ffleet%2Fvehicle%2F" in response["Location"]
+
+    def test_it_is_not_an_open_redirect(self, client):
+        """Reflecting ?next= unchecked would make this a phishing primitive."""
+        response = client.get("/admin/login/", {"next": "https://evil.example.com/"})
+        assert "evil.example.com" not in response["Location"]
+        assert "next=%2Fadmin%2F" in response["Location"]
+
+    def test_the_admin_itself_still_works_once_signed_in(self, client, roles):
+        user = User.objects.create_superuser(
+            email="boss@example.com", password="DashLocal!2026",
+        )
+        client.force_login(user)
+        assert client.get("/admin/").status_code == 200
+
+
+@pytest.mark.django_db
+class TestPagination:
+    """
+    Both lists used to truncate — bookings at 50, enquiries at 100 — and told
+    you to narrow the filters. With 2,217 bookings imported, older records were
+    simply unreachable through the interface.
+    """
+
+    def _staff(self, client, roles):
+        staff_in(DISPATCHER, roles)
+        client.login(username="dispatcher@example.com", password="DashLocal!2026")
+
+    def test_bookings_paginate_instead_of_truncating(self, client, roles, vehicle):
+        for i in range(120):
+            Booking.objects.create(
+                vehicle=vehicle, pickup_address=f"pickup {i}",
+                pickup_at=timezone.now() + timedelta(hours=i + 1),
+                total=Decimal("50.00"),
+            )
+        self._staff(client, roles)
+
+        first = client.get(reverse("dashboard:bookings"))
+        assert first.context["page"].paginator.count == 120
+        assert first.context["page"].paginator.num_pages == 3
+        assert len(first.context["bookings"]) == 50
+        assert b"Only the first" not in first.content
+
+        last = client.get(reverse("dashboard:bookings"), {"page": 3})
+        assert len(last.context["bookings"]) == 20
+
+        # Every record is reachable, which is the whole point.
+        seen = set()
+        for number in (1, 2, 3):
+            response = client.get(reverse("dashboard:bookings"), {"page": number})
+            seen.update(b.reference for b in response.context["bookings"])
+        assert len(seen) == 120
+
+    def test_filters_survive_a_page_change(self, client, roles, vehicle):
+        for i in range(60):
+            Booking.objects.create(
+                vehicle=vehicle, pickup_address="x",
+                pickup_at=timezone.now() + timedelta(hours=i + 1),
+                total=Decimal("50.00"),
+                status=Booking.Status.CANCELLED if i % 2 else Booking.Status.CONFIRMED,
+            )
+        self._staff(client, roles)
+
+        response = client.get(
+            reverse("dashboard:bookings"),
+            {"status": Booking.Status.CONFIRMED, "page": 1},
+        )
+        # The links must carry the filter, or page 2 shows a different set than
+        # the one being paged through.
+        assert "status=confirmed" in response.context["querystring"]
+        assert "page=" not in response.context["querystring"]
+        assert response.context["page"].paginator.count == 30
+
+    def test_csv_export_is_the_whole_filtered_set_not_one_page(
+        self, client, roles, vehicle,
+    ):
+        for i in range(70):
+            Booking.objects.create(
+                vehicle=vehicle, pickup_address="x",
+                pickup_at=timezone.now() + timedelta(hours=i + 1),
+                total=Decimal("50.00"),
+            )
+        self._staff(client, roles)
+
+        response = client.get(reverse("dashboard:bookings"), {"export": "csv"})
+        rows = response.content.decode().strip().splitlines()
+        assert len(rows) == 71  # 70 bookings plus the header
+
+    def test_a_silly_page_number_does_not_500(self, client, roles, booking):
+        self._staff(client, roles)
+        for value in ("0", "-1", "abc", "99999"):
+            assert client.get(
+                reverse("dashboard:bookings"), {"page": value}
+            ).status_code == 200
+
+    def test_enquiries_paginate_too(self, client, roles):
+        for i in range(130):
+            ContactMessage.objects.create(
+                name=f"Person {i}", email=f"p{i}@example.org",
+                message="Do you cover Round Rock?", is_read=True,
+                # No auto_now_add on this model -- the API view sets it.
+                created_at=timezone.now(),
+            )
+        self._staff(client, roles)
+
+        response = client.get(reverse("dashboard:enquiries"), {"state": "all"})
+        assert response.context["page"].paginator.count == 130
+        assert len(response.context["enquiries"]) == 50
+
+        page3 = client.get(
+            reverse("dashboard:enquiries"), {"state": "all", "page": 3},
+        )
+        assert len(page3.context["enquiries"]) == 30
+        assert "state=all" in page3.context["querystring"]
+
+
+@pytest.mark.django_db
+class TestQuickFiltersAndCalendar:
+    def _staff(self, client, roles):
+        staff_in(DISPATCHER, roles)
+        client.login(username="dispatcher@example.com", password="DashLocal!2026")
+
+    def test_today_filter_shows_only_todays_pickups(self, client, roles, vehicle):
+        today = timezone.localdate()
+        now = timezone.now()
+        todays = Booking.objects.create(
+            vehicle=vehicle, pickup_address="today", total=Decimal("50"),
+            pickup_at=now.replace(hour=12, minute=0),
+        )
+        next_week = Booking.objects.create(
+            vehicle=vehicle, pickup_address="later", total=Decimal("50"),
+            pickup_at=now + timedelta(days=7),
+        )
+        self._staff(client, roles)
+
+        response = client.get(
+            reverse("dashboard:bookings"),
+            {"from": today.isoformat(), "to": today.isoformat()},
+        )
+        body = response.content.decode()
+        assert todays.reference in body
+        assert next_week.reference not in body
+        assert response.context["active_quick"] == "today"
+
+    def test_tomorrow_filter(self, client, roles, vehicle):
+        tomorrow = timezone.localdate() + timedelta(days=1)
+        booking = Booking.objects.create(
+            vehicle=vehicle, pickup_address="tomorrow", total=Decimal("50"),
+            pickup_at=timezone.now() + timedelta(days=1),
+        )
+        self._staff(client, roles)
+
+        response = client.get(
+            reverse("dashboard:bookings"),
+            {"from": tomorrow.isoformat(), "to": tomorrow.isoformat()},
+        )
+        assert booking.reference in response.content.decode()
+        assert response.context["active_quick"] == "tomorrow"
+
+    def test_calendar_renders_a_full_month_grid(self, client, roles, booking):
+        self._staff(client, roles)
+        response = client.get(reverse("dashboard:calendar"))
+
+        assert response.status_code == 200
+        # Whole weeks always, so every row has seven cells.
+        assert all(len(week) == 7 for week in response.context["weeks"])
+        assert len(response.context["weeks"]) in (4, 5, 6)
+
+    def test_calendar_places_a_booking_on_its_own_day(self, client, roles, vehicle):
+        when = timezone.now() + timedelta(days=3)
+        booking = Booking.objects.create(
+            vehicle=vehicle, pickup_address="x", total=Decimal("50"), pickup_at=when,
+        )
+        self._staff(client, roles)
+
+        response = client.get(reverse("dashboard:calendar"))
+        target = timezone.localtime(when).date()
+        placed = [
+            day for week in response.context["weeks"] for day in week
+            if day["date"] == target
+        ]
+        assert placed and booking in placed[0]["bookings"]
+
+    def test_calendar_hides_cancelled_bookings(self, client, roles, vehicle):
+        Booking.objects.create(
+            vehicle=vehicle, pickup_address="x", total=Decimal("50"),
+            pickup_at=timezone.now() + timedelta(days=2),
+            status=Booking.Status.CANCELLED,
+        )
+        self._staff(client, roles)
+        response = client.get(reverse("dashboard:calendar"))
+        assert response.context["month_total"] == 0
+
+    def test_calendar_month_navigation(self, client, roles):
+        self._staff(client, roles)
+        response = client.get(reverse("dashboard:calendar"), {"year": 2026, "month": 1})
+        assert "January 2026" in response.content.decode()
+        # December of the previous year, not month zero.
+        assert response.context["prev"] == {"year": 2025, "month": 12}
+        assert response.context["next"] == {"year": 2026, "month": 2}
+
+    def test_calendar_survives_a_nonsense_month(self, client, roles):
+        self._staff(client, roles)
+        for params in ({"month": "13"}, {"month": "abc"}, {"year": "0"}):
+            assert client.get(
+                reverse("dashboard:calendar"), params
+            ).status_code == 200
+
+
+@pytest.mark.django_db
+class TestManagedRecords:
+    """
+    The screens that replace Django's admin.
+
+    The client is never to be sent to /admin/, so anything they need must work
+    here — and must respect the same permission boundaries the admin did.
+    """
+
+    def _manager(self, client, roles):
+        user = staff_in(MANAGER, roles)
+        client.login(username="manager@example.com", password="DashLocal!2026")
+        return user
+
+    def test_every_registered_screen_loads_for_a_manager(self, client, roles):
+        from dashboard.crud import REGISTRY
+        self._manager(client, roles)
+        for slug in REGISTRY:
+            response = client.get(reverse("dashboard:managed_list", args=[slug]))
+            assert response.status_code == 200, f"{slug} returned {response.status_code}"
+
+    def test_a_driver_can_be_created_and_edited(self, client, roles):
+        self._manager(client, roles)
+
+        client.post(reverse("dashboard:managed_create", args=["drivers"]), {
+            "full_name": "Alex Ruiz", "phone": "5125550134",
+            "email": "alex@example.org", "is_active": "on", "notes": "",
+        })
+        driver = Driver.objects.get(full_name="Alex Ruiz")
+
+        client.post(reverse("dashboard:managed_edit", args=["drivers", driver.pk]), {
+            "full_name": "Alex Ruiz", "phone": "5125550199",
+            "email": "alex@example.org", "notes": "",
+        })
+        driver.refresh_from_db()
+        assert driver.phone == "5125550199"
+        assert driver.is_active is False  # checkbox omitted means unchecked
+
+    def test_dispatcher_cannot_reach_the_rate_card(self, client, roles):
+        """A rate card edit reprices every future quote. Managers only."""
+        staff_in(DISPATCHER, roles)
+        client.login(username="dispatcher@example.com", password="DashLocal!2026")
+
+        assert client.get(
+            reverse("dashboard:managed_create", args=["vehicles"])
+        ).status_code == 403
+
+    def test_editor_can_reach_content_but_not_vehicles(self, client, roles):
+        staff_in(EDITOR, roles)
+        client.login(username="editor@example.com", password="DashLocal!2026")
+
+        # An Editor has no bookings permission, so the dashboard gate itself
+        # turns them away -- content editing happens through the same gate.
+        assert client.get(
+            reverse("dashboard:managed_list", args=["pages"])
+        ).status_code in (302, 403)
+
+    def test_staff_and_customer_lists_do_not_bleed_into_each_other(
+        self, client, roles,
+    ):
+        """Both are rows in one table; each screen must exclude the other."""
+        self._manager(client, roles)
+        User.objects.create_user(email="buyer@example.org", password="DashLocal!2026")
+
+        staff_page = client.get(reverse("dashboard:managed_list", args=["staff"]))
+        customer_page = client.get(reverse("dashboard:managed_list", args=["customers"]))
+
+        # Against the rows, not the rendered page: the sidebar prints the
+        # signed-in user's own email on every screen, which would make a
+        # whole-page search pass or fail for the wrong reason.
+        def emails(response):
+            return {row["instance"].email for row in response.context["rows"]}
+
+        assert "buyer@example.org" not in emails(staff_page)
+        assert "buyer@example.org" in emails(customer_page)
+        assert "manager@example.com" in emails(staff_page)
+        assert "manager@example.com" not in emails(customer_page)
+
+    def test_a_new_staff_account_gets_its_role_and_can_sign_in(self, client, roles):
+        self._manager(client, roles)
+
+        client.post(reverse("dashboard:managed_create", args=["staff"]), {
+            "email": "newhire@example.com", "first_name": "New", "last_name": "Hire",
+            "phone": "", "is_active": "on",
+            "role": Group.objects.get(name=DISPATCHER).pk,
+            "new_password": "AnotherStrongPass!99",
+        })
+
+        user = User.objects.get(email="newhire@example.com")
+        assert user.is_staff
+        assert list(user.groups.values_list("name", flat=True)) == [DISPATCHER]
+        assert user.check_password("AnotherStrongPass!99")
+
+    def test_a_weak_staff_password_is_refused(self, client, roles):
+        self._manager(client, roles)
+        client.post(reverse("dashboard:managed_create", args=["staff"]), {
+            "email": "weak@example.com", "is_active": "on", "new_password": "1234",
+        })
+        assert not User.objects.filter(email="weak@example.com").exists()
+
+    def test_editing_staff_without_a_password_keeps_the_old_one(self, client, roles):
+        self._manager(client, roles)
+        user = User.objects.create_user(
+            email="keeps@example.com", password="DashLocal!2026", is_staff=True,
+        )
+
+        client.post(reverse("dashboard:managed_edit", args=["staff", user.pk]), {
+            "email": "keeps@example.com", "first_name": "Still", "last_name": "Here",
+            "phone": "", "is_active": "on", "new_password": "",
+        })
+
+        user.refresh_from_db()
+        assert user.first_name == "Still"
+        assert user.check_password("DashLocal!2026")
+
+    def test_staff_accounts_cannot_be_deleted(self, client, roles):
+        """The audit trail points at them; deactivation is the supported route."""
+        user = self._manager(client, roles)
+        response = client.post(
+            reverse("dashboard:managed_delete", args=["staff", user.pk])
+        )
+        assert response.status_code == 403
+        assert User.objects.filter(pk=user.pk).exists()
+
+    def test_an_unknown_slug_is_a_404_not_a_500(self, client, roles):
+        self._manager(client, roles)
+        assert client.get(
+            reverse("dashboard:managed_list", args=["nonsense"])
+        ).status_code == 404
+
+
+@pytest.mark.django_db
+class TestRateCardValidation:
+    """
+    Distance bands are cumulative, so a card can be wrong while every row in it
+    is individually valid. These are the two failures that misprice silently.
+    """
+
+    def _post_bands(self, client, vehicle, bands):
+        data = {
+            "name": vehicle.name, "slug": vehicle.slug, "description": "",
+            "features": "", "passenger_capacity": "3", "luggage_capacity": "2",
+            "hourly_rate": "85.00", "meet_greet_fee": "0.00",
+            "minimum_fare": "45.00", "display_order": "0", "is_active": "on",
+            "bands-TOTAL_FORMS": str(len(bands)),
+            "bands-INITIAL_FORMS": "0",
+            "bands-MIN_NUM_FORMS": "0",
+            "bands-MAX_NUM_FORMS": "1000",
+        }
+        for i, (start, end, rate) in enumerate(bands):
+            data[f"bands-{i}-from_miles"] = str(start)
+            data[f"bands-{i}-to_miles"] = "" if end is None else str(end)
+            data[f"bands-{i}-rate_per_mile"] = str(rate)
+        return client.post(
+            reverse("dashboard:managed_edit", args=["vehicles", vehicle.pk]), data,
+        )
+
+    def test_a_gap_between_bands_is_refused(self, client, roles, vehicle):
+        staff_in(MANAGER, roles)
+        client.login(username="manager@example.com", password="DashLocal!2026")
+
+        # Nothing prices miles 6 to 10, so those four miles would cost nothing.
+        response = self._post_bands(
+            client, vehicle, [(0, 6, "3.50"), (10, None, "2.90")],
+        )
+        assert response.status_code == 200
+        assert b"Nothing prices the miles between" in response.content
+        assert vehicle.bands.count() == 0
+
+    def test_overlapping_bands_are_refused(self, client, roles, vehicle):
+        staff_in(MANAGER, roles)
+        client.login(username="manager@example.com", password="DashLocal!2026")
+
+        # Miles 5 to 6 would be charged by both bands.
+        response = self._post_bands(
+            client, vehicle, [(0, 6, "3.50"), (5, None, "2.90")],
+        )
+        assert response.status_code == 200
+        assert b"charged twice" in response.content
+        assert vehicle.bands.count() == 0
+
+    def test_a_card_not_starting_at_zero_is_refused(self, client, roles, vehicle):
+        staff_in(MANAGER, roles)
+        client.login(username="manager@example.com", password="DashLocal!2026")
+
+        response = self._post_bands(client, vehicle, [(2, None, "3.50")])
+        assert b"must start at 0 miles" in response.content
+        assert vehicle.bands.count() == 0
+
+    def test_a_continuous_card_saves(self, client, roles, vehicle):
+        staff_in(MANAGER, roles)
+        client.login(username="manager@example.com", password="DashLocal!2026")
+
+        response = self._post_bands(
+            client, vehicle, [(0, 6, "3.50"), (6, 50, "2.90"), (50, None, "2.40")],
+        )
+        assert response.status_code == 302
+        assert vehicle.bands.count() == 3
+
+
+@pytest.mark.django_db
+class TestSingletonSettingsScreens:
+    def test_site_settings_saves(self, client, roles):
+        staff_in(MANAGER, roles)
+        client.login(username="manager@example.com", password="DashLocal!2026")
+
+        response = client.post(reverse("dashboard:site_settings"), {
+            "contact_phone": "+1 (512) 555-0134",
+            "contact_email": "info@austinlimoshuttle.com",
+            "ops_notification_email": "dispatch@austinlimoshuttle.com",
+            "facebook": "", "instagram": "", "twitter": "", "linkedin": "",
+        })
+        assert response.status_code == 302
+
+        from content.models import SiteSettings
+        assert SiteSettings.load().contact_phone == "+1 (512) 555-0134"
+
+    def test_pricing_settings_are_manager_only(self, client, roles):
+        staff_in(DISPATCHER, roles)
+        client.login(username="dispatcher@example.com", password="DashLocal!2026")
+        assert client.get(reverse("dashboard:pricing_settings")).status_code == 403

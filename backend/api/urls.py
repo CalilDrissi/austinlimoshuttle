@@ -11,11 +11,18 @@ urlpatterns = [
     path("pages/", views.page_list, name="pages"),
     path("pages/<slug:slug>/", views.page_detail, name="page_detail"),
     path("vehicles/", views.vehicle_list, name="vehicles"),
+    path("site-settings/", views.site_settings, name="site_settings"),
     path("availability/", views.availability, name="availability"),
 
     # Quoting and booking
     path("quotes/", views.create_quote, name="quotes"),
     path("bookings/", views.create_booking, name="create_booking"),
+    path("bookings/<str:reference>/status/", views.booking_status,
+         name="booking_status"),
+    path("bookings/<str:reference>/receipt/", views.booking_receipt,
+         name="booking_receipt"),
+    path("bookings/<str:reference>/pay-cash/", payment_views.pay_cash,
+         name="pay_cash"),
 
     # Customer account
     path("account/bookings/", views.my_bookings, name="my_bookings"),
@@ -23,6 +30,7 @@ urlpatterns = [
          name="my_booking_detail"),
 
     # Auth
+    path("auth/csrf/", views.auth_csrf, name="csrf"),
     path("auth/login/", views.auth_login, name="login"),
     path("auth/logout/", views.auth_logout, name="logout"),
     path("auth/register/", views.auth_register, name="register"),

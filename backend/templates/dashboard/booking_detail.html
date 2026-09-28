@@ -71,7 +71,7 @@
                 <td class="small text-nowrap">{{ change.changed_at|date:"j M Y, H:i" }}</td>
                 <td class="small">{{ change.from_status|default:"—" }}
                   <i class="bi bi-arrow-right mx-1"></i><strong>{{ change.to_status }}</strong></td>
-                <td class="small">{{ change.changed_by.get_full_name|default:change.changed_by.email|default:"system" }}</td>
+                <td class="small">{% if change.changed_by %}{{ change.changed_by.get_full_name|default:change.changed_by.email }}{% else %}system{% endif %}</td>
                 <td class="small text-secondary">{{ change.note|default:"" }}</td>
               </tr>
             {% endfor %}

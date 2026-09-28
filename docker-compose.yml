@@ -1,0 +1,82 @@
+# Full local stack for M&M Austin Limousine: MariaDB + Django + Next.js.
+#
+#   docker compose up --build          # start everything
+#   docker compose down                # stop (keeps the db volume)
+#   docker compose down -v             # stop and wipe the database
+#
+# Everything here is local and disposable. It never points at InMotion
+# production or the live site.
+#
+# Ports on the host:
+#   3307 -> MariaDB   (matches the existing ops/ convention)
+#   8000 -> Django API + staff dashboard
+#   3000 -> Next.js frontend
+#
+# The browser reaches the API at http://localhost:8000; the backend reaches the
+# database at host "db" on the internal 3306. django-environ does not overwrite
+# variables already in the environment, so the DB_HOST/DB_PORT set here win over
+# backend/.env.
+
+services:
+  db:
+    image: mariadb:10.11
+    container_name: limo-db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: localdevonly
+      MARIADB_DATABASE: austinlimo
+      MARIADB_USER: austinlimo
+      MARIADB_PASSWORD: localdevonly
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3307:3306"
+    volumes:
+      - limo-db-data:/var/lib/mysql
+      - ./ops/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: ./backend
+    container_name: limo-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      DJANGO_SECRET_KEY: dev-only-change-me
+      DJANGO_DEBUG: "true"
+      DB_HOST: db
+      DB_PORT: "3306"
+      LEGACY_DB_HOST: db
+      LEGACY_DB_PORT: "3306"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: limo-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000/api
+      NEXT_PUBLIC_USE_MOCKS: "false"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  limo-db-data:

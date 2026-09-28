@@ -3,6 +3,11 @@
 backend/.env
 .secrets/
 
+# The handoff archive carries the session transcript, which contains live
+# credentials in plain text. It is for moving between our own machines.
+handoff/
+handoff-*.zip
+
 # --- Legacy audit artefacts ---
 # The legacy source and DB dump are the client's production code and data.
 legacy/
@@ -27,7 +32,16 @@ node_modules/
 frontend/node_modules/
 frontend/.next/
 frontend/out/
-frontend/.env.local
+.env.local
+frontend/.env*.local
+frontend/.storybook-static/
+frontend/storybook-static/
+
+# Test output — traces/screenshots can capture real records; never commit.
+test-results/
+frontend/test-results/
+frontend/playwright-report/
+playwright/.cache/
 
 # The scraped template mirror is the client's supplied material, not ours.
 luxride-nextjs.vercel.appx/

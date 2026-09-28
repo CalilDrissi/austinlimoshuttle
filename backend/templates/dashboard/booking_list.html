@@ -1,9 +1,25 @@
 {% extends "dashboard/base.html" %}
 {% block title %}Bookings{% endblock %}
 {% block page_title %}Bookings{% endblock %}
-{% block lede %}<p class="lede">Showing {{ showing }} of {{ total|default:0 }} matching bookings.</p>{% endblock %}
+{% block lede %}<p class="lede">{{ total|default:0 }} matching booking{{ total|pluralize }}{% if page.paginator.num_pages > 1 %}, page {{ page.number }} of {{ page.paginator.num_pages }}{% endif %}.</p>{% endblock %}
 
 {% block content %}
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+  <div class="btn-group btn-group-sm">
+    <a class="btn {% if active_quick == 'today' %}btn-brand{% else %}btn-outline-secondary{% endif %}"
+       href="?from={{ quick_ranges.today.from }}&to={{ quick_ranges.today.to }}">Today</a>
+    <a class="btn {% if active_quick == 'tomorrow' %}btn-brand{% else %}btn-outline-secondary{% endif %}"
+       href="?from={{ quick_ranges.tomorrow.from }}&to={{ quick_ranges.tomorrow.to }}">Tomorrow</a>
+    <a class="btn {% if active_quick == 'week' %}btn-brand{% else %}btn-outline-secondary{% endif %}"
+       href="?from={{ quick_ranges.week.from }}&to={{ quick_ranges.week.to }}">Next 7 days</a>
+    <a class="btn {% if not active_quick and not filters.from and not filters.to %}btn-brand{% else %}btn-outline-secondary{% endif %}"
+       href="{% url 'dashboard:bookings' %}">All</a>
+  </div>
+  <a class="btn btn-sm btn-outline-secondary ms-auto" href="{% url 'dashboard:calendar' %}">
+    <i class="bi bi-calendar3"></i> Calendar view
+  </a>
+</div>
+
 <div class="card mb-3">
   <div class="card-body py-3">
     <form method="get" class="row g-2 align-items-end">
@@ -71,11 +87,7 @@
         </tbody>
       </table>
     </div>
-    {% if total > showing %}
-      <div class="card-footer bg-white small text-secondary">
-        Only the first {{ showing }} are shown. Narrow the filters, or export to CSV for the full set.
-      </div>
-    {% endif %}
+    {% include "dashboard/_pagination.html" %}
   </div>
 {% else %}
   <div class="card"><div class="empty-state">

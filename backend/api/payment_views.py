@@ -26,11 +26,12 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 
-from bookings.models import Booking
+from bookings.models import Booking, BookingStatusChange
 from payments import gateway
 from payments.models import Payment, PaymentSettings, WebhookEvent
 
 from .serializers import (
+    BookingStatusSerializer,
     DetailSerializer,
     PaymentConfigSerializer,
     PaymentIntentRequestSerializer,
@@ -146,6 +147,67 @@ def create_intent(request):
         "currency": booking.currency,
         "reference": booking.reference,
     })
+
+
+@extend_schema(
+    tags=["payments"],
+    summary="Confirm a booking for cash / pay-on-arrival",
+    description=(
+        "Confirms a pending booking without an online payment — the fare is "
+        "collected by the driver. Records a cash payment for the booking's own "
+        "amount (never a client-supplied one) and moves the booking to "
+        "`confirmed`.\n\n"
+        "Scoped like the other reference endpoints: a signed-in customer may "
+        "only settle their own booking; a guest booking is settled by whoever "
+        "holds the reference."
+    ),
+    request=None,
+    responses={
+        200: BookingStatusSerializer,
+        404: DetailSerializer,
+        409: OpenApiResponse(DetailSerializer,
+                             description="Already paid, or the booking was cancelled."),
+    },
+)
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@throttle_classes([AnonRateThrottle])
+def pay_cash(request, reference):
+    """Confirm a booking as cash / pay-on-arrival."""
+    booking = Booking.objects.filter(reference=reference).first()
+    if booking is None:
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if booking.customer_id and request.user.is_authenticated \
+            and booking.customer_id != request.user.id:
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if booking.status == Booking.Status.CANCELLED:
+        return Response({"detail": "This booking was cancelled."},
+                        status=status.HTTP_409_CONFLICT)
+    if booking.payments.filter(status=Payment.Status.SUCCEEDED).exists():
+        return Response({"detail": "This booking is already paid."},
+                        status=status.HTTP_409_CONFLICT)
+
+    with transaction.atomic():
+        Payment.objects.create(
+            booking=booking,
+            provider=Payment.Provider.CASH,
+            amount=booking.total,
+            currency=booking.currency,
+            status=Payment.Status.SUCCEEDED,
+        )
+        if booking.status == Booking.Status.PENDING:
+            BookingStatusChange.objects.create(
+                booking=booking,
+                from_status=booking.status,
+                to_status=Booking.Status.CONFIRMED,
+                note="Cash — pay the driver",
+            )
+            booking.status = Booking.Status.CONFIRMED
+            booking.save(update_fields=["status", "updated_at"])
+
+    return Response(BookingStatusSerializer(booking).data)
 
 
 @extend_schema(

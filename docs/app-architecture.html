@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M&amp;M Austin Limousine — Developer Docs</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#141824; --panel2:#1b2130; --ink:#e8ecf3; --muted:#8b94a6;
+    --line:#2a3140; --accent:#c9a227; --blue:#4a9eff; --green:#3fb950; --amber:#d6a41f;
+    --red:#f85149; --purple:#a970ff; --teal:#2bb6a3;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;font-size:15px}
+  a{color:var(--blue);text-decoration:none} a:hover{text-decoration:underline}
+  .layout{display:flex;align-items:flex-start}
+  nav.side{position:sticky;top:0;height:100vh;width:250px;flex:0 0 250px;overflow-y:auto;
+    background:var(--panel);border-right:1px solid var(--line);padding:22px 16px}
+  nav.side h1{font-size:15px;margin:0 0 2px;color:var(--accent)}
+  nav.side .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+  nav.side a{display:block;color:var(--muted);padding:5px 8px;border-radius:6px;font-size:13.5px}
+  nav.side a:hover{background:var(--panel2);color:var(--ink);text-decoration:none}
+  nav.side .grp{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#5b6472;margin:16px 8px 4px}
+  main{flex:1;max-width:1020px;margin:0 auto;padding:36px 46px 120px}
+  h2{font-size:24px;margin:54px 0 6px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+  h2:first-of-type{margin-top:6px}
+  h3{font-size:17px;margin:26px 0 8px;color:var(--accent)}
+  h4{font-size:14px;margin:16px 0 6px}
+  p{color:#cfd5df} .muted{color:var(--muted)}
+  code{font-family:var(--mono);background:var(--panel2);padding:1px 6px;border-radius:4px;font-size:12.5px;color:#e8c07d}
+  pre{background:#070a0f;border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow:auto;font-family:var(--mono);font-size:12.5px;color:#d7dce4}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+  th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+  td code{background:transparent;padding:0;color:#e8c07d}
+  .pill{display:inline-block;font-size:11px;padding:1px 8px;border-radius:20px;font-weight:600}
+  .pill.built{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.35)}
+  .pill.stub{background:rgba(214,164,31,.15);color:var(--amber);border:1px solid rgba(214,164,31,.35)}
+  .callout{border-left:3px solid var(--accent);background:var(--panel);padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+  .callout.warn{border-color:var(--red)} .callout.warn b{color:var(--red)}
+  .callout.ok{border-color:var(--green)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin:12px 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .card h4{margin:0 0 4px;color:var(--accent)} .card .k{font-size:12px;color:var(--muted)}
+  .cols2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .er{font-family:var(--mono);font-size:12.5px;color:#d7dce4;white-space:pre;overflow:auto;background:#070a0f;border:1px solid var(--line);border-radius:8px;padding:16px}
+  .modelcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin:12px 0;overflow:hidden}
+  .modelcard .mh{background:var(--panel2);padding:8px 14px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+  .modelcard .mh .tbl{font-family:var(--mono);font-size:11.5px;color:var(--muted);font-weight:400}
+  .modelcard table{margin:0;border:0} .modelcard th,.modelcard td{border-left:0;border-right:0}
+  .fk{color:var(--blue);font-size:11px}
+  footer{color:#5b6472;font-size:12px;margin-top:60px;border-top:1px solid var(--line);padding-top:16px}
+  @media(max-width:860px){nav.side{display:none}.cols2{grid-template-columns:1fr}main{padding:22px}}
+
+  /* ===== embedded interactive App Map ===== */
+  .mapbox{position:relative;height:700px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg);margin:16px 0}
+  .map-top{position:absolute;top:0;left:0;right:0;height:48px;display:flex;align-items:center;gap:14px;
+    padding:0 14px;background:rgba(20,24,36,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);z-index:6}
+  .tabs{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:3px}
+  .tabs button{background:transparent;border:0;color:var(--muted);font:inherit;font-size:12.5px;padding:5px 12px;border-radius:7px;cursor:pointer}
+  .tabs button.on{background:var(--panel2);color:var(--ink)}
+  .legend{display:flex;gap:12px;align-items:center;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
+  .legend .lg{display:flex;align-items:center;gap:5px}
+  .dot{width:9px;height:9px;border-radius:3px;display:inline-block}
+  .maphint{color:var(--muted);font-size:11.5px;margin-left:auto;font-family:var(--mono)}
+  #viewport{position:absolute;inset:48px 0 0 0;overflow:hidden;cursor:grab}
+  #viewport.grabbing{cursor:grabbing}
+  #world{position:absolute;top:0;left:0;transform-origin:0 0}
+  #edges{position:absolute;top:0;left:0;overflow:visible;pointer-events:none}
+  .node{position:absolute;width:230px;background:var(--panel);border:1px solid var(--line);border-left-width:4px;
+    border-radius:12px;padding:10px 14px;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.35);transition:transform .08s,border-color .12s}
+  .node:hover{transform:translateY(-1px);border-color:#3a4356}
+  .node .title{font-weight:600;font-size:14px;line-height:1.2}
+  .node .path{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:2px}
+  .node .tag{position:absolute;top:-9px;right:10px;font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;text-transform:uppercase}
+  .node.root{border-left-color:var(--accent);background:linear-gradient(180deg,#1b2130,#141824)}
+  .node.group{border-left-color:var(--teal)} .node.group.auth{border-left-color:var(--purple)} .node.group.wizard{border-left-color:var(--blue)}
+  .node.built{border-left-color:var(--green)} .node.stub{border-left-color:var(--amber)}
+  .tag.built{background:rgba(63,185,80,.16);color:var(--green)} .tag.stub{background:rgba(214,164,31,.16);color:var(--amber)}
+  .node .toggle{position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:6px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--muted);font-size:13px;line-height:18px;text-align:center;cursor:pointer}
+  .node .toggle:hover{color:var(--ink)}
+  .ctrls{position:absolute;right:14px;bottom:14px;display:flex;flex-direction:column;gap:8px;z-index:7}
+  .ctrls button{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:16px;cursor:pointer}
+  .ctrls button:hover{background:var(--panel2)} .ctrls button.sm{font-size:11px;font-weight:700}
+  #drawer{position:absolute;top:48px;right:0;width:320px;height:calc(100% - 48px);background:var(--panel);
+    border-left:1px solid var(--line);transform:translateX(100%);transition:transform .18s;padding:20px;overflow-y:auto;z-index:8}
+  #drawer.open{transform:translateX(0)}
+  #drawer h3{margin:0 0 2px;font-size:17px;color:var(--ink)}
+  #drawer .dp{font-family:var(--mono);font-size:12.5px;color:var(--accent);margin-bottom:12px}
+  #drawer .row{margin:11px 0} #drawer .k{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:3px}
+  #drawer .v{font-size:13.5px;color:#d7dce4} #drawer .v code{display:inline-block;margin:2px 0}
+  #drawer .close{position:absolute;top:12px;right:14px;background:none;border:0;color:var(--muted);font-size:20px;cursor:pointer}
+  /* journey panel inside the box */
+  #journey{position:absolute;inset:48px 0 0 0;overflow:auto;padding:22px 24px;display:none}
+  #journey .jt{font-size:15px;font-weight:700;margin:0 0 2px}
+  #journey .js{color:var(--muted);font-size:12.5px;margin-bottom:16px}
+  .flow{display:flex;align-items:stretch;flex-wrap:nowrap;overflow-x:auto;padding-bottom:10px}
+  .stage{min-width:180px;flex:0 0 auto;background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--blue);border-radius:12px;padding:12px}
+  .stage.built{border-top-color:var(--green)} .stage.stub{border-top-color:var(--amber)}
+  .stage .n{font-size:11px;color:var(--muted)} .stage .t{font-weight:700;margin:2px 0 3px}
+  .stage .path{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+  .stage .api{margin-top:8px;font-family:var(--mono);font-size:10.5px;color:#e8c07d;background:var(--panel2);border-radius:6px;padding:5px 7px;line-height:1.5}
+  .arrow{flex:0 0 auto;align-self:center;color:var(--muted);font-size:20px;padding:0 6px}
+  .jnote{background:var(--panel);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:11px 15px;margin:16px 0;color:#cfd5df;font-size:13px;max-width:900px}
+  .jnote.warn{border-left-color:var(--amber)}
+  .branch{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+  .branch .b{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 15px;min-width:230px;flex:1}
+  .branch .b .t{font-weight:700;margin-bottom:3px} .branch .b .path{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  /* svg overview */
+  .svgwrap{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin:16px 0}
+  .svgwrap svg{width:100%;height:auto;display:block}
+  /* endpoint reference */
+  .ep{border:1px solid var(--line);border-radius:10px;margin:10px 0;overflow:hidden;background:var(--panel)}
+  .ep-h{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--panel2);flex-wrap:wrap}
+  .m{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;letter-spacing:.03em}
+  .m.get{background:rgba(63,185,80,.16);color:var(--green)}
+  .m.post{background:rgba(74,158,255,.16);color:var(--blue)}
+  .m.patch{background:rgba(214,164,31,.16);color:var(--amber)}
+  .m.delete{background:rgba(248,81,73,.16);color:var(--red)}
+  .ep-h .sig{font-family:var(--mono);font-size:13px;color:var(--ink)}
+  .ep-h .au{margin-left:auto;font-size:10.5px;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:1px 8px}
+  .ep-h .au.session{color:var(--purple);border-color:rgba(169,112,255,.4)}
+  .ep-b{padding:10px 14px;font-size:13px}
+  .ep-b .sm{color:var(--muted);margin:0 0 8px}
+  .ep-b .lab{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:8px 0 3px}
+  .ep-b table{margin:2px 0} .ep-b td{padding:4px 8px} .ep-b td.req{color:var(--amber);font-weight:600}
+  .fieldgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;font-family:var(--mono);font-size:11.5px}
+  .fieldgrid span{color:#cbd2dd} .fieldgrid .r::before{content:"*";color:var(--amber);margin-right:2px}
+  .fieldgrid .ty{color:var(--muted)}
+  .codes{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+  .code{font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-radius:5px;padding:1px 7px;color:var(--muted)}
+  .code.ok{color:var(--green);border-color:rgba(63,185,80,.3)}
+  /* client feature to-do */
+  .todo{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin:16px 0}
+  .todo-add{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .todo-add input[type=text]{flex:1;min-width:200px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 12px;color:var(--ink);font:inherit;font-size:14px}
+  .todo-add input[type=text]:focus{outline:none;border-color:var(--blue)}
+  .todo-add select{background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--ink);font:inherit;font-size:13px;padding:0 8px}
+  .todo-add button{background:var(--blue);border:0;color:#08131f;font:inherit;font-weight:700;font-size:13px;padding:0 18px;border-radius:8px;cursor:pointer}
+  .todo-bar{display:flex;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+  .todo-filters{display:flex;gap:3px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:3px}
+  .todo-filters button{background:transparent;border:0;color:var(--muted);font:inherit;font-size:12.5px;padding:4px 12px;border-radius:6px;cursor:pointer}
+  .todo-filters button.on{background:var(--bg);color:var(--ink)}
+  #td-count{font-size:12.5px;color:var(--muted);margin-right:auto}
+  .td-clear{background:var(--panel2);border:1px solid var(--line);color:var(--muted);font:inherit;font-weight:600;font-size:12px;padding:5px 12px;border-radius:7px;cursor:pointer}
+  .td-clear:hover{color:var(--ink)}
+  #td-list{list-style:none;margin:0;padding:0}
+  .td-item{display:flex;align-items:flex-start;gap:10px;padding:10px 6px;border-bottom:1px solid var(--line)}
+  .td-item:last-child{border-bottom:0}
+  .td-check{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--line);background:var(--bg);cursor:pointer;flex:0 0 auto;margin-top:2px;position:relative}
+  .td-item.done .td-check{background:var(--green);border-color:var(--green)}
+  .td-item.done .td-check::after{content:"✓";position:absolute;color:#08131f;font-size:12px;font-weight:800;left:3px;top:-3px}
+  .td-main{flex:1;min-width:0}
+  .td-text{font-size:14px;color:var(--ink);word-break:break-word;cursor:text}
+  .td-item.done .td-text{color:var(--muted);text-decoration:line-through}
+  .td-meta{font-size:11px;color:#5b6472;margin-top:3px;display:flex;gap:8px;align-items:center}
+  .td-prio{font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;text-transform:uppercase}
+  .td-prio.high{background:rgba(248,81,73,.16);color:var(--red)}
+  .td-prio.medium{background:rgba(214,164,31,.16);color:var(--amber)}
+  .td-prio.low{background:rgba(139,148,158,.14);color:var(--muted)}
+  .td-del{background:none;border:0;color:#5b6472;font-size:17px;line-height:1;cursor:pointer;flex:0 0 auto}
+  .td-del:hover{color:var(--red)}
+  .td-empty{color:var(--muted);font-size:13px;padding:18px 8px;text-align:center}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="side">
+  <h1>M&amp;M Austin Limousine</h1>
+  <div class="sub">Developer Docs</div>
+  <div class="grp">Overview</div>
+  <a href="#overview">1 · System overview</a>
+  <a href="#stack">2 · Tech stack</a>
+  <a href="#local">3 · Local dev (Docker)</a>
+  <div class="grp">Backend</div>
+  <a href="#apps">4 · Django apps</a>
+  <a href="#schema">5 · Database schema</a>
+  <div class="grp">Front end &amp; API</div>
+  <a href="#clientarch">6 · Client-site architecture</a>
+  <a href="#api">7 · Endpoint reference</a>
+  <a href="#appmap">8 · App map (interactive)</a>
+  <a href="#pricing">9 · Booking &amp; pricing flow</a>
+  <div class="grp">Meta</div>
+  <a href="#gap">10 · Integration gap</a>
+  <a href="#extend">11 · Extending these docs</a>
+  <div class="grp">Planning</div>
+  <a href="#todos">12 · Feature requests</a>
+  <a href="#changelog">13 · Changelog</a>
+</nav>
+
+<main>
+  <!-- ============================== 1 ============================== -->
+  <h2 id="overview" style="border:0;margin-bottom:0">1 · System overview</h2>
+
+  <div class="svgwrap">
+    <svg viewBox="0 0 980 560" role="img" aria-label="System architecture diagram">
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#7c8697"/>
+        </marker>
+        <linearGradient id="gClient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#1c2740"/><stop offset="1" stop-color="#141b28"/>
+        </linearGradient>
+      </defs>
+
+      <!-- layer bands -->
+      <g fill="#ffffff" fill-opacity="0.02" stroke="#232b39" stroke-dasharray="3 5">
+        <rect x="24"  y="70" width="186" height="452" rx="14"/>
+        <rect x="234" y="70" width="220" height="452" rx="14"/>
+        <rect x="478" y="70" width="266" height="452" rx="14"/>
+        <rect x="768" y="70" width="188" height="452" rx="14"/>
+      </g>
+      <g font-family="var(--mono)" font-size="11" fill="#7c8697" text-anchor="middle" letter-spacing="1">
+        <text x="117" y="58">CLIENTS</text>
+        <text x="344" y="58">PRESENTATION</text>
+        <text x="611" y="58">APPLICATION · Django :8000</text>
+        <text x="862" y="58">DATA · :3307</text>
+      </g>
+
+      <!-- CLIENTS -->
+      <g font-family="var(--sans)">
+        <rect x="41" y="112" width="152" height="112" rx="12" fill="#141b28" stroke="#33405a"/>
+        <g stroke="#9fb2c9" stroke-width="2" fill="none">
+          <rect x="88" y="130" width="40" height="26" rx="3"/>
+          <line x1="100" y1="156" x2="100" y2="162"/><line x1="90" y1="162" x2="126" y2="162"/>
+          <rect x="132" y="136" width="14" height="24" rx="3"/>
+        </g>
+        <text x="117" y="188" fill="#e8ecf3" font-size="14" text-anchor="middle" font-weight="700">Customer</text>
+        <text x="117" y="207" fill="#8b94a6" font-size="11" text-anchor="middle">web · mobile</text>
+
+        <rect x="41" y="326" width="152" height="104" rx="12" fill="#141b28" stroke="#33405a"/>
+        <g stroke="#9fb2c9" stroke-width="2" fill="none">
+          <rect x="97" y="344" width="40" height="26" rx="3"/>
+          <line x1="117" y1="370" x2="117" y2="376"/><line x1="107" y1="376" x2="127" y2="376"/>
+        </g>
+        <text x="117" y="400" fill="#e8ecf3" font-size="14" text-anchor="middle" font-weight="700">Staff</text>
+        <text x="117" y="418" fill="#8b94a6" font-size="11" text-anchor="middle">desktop</text>
+      </g>
+
+      <!-- PRESENTATION : client site -->
+      <g font-family="var(--sans)">
+        <rect x="254" y="118" width="180" height="176" rx="12" fill="url(#gClient)" stroke="#4a9eff"/>
+        <g stroke="#4a9eff" stroke-width="2" fill="none">
+          <rect x="314" y="138" width="60" height="42" rx="4"/>
+          <line x1="314" y1="150" x2="374" y2="150"/>
+          <circle cx="321" cy="144" r="1.6" fill="#4a9eff" stroke="none"/><circle cx="327" cy="144" r="1.6" fill="#4a9eff" stroke="none"/>
+        </g>
+        <text x="344" y="208" fill="#e8ecf3" font-size="15" text-anchor="middle" font-weight="700">Client Site</text>
+        <text x="344" y="230" fill="#9fb2c9" font-size="11.5" text-anchor="middle">Next.js 15 · React 19</text>
+        <text x="344" y="248" fill="#8b94a6" font-size="11" text-anchor="middle">TanStack Query · Zustand</text>
+        <text x="344" y="272" fill="#8b94a6" font-size="11" text-anchor="middle">:3000 · client-facing</text>
+        <text x="344" y="384" fill="#6b7688" font-size="10.5" text-anchor="middle" font-family="var(--mono)">staff UI is server-rendered —</text>
+        <text x="344" y="400" fill="#6b7688" font-size="10.5" text-anchor="middle" font-family="var(--mono)">no separate SPA</text>
+      </g>
+
+      <!-- APPLICATION : django -->
+      <rect x="498" y="92" width="226" height="404" rx="14" fill="#0e1420" stroke="#2a3444"/>
+      <g font-family="var(--sans)">
+        <text x="611" y="116" fill="#e8ecf3" font-size="13" text-anchor="middle" font-weight="700">Django — one process</text>
+
+        <rect x="516" y="130" width="192" height="74" rx="10" fill="#141b28" stroke="#c9a227"/>
+        <circle cx="536" cy="152" r="4" fill="#c9a227"/>
+        <text x="611" y="156" fill="#e8ecf3" font-size="13" text-anchor="middle" font-weight="700">REST API</text>
+        <text x="611" y="173" fill="#9fb2c9" font-size="11" text-anchor="middle">DRF · JSON /api/</text>
+        <text x="611" y="189" fill="#8b94a6" font-size="10.5" text-anchor="middle">cookie session + CSRF</text>
+
+        <rect x="516" y="214" width="192" height="74" rx="10" fill="#141b28" stroke="#a970ff"/>
+        <circle cx="536" cy="236" r="4" fill="#a970ff"/>
+        <text x="611" y="240" fill="#e8ecf3" font-size="13" text-anchor="middle" font-weight="700">Back Office</text>
+        <text x="611" y="257" fill="#9fb2c9" font-size="11" text-anchor="middle">/dashboard/ · templates</text>
+        <text x="611" y="273" fill="#8b94a6" font-size="10.5" text-anchor="middle">server-rendered HTML</text>
+
+        <rect x="516" y="298" width="192" height="86" rx="10" fill="#141b28" stroke="#2bb6a3"/>
+        <circle cx="536" cy="322" r="4" fill="#2bb6a3"/>
+        <text x="611" y="326" fill="#e8ecf3" font-size="13" text-anchor="middle" font-weight="700">Business logic</text>
+        <text x="611" y="344" fill="#9fb2c9" font-size="11" text-anchor="middle">pricing · quotes · bookings</text>
+        <text x="611" y="360" fill="#8b94a6" font-size="10.5" text-anchor="middle">payments · fare engine</text>
+        <text x="611" y="376" fill="#6b7688" font-size="10" text-anchor="middle" font-family="var(--mono)">shared models &amp; auth</text>
+      </g>
+
+      <!-- DATA : databases -->
+      <g font-family="var(--sans)">
+        <path d="M804 168 a58 12 0 0 1 116 0 v104 a58 12 0 0 1 -116 0 z" fill="#141b28" stroke="#2bb6a3"/>
+        <ellipse cx="862" cy="168" rx="58" ry="12" fill="#18232f" stroke="#2bb6a3"/>
+        <text x="862" y="214" fill="#e8ecf3" font-size="13" text-anchor="middle" font-weight="700">MariaDB 10.11</text>
+        <text x="862" y="232" fill="#9fb2c9" font-size="11" text-anchor="middle">austinlimo</text>
+
+        <path d="M804 344 a58 10 0 0 1 116 0 v86 a58 10 0 0 1 -116 0 z" fill="#141b28" stroke="#556074" stroke-dasharray="4 4"/>
+        <ellipse cx="862" cy="344" rx="58" ry="10" fill="#161d27" stroke="#556074"/>
+        <text x="862" y="388" fill="#c6cdd8" font-size="12.5" text-anchor="middle" font-weight="700">Legacy replica</text>
+        <text x="862" y="405" fill="#8b94a6" font-size="10.5" text-anchor="middle">read-only</text>
+      </g>
+
+      <!-- arrows -->
+      <g stroke="#7c8697" stroke-width="1.9" fill="none">
+        <line x1="193" y1="168" x2="250" y2="200" marker-end="url(#ah)"/>
+        <line x1="434" y1="200" x2="512" y2="167" marker-end="url(#ah)"/>
+        <line x1="193" y1="378" x2="512" y2="251" marker-end="url(#ah)"/>
+        <line x1="724" y1="330" x2="802" y2="230" marker-end="url(#ah)"/>
+      </g>
+      <g stroke="#556074" stroke-width="1.6" fill="none" stroke-dasharray="5 4">
+        <line x1="804" y1="360" x2="712" y2="344" marker-end="url(#ah)"/>
+      </g>
+      <g font-family="var(--mono)" font-size="10.5" fill="#9aa4b2">
+        <text x="214" y="176" text-anchor="middle">loads app</text>
+        <text x="474" y="172" text-anchor="middle">JSON /api/ · HTTPS</text>
+        <text x="330" y="330" text-anchor="middle">HTTP · form posts</text>
+        <text x="760" y="278" text-anchor="middle">ORM (PyMySQL)</text>
+        <text x="742" y="372" text-anchor="middle" fill="#6b7688">importers</text>
+      </g>
+    </svg>
+  </div>
+
+  <p><b>Two front-ends, one backend.</b> A nine-year-old PHP booking site is being rebuilt as a single
+  Django process that presents <i>two</i> UI surfaces plus a database:</p>
+  <ul>
+    <li><b>Client Site</b> — the <b>client-facing</b> Next.js app customers use to book. It runs in the browser and
+      talks to Django's <b>JSON REST API</b> (<code>/api/</code>).</li>
+    <li><b>Back Office</b> — the <b>staff dashboard</b>, rendered by Django's <b>template engine</b> (server-side HTML,
+      no separate JS app) at <code>/dashboard/</code>. It replaced Django admin entirely.</li>
+    <li><b>MariaDB 10.11</b> — the application database, plus a read-only <b>sanitised legacy replica</b> the one-shot
+      importers copy from (never used at runtime).</li>
+  </ul>
+  <p class="muted">Both surfaces share the same models, auth and business rules — they differ only in how they
+  render. The interactive maps for each live in <a href="#appmap">§8</a>.</p>
+
+  <div class="grid">
+    <div class="card"><h4>2</h4><div class="k">UI surfaces (client + back office)</div></div>
+    <div class="card"><h4>25</h4><div class="k">application models · 9 apps</div></div>
+    <div class="card"><h4>19</h4><div class="k">public API endpoints</div></div>
+    <div class="card"><h4>25+</h4><div class="k">back-office screens</div></div>
+    <div class="card"><h4>2,217</h4><div class="k">bookings imported (local)</div></div>
+    <div class="card"><h4>1,251</h4><div class="k">customers imported</div></div>
+  </div>
+
+  <!-- ============================== 2 ============================== -->
+  <h2 id="stack">2 · Tech stack</h2>
+  <div class="cols2">
+    <div>
+      <h4>Backend &amp; back office</h4>
+      <table>
+        <tr><th>Piece</th><th>Choice</th></tr>
+        <tr><td>Framework</td><td>Django 5.2 + DRF</td></tr>
+        <tr><td>Back-office UI</td><td>Django template engine (server-rendered)</td></tr>
+        <tr><td>DB driver</td><td>PyMySQL (pure-Python)</td></tr>
+        <tr><td>Database</td><td>MariaDB 10.11</td></tr>
+        <tr><td>API schema</td><td>drf-spectacular → <code>/api/docs/</code></td></tr>
+        <tr><td>Auth</td><td>Cookie session + CSRF; custom email <code>User</code></td></tr>
+        <tr><td>Payments / PDF / maps</td><td>Stripe · xhtml2pdf · Google Distance Matrix</td></tr>
+      </table>
+    </div>
+    <div>
+      <h4>Client site</h4>
+      <table>
+        <tr><th>Piece</th><th>Choice</th></tr>
+        <tr><td>Framework</td><td>Next.js 15 (App Router) · React 19</td></tr>
+        <tr><td>Language</td><td>TypeScript (strict)</td></tr>
+        <tr><td>Server state</td><td>TanStack Query v5</td></tr>
+        <tr><td>Wizard state</td><td>Zustand (sessionStorage)</td></tr>
+        <tr><td>Forms</td><td>react-hook-form + zod</td></tr>
+        <tr><td>Payments</td><td>@stripe/react-stripe-js</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============================== 3 ============================== -->
+  <h2 id="local">3 · Local development (Docker)</h2>
+  <p>The whole stack runs from one compose file at the repo root. Everything is local and disposable; it never
+  touches InMotion production.</p>
+  <pre>docker compose up --build      # db + backend (API + back office) + client site
+docker compose down            # stop (keeps the database volume)
+docker compose down -v         # stop and wipe the database
+
+# one-time data load (after the stack is up):
+bash ops/load-legacy.sh
+docker compose exec backend python manage.py import_fleet
+docker compose exec backend python manage.py import_pricing
+docker compose exec backend python manage.py import_members
+docker compose exec backend python manage.py import_orders
+docker compose exec backend python manage.py import_content
+
+docker compose exec backend pytest -m "not legacy"</pre>
+  <table>
+    <tr><th>Surface</th><th>URL</th><th>Container</th></tr>
+    <tr><td>Client site</td><td><a href="http://localhost:3000">localhost:3000</a></td><td><code>limo-frontend</code></td></tr>
+    <tr><td>API</td><td><a href="http://localhost:8000/api/">localhost:8000/api/</a></td><td><code>limo-backend</code></td></tr>
+    <tr><td>Swagger</td><td><a href="http://localhost:8000/api/docs/">localhost:8000/api/docs/</a></td><td><code>limo-backend</code></td></tr>
+    <tr><td>Back office</td><td><a href="http://localhost:8000/dashboard/">localhost:8000/dashboard/</a></td><td>login <code>cal@local.test</code> / <code>devpass12345</code></td></tr>
+    <tr><td>MariaDB</td><td><code>localhost:3307</code></td><td><code>limo-db</code></td></tr>
+  </table>
+
+  <!-- ============================== 4 ============================== -->
+  <h2 id="apps">4 · Django apps</h2>
+  <table>
+    <tr><th>App</th><th>Responsibility</th><th>Key models</th></tr>
+    <tr><td><code>accounts</code></td><td>Users (email login), billing, corporate accounts, roles</td><td>User, BillingAddress, CorporateAccount</td></tr>
+    <tr><td><code>fleet</code></td><td>Vehicles &amp; per-mile distance bands</td><td>Vehicle, DistanceBand</td></tr>
+    <tr><td><code>pricing</code></td><td>Surcharges, blackout dates, tax &amp; quote settings</td><td>TimeSurcharge, BlackoutDate, PricingSettings</td></tr>
+    <tr><td><code>bookings</code></td><td>Bookings, price lines, status history, drivers</td><td>Booking, BookingPriceLine, BookingStatusChange, Driver</td></tr>
+    <tr><td><code>payments</code></td><td>Stripe/PayPal payments, refunds, webhook log, settings</td><td>Payment, Refund, PaymentSettings, PayPalSettings, WebhookEvent</td></tr>
+    <tr><td><code>content</code></td><td>CMS pages, banners, testimonials, gallery, site settings</td><td>Page, Banner, Testimonial, GalleryImage, SiteSettings</td></tr>
+    <tr><td><code>enquiries</code></td><td>Contact / enquiry inbox</td><td>ContactMessage</td></tr>
+    <tr><td><code>notifications</code></td><td>Email settings + send log</td><td>EmailSettings, EmailLog</td></tr>
+    <tr><td><code>legacy_import</code></td><td>One-shot importers &amp; fare replay (no models)</td><td>— management commands</td></tr>
+    <tr><td><code>api</code> · <code>dashboard</code> · <code>config</code></td><td>API routing · back-office views/templates · project settings</td><td>—</td></tr>
+  </table>
+
+  <!-- ============================== 5 ============================== -->
+  <h2 id="schema">5 · Database schema</h2>
+  <p>25 application models. Core relationships (Django adds <code>auth</code>/<code>admin</code>/<code>sessions</code>
+  tables on top):</p>
+  <div class="er">User ─┬─&lt; BillingAddress
+      ├─&lt; CorporateAccount
+      └─&lt; Booking (customer) ─┬─&lt; BookingPriceLine
+                              ├─&lt; BookingStatusChange &gt;─ User (changed_by)
+                              ├─&lt; Payment ─&lt; Refund &gt;─ User (created_by)
+                              └─&lt; EmailLog
+
+Vehicle ─┬─&lt; DistanceBand           Driver ─&lt; Booking
+         └─&lt; Booking
+
+Page ─┬─&lt; Banner                   ContactMessage &gt;─ User (replied_by)
+      └─&lt; Page (self, parent)      Surcharge · BlackoutDate · *Settings (singletons/rules)</div>
+
+  <h3>accounts</h3>
+  <div class="modelcard">
+    <div class="mh"><span>User</span><span class="tbl">accounts_user</span></div>
+    <table>
+      <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+      <tr><td>email</td><td>CharField</td><td>login identifier (USERNAME_FIELD)</td></tr>
+      <tr><td>title / first_name / last_name / phone</td><td>CharField</td><td>profile</td></tr>
+      <tr><td>is_active / is_staff / is_superuser</td><td>BooleanField</td><td>staff = back-office access</td></tr>
+      <tr><td>marketing_opt_in / legacy_member_id</td><td>—</td><td></td></tr>
+      <tr><td>groups</td><td>M2M → Group</td><td class="fk">Dispatcher / Manager / Editor</td></tr>
+    </table>
+  </div>
+  <div class="cols2">
+    <div class="modelcard"><div class="mh"><span>BillingAddress</span><span class="tbl">accounts_billingaddress</span></div>
+      <table><tr><td>user <span class="fk">→ User</span>, line1/2, city, state, postal_code, country, is_default</td></tr></table></div>
+    <div class="modelcard"><div class="mh"><span>CorporateAccount</span><span class="tbl">accounts_corporateaccount</span></div>
+      <table><tr><td>user <span class="fk">→ User</span>, company_name, contact_name, email, phone, address, status</td></tr></table></div>
+  </div>
+
+  <h3>fleet</h3>
+  <div class="cols2">
+    <div class="modelcard"><div class="mh"><span>Vehicle</span><span class="tbl">fleet_vehicle</span></div>
+      <table><tr><td>name, slug, description, features, photo, passenger_capacity, luggage_capacity, hourly_rate, meet_greet_fee, minimum_fare, display_order, is_active</td></tr></table></div>
+    <div class="modelcard"><div class="mh"><span>DistanceBand</span><span class="tbl">fleet_distanceband</span></div>
+      <table><tr><td>vehicle <span class="fk">→ Vehicle</span>, from_miles, to_miles, rate_per_mile</td></tr></table></div>
+  </div>
+  <p class="muted"><b>Vehicle has no "price" field.</b> A fare is derived from <code>minimum_fare</code>,
+  <code>hourly_rate</code> and <code>DistanceBand</code> rows — never a stored total. This is the security spine (§9).</p>
+
+  <h3>pricing · bookings · payments · content · enquiries · notifications</h3>
+  <div class="grid">
+    <div class="modelcard"><div class="mh"><span>TimeSurcharge</span></div><table><tr><td>name, start_time, end_time, percentage, is_active</td></tr></table></div>
+    <div class="modelcard"><div class="mh"><span>BlackoutDate</span></div><table><tr><td>name, description, date, percentage, is_active</td></tr></table></div>
+    <div class="modelcard"><div class="mh"><span>PricingSettings</span></div><table><tr><td>tax_rate, currency, cancellation_window_hours, quote_ttl_minutes</td></tr></table></div>
+    <div class="modelcard"><div class="mh"><span>Booking</span></div><table><tr><td>reference, customer <span class="fk">→ User</span>, vehicle <span class="fk">→ Vehicle</span>, driver <span class="fk">→ Driver</span>, trip_type, status, pickup/dropoff (+lat/lng), pickup_at, distance_miles, hours, passenger/luggage counts, flight_number, meet_and_greet, guest_email/phone, subtotal, surcharge_total, tax, total, vehicle_name_snapshot, cancellation_*</td></tr></table></div>
+    <div class="modelcard"><div class="mh"><span>BookingPriceLine</span></div><table><tr><td>booking <span class="fk">→ Booking</span>, kind, label, amount, ordering</td></tr></table></div>
+    <div class="modelcard"><div class="mh"><span>BookingStatusChange</span></div><table><tr><td>booking <span class="fk">→ Booking</span>, from_status, to_status, changed_by <span class="fk">→ User</span>, changed_at, note</td></tr></table></div>
+    <div class="modelcard"><div class="mh"><span>Driver</span></div><table><tr><td>full_name, phone, email, is_active, notes</td></tr></table></div>
+    <div class="modelcard"><div class="mh"><span>Payment</span></div><table><tr><td>booking <span class="fk">→ Booking</span>, provider, payment_intent_id, charge_id, amount, status, card_brand, card_last4, receipt_url</td></tr></table></div>
+    <div class="modelcard"><div class="mh"><span>Refund</span></div><table><tr><td>payment <span class="fk">→ Payment</span>, stripe_refund_id, amount, reason, created_by <span class="fk">→ User</span></td></tr></table></div>
+    <div class="modelcard"><div class="mh"><span>PaymentSettings / PayPalSettings</span></div><table><tr><td>mode, keys/ids, is_enabled, last_test_* (singletons)</td></tr></table></div>
+    <div class="modelcard"><div class="mh"><span>WebhookEvent</span></div><table><tr><td>event_id, event_type, received_at, payload_summary</td></tr></table></div>
+    <div class="modelcard"><div class="mh"><span>Page</span></div><table><tr><td>slug, title, page_type, body, meta_*, hero_image, parent <span class="fk">→ Page</span>, menu_placement, is_published</td></tr></table></div>
+    <div class="modelcard"><div class="mh"><span>Banner / Testimonial / GalleryImage</span></div><table><tr><td>image, ordering, is_active/published (+ Banner.page <span class="fk">→ Page</span>)</td></tr></table></div>
+    <div class="modelcard"><div class="mh"><span>SiteSettings</span></div><table><tr><td>socials, contact_email, contact_phone, ops_notification_email (singleton)</td></tr></table></div>
+    <div class="modelcard"><div class="mh"><span>ContactMessage</span></div><table><tr><td>name, email, phone, nature, subject, message, is_read, replied_by <span class="fk">→ User</span>, reply_body</td></tr></table></div>
+    <div class="modelcard"><div class="mh"><span>EmailSettings / EmailLog</span></div><table><tr><td>SMTP config (singleton) · log: kind, to_email, subject, booking <span class="fk">→ Booking</span>, succeeded, sent_at</td></tr></table></div>
+  </div>
+
+  <!-- ============================== 6 ============================== -->
+  <h2 id="clientarch">6 · Client-site architecture (Next.js)</h2>
+  <p>How the client site holds state, moves data, and authenticates. In one line:
+  <b>two state systems by concern</b> — TanStack Query for server data, a Zustand global store for the booking
+  wizard — talking to Django through a thin service layer over a cookie-authenticated <code>fetch</code>.</p>
+
+  <div class="svgwrap">
+    <svg viewBox="0 0 1000 430" role="img" aria-label="Next.js data flow, state and auth">
+      <defs>
+        <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#7c8697"/></marker>
+      </defs>
+      <g font-family="var(--mono)" font-size="11" fill="#7c8697" text-anchor="middle" letter-spacing="1">
+        <text x="105" y="32">COMPONENTS</text>
+        <text x="335" y="32">STATE</text>
+        <text x="590" y="32">SERVICE + TRANSPORT</text>
+        <text x="915" y="32">SERVER</text>
+      </g>
+      <!-- components -->
+      <g font-family="var(--sans)">
+        <rect x="30" y="150" width="150" height="120" rx="12" fill="#141b28" stroke="#4a9eff"/>
+        <text x="105" y="196" fill="#e8ecf3" font-size="14" text-anchor="middle" font-weight="700">React</text>
+        <text x="105" y="214" fill="#e8ecf3" font-size="14" text-anchor="middle" font-weight="700">components</text>
+        <text x="105" y="236" fill="#8b94a6" font-size="10.5" text-anchor="middle">App Router pages</text>
+      </g>
+      <!-- state boxes -->
+      <g font-family="var(--sans)">
+        <rect x="225" y="58" width="215" height="96" rx="12" fill="#141b28" stroke="#c9a227"/>
+        <text x="332" y="84" fill="#e8ecf3" font-size="13.5" text-anchor="middle" font-weight="700">TanStack Query v5</text>
+        <text x="332" y="102" fill="#9fb2c9" font-size="11" text-anchor="middle">server-state cache</text>
+        <text x="332" y="118" fill="#8b94a6" font-size="10.5" text-anchor="middle">staleTime 60s · retry 1</text>
+        <text x="332" y="134" fill="#8b94a6" font-size="10.5" text-anchor="middle">useQuery / useMutation</text>
+
+        <rect x="225" y="222" width="215" height="112" rx="12" fill="#141b28" stroke="#2bb6a3"/>
+        <text x="332" y="248" fill="#e8ecf3" font-size="13.5" text-anchor="middle" font-weight="700">Zustand store</text>
+        <text x="332" y="266" fill="#9fb2c9" font-size="11" text-anchor="middle">useBookingStore — global</text>
+        <text x="332" y="282" fill="#8b94a6" font-size="10.5" text-anchor="middle">set() setters + reset()</text>
+        <text x="332" y="298" fill="#8b94a6" font-size="10.5" text-anchor="middle">persist → sessionStorage</text>
+        <text x="332" y="314" fill="#8b94a6" font-size="10.5" text-anchor="middle">key "mm-booking"</text>
+      </g>
+      <!-- service layer -->
+      <g font-family="var(--sans)">
+        <rect x="480" y="120" width="200" height="130" rx="12" fill="#141b28" stroke="#a970ff"/>
+        <text x="580" y="150" fill="#e8ecf3" font-size="13.5" text-anchor="middle" font-weight="700">Service layer</text>
+        <text x="580" y="168" fill="#9fb2c9" font-size="11" text-anchor="middle">lib/api/*.service.ts</text>
+        <text x="580" y="184" fill="#8b94a6" font-size="10.5" text-anchor="middle">auth · fleet · booking · site</text>
+        <text x="580" y="208" fill="#8b94a6" font-size="10.5" text-anchor="middle" font-family="var(--mono)">USE_MOCKS ?</text>
+        <text x="580" y="224" fill="#8b94a6" font-size="10.5" text-anchor="middle" font-family="var(--mono)">mocks : http</text>
+      </g>
+      <!-- fetch client -->
+      <g font-family="var(--sans)">
+        <rect x="720" y="135" width="120" height="100" rx="12" fill="#0e1420" stroke="#33405a"/>
+        <text x="780" y="170" fill="#e8ecf3" font-size="12.5" text-anchor="middle" font-weight="700">fetch client</text>
+        <text x="780" y="188" fill="#8b94a6" font-size="10" text-anchor="middle">credentials:</text>
+        <text x="780" y="202" fill="#8b94a6" font-size="10" text-anchor="middle">"include"</text>
+        <text x="780" y="218" fill="#8b94a6" font-size="10" text-anchor="middle">JSON</text>
+      </g>
+      <!-- django -->
+      <g font-family="var(--sans)">
+        <rect x="880" y="120" width="100" height="130" rx="12" fill="#141b28" stroke="#c9a227"/>
+        <text x="930" y="180" fill="#e8ecf3" font-size="13" text-anchor="middle" font-weight="700">Django</text>
+        <text x="930" y="198" fill="#8b94a6" font-size="10" text-anchor="middle">/api/</text>
+      </g>
+      <!-- arrows -->
+      <g stroke="#7c8697" stroke-width="1.7" fill="none">
+        <line x1="180" y1="185" x2="222" y2="120" marker-end="url(#ah2)"/>
+        <line x1="222" y1="120" x2="180" y2="180" marker-end="url(#ah2)"/>
+        <line x1="180" y1="238" x2="222" y2="270" marker-end="url(#ah2)"/>
+        <line x1="222" y1="285" x2="180" y2="250" marker-end="url(#ah2)"/>
+        <line x1="440" y1="106" x2="478" y2="150" marker-end="url(#ah2)"/>
+        <line x1="680" y1="185" x2="718" y2="185" marker-end="url(#ah2)"/>
+        <line x1="840" y1="176" x2="878" y2="176" marker-end="url(#ah2)"/>
+        <line x1="878" y1="210" x2="840" y2="210" marker-end="url(#ah2)"/>
+      </g>
+      <g font-family="var(--mono)" font-size="10" fill="#9aa4b2">
+        <text x="470" y="96" text-anchor="middle">queryFn → service</text>
+        <text x="700" y="176" text-anchor="middle">http</text>
+        <text x="860" y="168" text-anchor="middle">request</text>
+        <text x="905" y="228" text-anchor="middle" fill="#6b7688">Set-Cookie</text>
+      </g>
+      <text x="105" y="300" font-family="var(--mono)" font-size="9.5" fill="#6b7688" text-anchor="middle">useQuery · useBookingStore</text>
+    </svg>
+  </div>
+
+  <h3>How state is managed</h3>
+  <p class="muted">Directly answering “global provider / dispatcher?” — <b>no Redux, no reducer/dispatch, no app-wide
+  Context.</b> State is split by concern into two purpose-built stores:</p>
+  <table>
+    <tr><th>Concern</th><th>Tool</th><th>Where</th><th>Shape</th></tr>
+    <tr><td>Server data (vehicles, pages, bookings, quotes)</td><td>TanStack Query v5</td>
+        <td><code>providers/Providers.tsx</code> — one <code>QueryClientProvider</code></td>
+        <td><code>useQuery</code>/<code>useMutation</code>; cache w/ <code>staleTime 60s</code>, <code>retry 1</code></td></tr>
+    <tr><td>Booking wizard (search → vehicle → extras → passenger → payment)</td><td>Zustand — global store</td>
+        <td><code>lib/booking/store.ts</code> · <code>useBookingStore</code></td>
+        <td>module-level hook; direct <code>set()</code> setters + <code>reset()</code>; <code>persist</code> → <code>sessionStorage["mm-booking"]</code></td></tr>
+    <tr><td>Cross-cutting React Context</td><td>React Context</td><td>only the Query client</td>
+        <td>no custom auth/app Context provider</td></tr>
+    <tr><td>Auth / session</td><td>httpOnly cookie</td><td>server-set; no token in JS</td>
+        <td>read current user via <code>authService.me()</code> wrapped in <code>useQuery</code></td></tr>
+  </table>
+
+  <h3>Data flow</h3>
+  <ol class="muted">
+    <li>A component calls a <b>service</b> (e.g. <code>fleetService.listVehicles()</code>), usually inside <code>useQuery</code>.</li>
+    <li>The service picks <b>mock or HTTP</b> from <code>USE_MOCKS</code> (<code>lib/api/config.ts</code>) — no component change to switch.</li>
+    <li>The HTTP impl calls the <b>fetch client</b> (<code>lib/api/client.ts</code>): <code>credentials:"include"</code>, JSON, throws <code>ApiRequestError</code> on non-2xx, returns <code>undefined</code> on 204.</li>
+    <li>Server responses are cached by <b>TanStack Query</b>; wizard selections are written to the <b>Zustand store</b> and persisted so a refresh mid-flow survives.</li>
+  </ol>
+
+  <h3>Authentication</h3>
+  <ol class="muted">
+    <li><code>POST /api/auth/login/</code> <code>{email, password}</code> sent with <code>credentials:"include"</code>.</li>
+    <li>Django responds with the <code>User</code> and a <code>Set-Cookie: mm_store_sessionid</code> (httpOnly, SameSite=Lax, Secure in prod). The storefront session cookie is deliberately <b>not</b> the default <code>sessionid</code> — that name is reserved for the staff dashboard/admin, so a customer login on a shared host (all <code>localhost</code> in dev) can never clobber or 403 a staff session. See <code>config.session.ScopedSessionMiddleware</code> (cookie name chosen per path: <code>/api/</code> → <code>mm_store_sessionid</code>, everything else → <code>sessionid</code>).</li>
+    <li>Every later request auto-carries the cookie — <b>no token handling in JS</b>.</li>
+    <li><code>GET /api/auth/me/</code> resolves the current user; wrap it in <code>useQuery</code> for app-wide auth state.</li>
+    <li><code>POST /api/auth/logout/</code> clears the cookie server-side.</li>
+  </ol>
+  <div class="callout warn">
+    <b>Two gaps to close during the rebuild (§10):</b> the fetch client sends <b>no <code>X-CSRFToken</code> header</b>,
+    so authenticated writes (booking, cancel) would 403; and there is <b>no <code>middleware.ts</code></b>, so
+    <code>/booking/*</code> and a future <code>/account/*</code> are not route-gated.
+  </div>
+
+  <!-- ============================== 7 ============================== -->
+  <h2 id="api">7 · API endpoint reference</h2>
+  <p>Every operation the API exposes — 19 paths / 22 operations, generated from the live schema. Full interactive
+  contract at <a href="http://localhost:8000/api/docs/">/api/docs/</a>. <span class="pill" style="background:rgba(74,158,255,.16);color:var(--blue)">public</span>
+  = no auth; <span class="pill" style="background:rgba(169,112,255,.16);color:var(--purple)">session</span> = requires the login cookie.
+  <code>*</code> marks a required field; money is always a decimal <b>string</b>.</p>
+
+  <h3>Catalog &amp; content</h3>
+  <div class="ep"><div class="ep-h"><span class="m get">GET</span><span class="sig">/api/vehicles/</span><span class="au">public</span></div>
+    <div class="ep-b"><p class="sm">List bookable vehicles (no price — fares come from quotes).</p>
+      <div class="lab">Response 200 · Vehicle[]</div>
+      <div class="fieldgrid"><span class="r">id<span class="ty"> int</span></span><span class="r">name<span class="ty"> str</span></span><span class="r">slug<span class="ty"> str</span></span><span>description<span class="ty"> str</span></span><span>features<span class="ty"> str</span></span><span>passenger_capacity<span class="ty"> int</span></span><span>luggage_capacity<span class="ty"> int</span></span><span>minimum_fare<span class="ty"> decimal</span></span></div>
+      <div class="codes"><span class="code ok">200</span></div></div></div>
+  <div class="ep"><div class="ep-h"><span class="m get">GET</span><span class="sig">/api/pages/</span><span class="au">public</span></div>
+    <div class="ep-b"><p class="sm">List published CMS pages.</p><div class="lab">Response 200 · Page[]</div>
+      <div class="codes"><span class="code ok">200</span></div></div></div>
+  <div class="ep"><div class="ep-h"><span class="m get">GET</span><span class="sig">/api/pages/{slug}/</span><span class="au">public</span></div>
+    <div class="ep-b"><p class="sm">Fetch one published page.</p>
+      <div class="lab">Path</div><div class="fieldgrid"><span class="r">slug<span class="ty"> str</span></span></div>
+      <div class="lab">Response 200 · Page</div>
+      <div class="fieldgrid"><span class="r">slug<span class="ty"> str</span></span><span class="r">url<span class="ty"> str</span></span><span class="r">title<span class="ty"> str</span></span><span>page_type<span class="ty"> enum</span></span><span>body<span class="ty"> str</span></span><span>meta_title<span class="ty"> str</span></span><span>meta_description<span class="ty"> str</span></span><span>meta_keywords<span class="ty"> str</span></span></div>
+      <div class="codes"><span class="code ok">200</span><span class="code">404</span></div></div></div>
+  <div class="ep"><div class="ep-h"><span class="m get">GET</span><span class="sig">/api/site-settings/</span><span class="au">public</span></div>
+    <div class="ep-b"><p class="sm">Site-wide contact details and social links.</p>
+      <div class="lab">Response 200 · SiteSettings</div>
+      <div class="fieldgrid"><span class="r">contact_email<span class="ty"> email</span></span><span class="r">contact_phone<span class="ty"> str</span></span><span class="r">facebook<span class="ty"> uri</span></span><span class="r">instagram<span class="ty"> uri</span></span><span class="r">twitter<span class="ty"> uri</span></span><span class="r">linkedin<span class="ty"> uri</span></span></div>
+      <div class="codes"><span class="code ok">200</span></div></div></div>
+  <div class="ep"><div class="ep-h"><span class="m get">GET</span><span class="sig">/api/availability/</span><span class="au">public</span></div>
+    <div class="ep-b"><p class="sm">Surcharge windows and blackout dates (drives the date/time picker).</p>
+      <div class="lab">Response 200 · Availability</div>
+      <div class="fieldgrid"><span class="r">blackout_dates<span class="ty"> BlackoutDate[]</span></span><span class="r">time_surcharges<span class="ty"> TimeSurcharge[]</span></span></div>
+      <div class="codes"><span class="code ok">200</span></div></div></div>
+
+  <h3>Quote &amp; booking</h3>
+  <div class="ep"><div class="ep-h"><span class="m post">POST</span><span class="sig">/api/quotes/</span><span class="au">public</span></div>
+    <div class="ep-b"><p class="sm">Price a journey across <b>every</b> vehicle. Returns a signed <code>quote_token</code> per vehicle (~30&nbsp;min TTL). The one call that decides money.</p>
+      <div class="lab">Request · QuoteRequest</div>
+      <div class="fieldgrid"><span class="r">pickup_address<span class="ty"> str</span></span><span>dropoff_address<span class="ty"> str</span></span><span class="r">pickup_at<span class="ty"> datetime</span></span><span>hours<span class="ty"> decimal</span></span><span>meet_and_greet<span class="ty"> bool</span></span></div>
+      <div class="lab">Response 200 · QuoteResponse</div>
+      <div class="fieldgrid"><span class="r">journey<span class="ty"> obj</span></span><span class="r">quotes<span class="ty"> QuoteResult[]</span></span><span class="ty">QuoteResult: vehicle_id, vehicle_name, subtotal, surcharge_total, tax, total, currency, lines[], quote_token</span></div>
+      <div class="codes"><span class="code ok">200</span><span class="code">400</span><span class="code">422</span><span class="code">429</span></div></div></div>
+  <div class="ep"><div class="ep-h"><span class="m post">POST</span><span class="sig">/api/bookings/</span><span class="au">public</span></div>
+    <div class="ep-b"><p class="sm">Create a booking from a signed quote. The server re-derives the total from the token — it never trusts a client price.</p>
+      <div class="lab">Request · BookingCreate</div>
+      <div class="fieldgrid"><span class="r">quote_token<span class="ty"> str</span></span><span>passenger_count<span class="ty"> int</span></span><span>luggage_count<span class="ty"> int</span></span><span>flight_number<span class="ty"> str</span></span><span>pickup_sign<span class="ty"> str</span></span><span>notes<span class="ty"> str</span></span><span>guest_email<span class="ty"> email</span></span><span>guest_name<span class="ty"> str</span></span></div>
+      <div class="lab">Response 201 · Booking</div>
+      <div class="fieldgrid"><span class="r">reference<span class="ty"> str</span></span><span class="r">status<span class="ty"> enum</span></span><span class="r">pickup_at<span class="ty"> datetime</span></span><span class="r">vehicle_name<span class="ty"> str</span></span><span class="r">subtotal / surcharge_total / tax / total<span class="ty"> decimal</span></span><span class="r">price_lines<span class="ty"> obj[]</span></span></div>
+      <div class="codes"><span class="code ok">201</span><span class="code">400</span></div></div></div>
+  <div class="ep"><div class="ep-h"><span class="m get">GET</span><span class="sig">/api/bookings/{reference}/status/</span><span class="au">public</span></div>
+    <div class="ep-b"><p class="sm">Public confirmation status for one booking (by reference).</p>
+      <div class="lab">Path</div><div class="fieldgrid"><span class="r">reference<span class="ty"> str</span></span></div>
+      <div class="lab">Response 200 · BookingStatus</div>
+      <div class="fieldgrid"><span class="r">reference<span class="ty"> str</span></span><span class="r">status / status_display</span><span class="r">pickup_at<span class="ty"> datetime</span></span><span class="r">vehicle_name<span class="ty"> str</span></span><span class="r">total<span class="ty"> decimal</span></span><span class="r">currency<span class="ty"> str</span></span></div>
+      <div class="codes"><span class="code ok">200</span><span class="code">404</span></div></div></div>
+  <div class="ep"><div class="ep-h"><span class="m get">GET</span><span class="sig">/api/bookings/{reference}/receipt/</span><span class="au">public</span></div>
+    <div class="ep-b"><p class="sm">The booking confirmation as a downloadable <b>PDF</b> (rendered by <code>notifications.pdf.render_booking_pdf</code>, same template as the confirmation email). Reference-scoped; a signed-in customer may only fetch their own.</p>
+      <div class="lab">Path</div><div class="fieldgrid"><span class="r">reference<span class="ty"> str</span></span></div>
+      <div class="lab">Response 200 · application/pdf</div>
+      <div class="codes"><span class="code ok">200</span><span class="code">404</span><span class="code">503</span></div></div></div>
+
+  <h3>Account <span class="muted" style="font-weight:400;font-size:13px">— require the session cookie</span></h3>
+  <div class="ep"><div class="ep-h"><span class="m get">GET</span><span class="sig">/api/account/bookings/</span><span class="au session">session</span></div>
+    <div class="ep-b"><p class="sm">The signed-in customer's bookings.</p><div class="lab">Response 200 · Booking[] · 403 if anonymous</div>
+      <div class="codes"><span class="code ok">200</span><span class="code">403</span></div></div></div>
+  <div class="ep"><div class="ep-h"><span class="m get">GET</span><span class="sig">/api/account/bookings/{reference}/</span><span class="au session">session</span></div>
+    <div class="ep-b"><p class="sm">Read one of your bookings.</p><div class="lab">Path</div><div class="fieldgrid"><span class="r">reference<span class="ty"> str</span></span></div>
+      <div class="lab">Response 200 · Booking</div><div class="codes"><span class="code ok">200</span><span class="code">400</span><span class="code">404</span></div></div></div>
+  <div class="ep"><div class="ep-h"><span class="m patch">PATCH</span><span class="sig">/api/account/bookings/{reference}/</span><span class="au session">session</span></div>
+    <div class="ep-b"><p class="sm">Cancel one of your bookings.</p>
+      <div class="lab">Request · PatchedCancelBooking</div><div class="fieldgrid"><span>action<span class="ty"> enum (cancel)</span></span></div>
+      <div class="lab">Response 200 · Booking</div><div class="codes"><span class="code ok">200</span><span class="code">400</span><span class="code">404</span></div></div></div>
+
+  <h3>Auth</h3>
+  <div class="ep"><div class="ep-h"><span class="m post">POST</span><span class="sig">/api/auth/login/</span><span class="au">public</span></div>
+    <div class="ep-b"><p class="sm">Sign in. Sets the session cookie.</p>
+      <div class="lab">Request · LoginRequest</div><div class="fieldgrid"><span class="r">email<span class="ty"> email</span></span><span class="r">password<span class="ty"> str</span></span></div>
+      <div class="lab">Response 200 · User <span class="ty">(+ Set-Cookie)</span></div><div class="codes"><span class="code ok">200</span><span class="code">401</span></div></div></div>
+  <div class="ep"><div class="ep-h"><span class="m post">POST</span><span class="sig">/api/auth/register/</span><span class="au">public</span></div>
+    <div class="ep-b"><p class="sm">Create an account.</p>
+      <div class="lab">Request · RegisterRequest</div><div class="fieldgrid"><span class="r">email<span class="ty"> email</span></span><span class="r">password<span class="ty"> str</span></span><span>first_name<span class="ty"> str</span></span><span>last_name<span class="ty"> str</span></span><span>phone<span class="ty"> str</span></span></div>
+      <div class="lab">Response 201 · User</div><div class="codes"><span class="code ok">201</span><span class="code">202</span><span class="code">400</span></div></div></div>
+  <div class="ep"><div class="ep-h"><span class="m get">GET</span><span class="sig">/api/auth/me/</span><span class="au session">session</span></div>
+    <div class="ep-b"><p class="sm">The current signed-in user.</p>
+      <div class="lab">Response 200 · User</div><div class="fieldgrid"><span class="r">email<span class="ty"> email</span></span><span class="r">first_name<span class="ty"> str</span></span><span class="r">last_name<span class="ty"> str</span></span><span>phone<span class="ty"> str</span></span></div>
+      <div class="codes"><span class="code ok">200</span><span class="code">403</span></div></div></div>
+  <div class="ep"><div class="ep-h"><span class="m post">POST</span><span class="sig">/api/auth/logout/</span><span class="au session">session</span></div>
+    <div class="ep-b"><p class="sm">Sign out; clears the cookie.</p><div class="lab">Response 204</div><div class="codes"><span class="code ok">204</span></div></div></div>
+  <div class="ep"><div class="ep-h"><span class="m post">POST</span><span class="sig">/api/auth/password-reset/</span><span class="au">public</span></div>
+    <div class="ep-b"><p class="sm">Request a password-reset link.</p>
+      <div class="lab">Request · PasswordResetRequest</div><div class="fieldgrid"><span class="r">email<span class="ty"> email</span></span></div>
+      <div class="lab">Response 202</div><div class="codes"><span class="code ok">202</span></div></div></div>
+
+  <h3>Payments</h3>
+  <div class="ep"><div class="ep-h"><span class="m get">GET</span><span class="sig">/api/payments/config/</span><span class="au">public</span></div>
+    <div class="ep-b"><p class="sm">Publishable key + whether payment is enabled.</p>
+      <div class="lab">Response 200 · PaymentConfig</div><div class="fieldgrid"><span class="r">enabled<span class="ty"> bool</span></span><span class="r">publishable_key<span class="ty"> str</span></span><span class="r">mode<span class="ty"> str</span></span></div>
+      <div class="codes"><span class="code ok">200</span></div></div></div>
+  <div class="ep"><div class="ep-h"><span class="m post">POST</span><span class="sig">/api/payments/intent/</span><span class="au">public</span></div>
+    <div class="ep-b"><p class="sm">Start payment for a booking → Stripe client secret. Card data goes browser → Stripe only.</p>
+      <div class="lab">Request · PaymentIntentRequest</div><div class="fieldgrid"><span class="r">reference<span class="ty"> str</span></span></div>
+      <div class="lab">Response 200 · PaymentIntentResponse</div><div class="fieldgrid"><span class="r">client_secret<span class="ty"> str</span></span><span class="r">publishable_key<span class="ty"> str</span></span><span class="r">amount<span class="ty"> str</span></span><span class="r">currency<span class="ty"> str</span></span><span class="r">reference<span class="ty"> str</span></span></div>
+      <div class="codes"><span class="code ok">200</span><span class="code">400</span><span class="code">404</span><span class="code">409</span><span class="code">502</span><span class="code">503</span></div></div></div>
+  <div class="ep"><div class="ep-h"><span class="m post">POST</span><span class="sig">/api/bookings/{reference}/pay-cash/</span><span class="au">public</span></div>
+    <div class="ep-b"><p class="sm">Confirm a booking as <b>cash / pay-on-arrival</b> — no card. Records a cash payment for the booking's own amount and moves it pending → confirmed. Reference-scoped like the intent endpoint; idempotent.</p>
+      <div class="lab">Path</div><div class="fieldgrid"><span class="r">reference<span class="ty"> str</span></span></div>
+      <div class="lab">Response 200 · BookingStatus</div>
+      <div class="codes"><span class="code ok">200</span><span class="code">404</span><span class="code">409</span></div></div></div>
+  <div class="ep"><div class="ep-h"><span class="m post">POST</span><span class="sig">/api/payments/webhook/</span><span class="au">Stripe</span></div>
+    <div class="ep-b"><p class="sm">Stripe webhook sink — <b>not called by the frontend</b>. Verifies signature, records a WebhookEvent.</p>
+      <div class="codes"><span class="code ok">200</span><span class="code">400</span><span class="code">503</span></div></div></div>
+
+  <h3>Enquiries</h3>
+  <div class="ep"><div class="ep-h"><span class="m post">POST</span><span class="sig">/api/enquiries/</span><span class="au">public</span></div>
+    <div class="ep-b"><p class="sm">Contact-form submission → back-office inbox. Rate-limited (429).</p>
+      <div class="lab">Request · Enquiry</div><div class="fieldgrid"><span class="r">name<span class="ty"> str</span></span><span class="r">email<span class="ty"> email</span></span><span>phone<span class="ty"> str</span></span><span>nature<span class="ty"> enum</span></span><span>subject<span class="ty"> str</span></span><span class="r">message<span class="ty"> str</span></span><span>company_name<span class="ty"> str</span></span></div>
+      <div class="codes"><span class="code ok">201</span><span class="code">400</span><span class="code">429</span></div></div></div>
+
+  <!-- ============================== 7 ============================== -->
+  <h2 id="appmap">8 · App map (interactive)</h2>
+  <p>Both UI surfaces as live mind maps — pan, zoom, collapse a section, click a card for detail. Toggle
+  <b>Client Site</b> / <b>Back Office</b>, or the booking <b>User Journey</b>. Card colour = build status.</p>
+
+  <div class="mapbox" id="mapbox">
+    <div class="map-top">
+      <div class="tabs">
+        <button id="tab-client" class="on" onclick="showView('client')">🌐 Client Site</button>
+        <button id="tab-backoffice" onclick="showView('backoffice')">🛠 Back Office</button>
+        <button id="tab-journey" onclick="showView('journey')">🚕 User Journey</button>
+      </div>
+      <div class="legend" id="legend">
+        <span class="lg"><span class="dot" style="background:var(--green)"></span>Built</span>
+        <span class="lg"><span class="dot" style="background:var(--amber)"></span>Stub</span>
+        <span class="lg"><span class="dot" style="background:var(--blue)"></span>Wizard</span>
+        <span class="lg"><span class="dot" style="background:var(--purple)"></span>Settings/Auth</span>
+      </div>
+      <div class="maphint" id="maphint"></div>
+    </div>
+    <div id="viewport"><div id="world"><svg id="edges"></svg></div></div>
+    <div class="ctrls" id="map-ctrls">
+      <button onclick="zoomBtn(1.2)">+</button>
+      <button onclick="zoomBtn(1/1.2)">−</button>
+      <button class="sm" onclick="fit()">FIT</button>
+    </div>
+    <div id="drawer">
+      <button class="close" onclick="closeDrawer()">×</button>
+      <h3 id="d-title"></h3><div class="dp" id="d-path"></div>
+      <div class="row"><div class="k">Status</div><div class="v" id="d-status"></div></div>
+      <div class="row"><div class="k">Section / layout</div><div class="v" id="d-group"></div></div>
+      <div class="row"><div class="k">Purpose</div><div class="v" id="d-desc"></div></div>
+      <div class="row" id="d-api-row"><div class="k">Backend it calls</div><div class="v" id="d-api"></div></div>
+    </div>
+    <div id="journey">
+      <div class="jt">Booking funnel — the primary customer journey</div>
+      <div class="js">Landing → search → 5-step wizard → confirmation. Mono lines are the API calls each step makes.</div>
+      <div class="flow" id="flow"></div>
+      <div class="jnote"><b>Live against the real backend</b> (<code>USE_MOCKS=false</code>). The funnel prices via
+        <code>POST /api/quotes/</code>, creates a booking from the <code>quote_token</code>, and settles with
+        <b>Cash — pay the driver</b> (<code>pay-cash</code>, confirmed instantly). Card is wired but disabled until
+        Stripe test keys are set.</div>
+      <div class="jnote"><b>Money (security spine):</b> the customer never sends a price. Step 1 calls
+        <code>POST /api/quotes/</code>; the server derives the fare and returns a signed <code>quote_token</code>
+        (~30&nbsp;min). Step 4 posts it to <code>POST /api/bookings/</code> and the server re-derives the total before charging.</div>
+      <div class="branch">
+        <div class="b"><div class="t">Signed-in customer</div><div class="path">/login · /register → /account (bookings + receipt PDF)</div></div>
+        <div class="b"><div class="t">Guest</div><div class="path">Continue as guest · guest_email → receipt PDF</div></div>
+        <div class="b"><div class="t">Enquiry</div><div class="path">/contact → POST /api/enquiries/ → back-office inbox</div></div>
+      </div>
+    </div>
+  </div>
+  <p class="muted">This map is data-driven — the two trees and the funnel are plain arrays in the page script.
+  Adding a page = adding one object (see §11).</p>
+
+  <!-- ============================== 8 ============================== -->
+  <h2 id="pricing">9 · Booking &amp; pricing flow</h2>
+  <p>The security spine of the rebuild: the client never sends a price. The server derives every fare, signs it into
+  a short-lived token, and re-derives the total before charging.</p>
+  <div class="er">1. Pick vehicle + trip  ─▶  POST /api/quotes/
+                            │  server: Google Distance Matrix → miles
+                            │          + DistanceBand rate + minimum_fare
+                            │          + TimeSurcharge / BlackoutDate %  + tax
+                            ▼
+2. { quote_token (signed), price breakdown, TTL ~30 min }
+3. POST /api/payments/intent/  ─▶  Stripe PaymentIntent (card → Stripe only)
+4. POST /api/bookings/ { quote_token, passenger, payment ref }
+                            │  server re-validates token + re-derives total
+                            ▼
+5. Booking created (totals frozen) + BookingPriceLine rows + Payment ; confirmation</div>
+  <div class="callout ok"><b>Why:</b> the legacy PHP app carried the fare in <code>$_SESSION</code> and trusted it at
+  payment. This design makes that tampering impossible — no field anywhere accepts a client-supplied price. Money is
+  always a decimal string.</div>
+
+  <!-- ============================== 9 ============================== -->
+  <h2 id="gap">10 · Integration gap (resolved)</h2>
+  <div class="callout ok">
+    <b>Closed 2026-09-26 — the client site now runs on the real backend.</b> The price-carrying API layer was
+    replaced (not adapted):
+    <ul style="margin:10px 0 0">
+      <li><code>src/lib/api/</code> rewritten to the real paths (<code>/api/vehicles/</code>, <code>/api/quotes/</code>, …);
+        the old <code>/api/fleet/vehicles/</code> + client-side prices are gone.</li>
+      <li>The fetch client sends <b>CSRF</b> (<code>X-CSRFToken</code> from cookie), primed by <code>GET /api/auth/csrf/</code>.</li>
+      <li>The wizard is rewired around <code>POST /api/quotes/</code> → <code>quote_token</code> → <code>POST /api/bookings/</code>;
+        <code>USE_MOCKS=false</code>. Funnel verified end-to-end in Docker (real booking in the DB).</li>
+    </ul>
+  </div>
+  <p class="muted">Remaining: Stripe test keys to enable card entry; login/register + marketing pages are still stubs.
+  See the Changelog (§13) for the full record.</p>
+
+  <!-- ============================== 10 ============================== -->
+  <h2 id="extend">11 · Extending these docs</h2>
+  <div class="callout"><b>📌 Working rule — document as you build.</b> Every feature, endpoint, or behaviour change to
+  this app is recorded in these docs <i>in the same task that ships it</i>: update the relevant section (map status,
+  endpoint reference, flow) <b>and</b> add a dated entry to the Changelog (§13). The docs are the source of truth for
+  <i>what exists</i>; code is the source of truth for <i>how</i>. If it isn't written here, it isn't done.</div>
+  <div class="callout warn"><b>⚠️ Porting gotcha — jQuery-plugin sections (recurring bug, now guarded).</b>
+  The Luxride template drives sections with jQuery plugins — <b>slick</b> sliders, <b>Bootstrap</b>
+  accordion/dropdowns (<code>data-bs-*</code>), <b>WOW</b> reveals, <b>Perfect Scrollbar</b> — whose CSS is scoped
+  to <i>runtime-injected</i> wrappers/classes (e.g. <code>.list-how .slick-list .slick-track li h4{color:#fff}</code>).
+  Ported verbatim to React without the plugin, those selectors stop matching and the section silently breaks
+  (invisible text, overflow, dead toggles). <b>Rule when porting a page:</b> (1) re-implement plugin behaviour with
+  the React equivalent — <b>Swiper</b> for any slick/carousel; (2) <code>data-bs-*</code> toggles work via the
+  Bootstrap bundle now loaded globally in <code>app/layout.tsx</code>; (3) otherwise add explicit overrides in
+  <code>public/assets/css/custom.css</code>. Before shipping a page, grep it for
+  <code>slick · data-bs · perfect-scroll · magnific · count</code> and handle each hit — never rely on the
+  plugin's runtime markup.</div>
+  <p>These docs are built to grow. Everything is one self-contained HTML file with no build step or dependencies.</p>
+  <table>
+    <tr><th>To change…</th><th>Do this</th></tr>
+    <tr><td>Add a client page or back-office screen to the map</td><td>Add an object to <code>CLIENT_TREE</code> or <code>BACKOFFICE_TREE</code> in the page script — <code>{title, path, status, desc, api}</code>. No layout code.</td></tr>
+    <tr><td>Add a whole new section/group</td><td>Add a group <code>{id, title, path, type, children:[…]}</code>. <code>type</code> sets the accent (<code>group</code>/<code>auth</code>/<code>wizard</code>).</td></tr>
+    <tr><td>Add a third UI surface (e.g. a mobile app)</td><td>Copy the tree shape into a new <code>*_TREE</code> const and add a tab that sets <code>TREE</code> and calls <code>render();fit()</code>.</td></tr>
+    <tr><td>Update a funnel step</td><td>Edit the <code>FLOW</code> array.</td></tr>
+    <tr><td>Refresh the DB schema after a migration</td><td>Re-run the Django introspection snippet (see repo notes) and paste into §5.</td></tr>
+    <tr><td>Add a new doc page</td><td>Reuse this file's <code>&lt;style&gt;</code> block as a shared design system; keep the sidebar-nav + numbered-sections pattern.</td></tr>
+  </table>
+  <p class="muted">Convention: status is <code>built</code> or <code>stub</code>; paths are real routes; the map's card
+  colour and the drawer read straight from the data, so the map can never drift from what you typed.</p>
+
+  <!-- ============================== 12 ============================== -->
+  <h2 id="todos">12 · Client feature requests (to-do)</h2>
+  <p>A working backlog you own in the browser. Add features the client asks for; each entry is saved to
+  <code>localStorage</code> (key <code>mm-client-todos</code>) so it persists across reloads and sessions on this
+  machine — no backend, no account. Press Enter or <b>Add</b> to save · click the box to tick it off ·
+  double-click the text to edit.</p>
+
+  <div class="todo">
+    <div class="todo-add">
+      <input type="text" id="td-input" placeholder="New feature / request from the client…" autocomplete="off">
+      <select id="td-prio" aria-label="priority">
+        <option value="High">High</option>
+        <option value="Medium" selected>Medium</option>
+        <option value="Low">Low</option>
+      </select>
+      <button onclick="tdAdd()">Add</button>
+    </div>
+    <div class="todo-bar">
+      <div class="todo-filters">
+        <button onclick="tdFilter('all',this)" class="on">All</button>
+        <button onclick="tdFilter('open',this)">Open</button>
+        <button onclick="tdFilter('done',this)">Done</button>
+      </div>
+      <span id="td-count"></span>
+      <button class="td-clear" onclick="tdExport()">Copy JSON</button>
+      <button class="td-clear" onclick="tdClearDone()">Clear done</button>
+    </div>
+    <ul id="td-list"></ul>
+  </div>
+  <p class="muted">Stored only in this browser (not in git, not shared). Use <b>Copy JSON</b> to back it up or move it
+  to another machine, and paste the important items into <code>project-docs/TODO.md</code> when they belong in the repo.</p>
+
+  <!-- ============================== 13 ============================== -->
+  <h2 id="changelog">13 · Changelog</h2>
+  <p class="muted">What has actually been built, newest first. Per the rule in §11, every change lands here.</p>
+
+  <div class="modelcard">
+    <div class="mh"><span>2026-09-28 · Google Places address autocomplete</span><span class="tbl">frontend</span></div>
+    <table>
+      <tr><td>Replaced the static Austin sample-list on the From/To search fields with live <b>Google Places</b>
+      autocomplete. New helper <code>lib/google/places.ts</code> lazy-loads the Maps JS API once and calls the
+      <b>new</b> Places API (<code>AutocompleteSuggestion.fetchAutocompleteSuggestions</code> — the classic
+      <code>AutocompleteService</code> is retired for keys minted in 2025+, so the key needs <b>Places API (New)</b>
+      enabled). Keystrokes are debounced (250&nbsp;ms, min 3 chars) and grouped under an
+      <code>AutocompleteSessionToken</code> for billing; predictions are region-restricted to the US and
+      location-biased to a ~50&nbsp;mi circle around Austin. Free text is still allowed (the backend geocodes the
+      submitted string) and the field degrades to a plain input if the key is missing/blocked. Key lives in
+      <code>frontend/.env.local</code> as <code>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> (git-ignored; must be
+      referrer-restricted in Cloud Console since Maps JS keys ship to the browser).</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
+    <div class="mh"><span>2026-09-26 · Isolate storefront &amp; dashboard sessions</span><span class="tbl">backend</span></div>
+    <table>
+      <tr><td>Fixed a <b>403 in the back office</b> caused by the storefront and dashboard sharing one session.
+      Both authenticate via Django sessions (DRF <code>SessionAuthentication</code>), and cookies are scoped by
+      host not port — so on <code>localhost</code> a customer login on the Next.js storefront (<code>:3000</code> → API
+      <code>:8000</code>) wrote the same <code>sessionid</code> the dashboard reads, evicting the staff session and
+      leaving <code>/dashboard/</code> to 403 a non-staff account. Added <code>config.session.ScopedSessionMiddleware</code>
+      (faithful subclass of Django 5.2 <code>SessionMiddleware</code>) that picks the cookie name per request path:
+      <code>/api/</code> → <code>mm_store_sessionid</code>, everything else (dashboard, admin, password-reset) →
+      <code>sessionid</code>. The two logins are now independent. Also dropped
+      <code>redirect_authenticated_user=True</code> on the dashboard login so a stale/non-staff session can't bounce
+      into the 403 home page — the visitor can always re-authenticate as staff. Verified both directions with curl:
+      storefront login → <code>mm_store_sessionid</code>, <code>/api/auth/me/</code> 200, <code>/dashboard/</code> 302→login;
+      dashboard login → <code>sessionid</code>, <code>/dashboard/</code> 200, <code>/api/auth/me/</code> 403.</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
+    <div class="mh"><span>2026-09-26 · Inline auth on booking Details step</span><span class="tbl">frontend</span></div>
+    <table>
+      <tr><td>The <code>/booking/passenger</code> (Details) step now completes the <b>full sign-in and register flow
+      inline</b> — no leaving the page. Two clickable rows (Returning customer? / New here?) each expand an inline
+      form with a clear <b>Sign in</b> / <b>Register</b> button; on success <code>refreshAuth()</code> swaps in a
+      "Signed in as …" banner and hides the guest fields (register signs in server-side via
+      <code>login(request, user)</code>). The whole row is the click target, and guest checkout stays available.</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
+    <div class="mh"><span>2026-09-26 · Dashboard 500 on website/cash bookings</span><span class="tbl">backend</span></div>
+    <table>
+      <tr><td>Fixed <code>VariableDoesNotExist</code> crash opening a booking created via the website:
+      <code>booking_detail.html</code> line 74 did <code>change.changed_by.email</code> where
+      <code>changed_by</code> is <b>None</b> for system/website/cash status changes (the <code>default</code> filter
+      doesn't swallow the failed lookup). Wrapped in <code>{% if change.changed_by %}…{% else %}system{% endif %}</code>.
+      Audited the other dashboard templates for the same pattern: <code>payment/paypal_settings</code> were already
+      guarded; <code>enquiry_detail.html</code> had the same latent bug (answered enquiry with null replier) — guarded
+      it too. Verified <code>/dashboard/bookings/{ref}/</code> now returns 200.</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
+    <div class="mh"><span>2026-09-26 · Header consistency + confirmation re-port</span><span class="tbl">frontend</span></div>
+    <table>
+      <tr><td>Full header audit: every layout renders the shared <code>Header</code> except the <code>(auth)</code>
+      layout, which had none — so Login/Register showed no header/footer. Fixed by wrapping the auth layout with
+      Header + Footer, so all pages carry the original template menu. Re-ported the booking <b>confirmation</b> page
+      faithfully from <code>booking-receved.html</code> (the info tiles belong in <code>box-info-book-border</code>,
+      not <code>box-row-tab</code> — that's why they rendered mashed); kept the live data wiring (reference, polled
+      status, trip snapshot, receipt PDF).</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
+    <div class="mh"><span>2026-09-26 · Fix jQuery-plugin sections + guardrail</span><span class="tbl">frontend</span></div>
+    <table>
+      <tr><td>Root-caused a recurring class of bug: template sections styled only via jQuery-plugin runtime
+      wrappers break when ported without the plugin (e.g. How It Works text was invisible because
+      <code>.list-how .slick-list .slick-track li h4{color:#fff}</code> no longer matched). Audited the whole app
+      (grep slick/data-bs/perfect-scroll/…): only 3 real cases. Fixed — <b>How It Works</b> rebuilt as a Swiper with
+      synced active-step highlighting; <b>Bootstrap bundle</b> loaded globally in <code>layout.tsx</code> so the FAQ
+      accordion + fleet filters (all <code>data-bs-*</code>) work; overflow/colour overrides in
+      <code>custom.css</code>. Added a "Porting gotcha" rule to §11 to prevent recurrence.</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
+    <div class="mh"><span>2026-09-26 · Template port — marketing pages, wizard restyle, original header</span><span class="tbl">frontend</span></div>
+    <table>
+      <tr><td>Added the Luxride/M&amp;M template into the repo at <code>frontend/design-reference/</code> and ported
+      pages faithfully from it (not from memory). Home rebuilt from <code>index.html</code> into 11 section
+      components; Fleet/Services/About/Contact ported. Booking wizard restyled to the template markup
+      (<code>box-booking-tabs</code> step bar, <code>box-row-tab</code> two-column layout, <code>item-vehicle</code>
+      cards, "Ride Summary" sidebar, <code>box-completed-booking</code> confirmation). Header rebuilt to the
+      <b>original template menu</b> (Our services ▾ / For business ▾ / For chauffeurs / Help + language selector),
+      replacing a from-memory flat menu. Fixed the picker time bug (AM/PM → 24h) that broke quotes, and added
+      <code>public/assets/css/custom.css</code> to constrain template imagery whose jQuery sliders we don't run.
+      tsc clean; all routes 200.</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
+    <div class="mh"><span>2026-09-26 · Auth pages, account &amp; receipt PDF</span><span class="tbl">backend + frontend</span></div>
+    <table>
+      <tr><td>Built <b>Login</b> (with <b>Continue as guest</b>) and <b>Register</b> pages on the ready auth service,
+      a <code>useAuth</code> hook, and a <b>My account</b> page (<code>/account</code>) listing the customer's bookings —
+      header now reflects sign-in state. Added a downloadable <b>receipt PDF</b>:
+      <code>GET /api/bookings/{reference}/receipt/</code> (reuses <code>render_booking_pdf</code>), linked from the
+      confirmation page and each account booking. Verified E2E: register → authenticated cash booking (exercises the
+      CSRF write path) → appears in account with its receipt. Tests: 429 passing.</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
+    <div class="mh"><span>2026-09-26 · Cash / pay-on-arrival</span><span class="tbl">backend + frontend</span></div>
+    <table>
+      <tr><td>Added <code>Payment.Provider.CASH</code> (migration <code>payments/0005</code>) and
+      <code>POST /api/bookings/{reference}/pay-cash/</code> — records a cash payment and confirms a pending booking
+      (idempotent, 409 if already paid). Frontend: <code>paymentService.payCash()</code> + a Cash/Card selector on the
+      payment page (card disabled until Stripe). Lets the funnel complete with no card. Verified E2E — booking shows
+      <b>Confirmed</b>. Tests: 429 passing.</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
+    <div class="mh"><span>2026-09-26 · Quote timezone fix</span><span class="tbl">frontend</span></div>
+    <table>
+      <tr><td><code>pickupIso</code> now sends the <b>naive wall-clock time</b> instead of the visitor's UTC, so a 3 pm
+      Austin pickup is priced at 3 pm Central (backend <code>TIME_ZONE=America/Chicago</code>). Fixes a spurious night
+      surcharge for anyone not in Central.</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
+    <div class="mh"><span>2026-09-26 · Client-site API-layer rebuild</span><span class="tbl">backend + frontend</span></div>
+    <table>
+      <tr><td>Replaced the mock/price-carrying <code>src/lib/api/</code> with real services
+      (catalog · quote · booking · payment · auth · enquiry); added CSRF to the fetch client + backend
+      <code>GET /api/auth/csrf/</code>; reworked the Zustand store and rewired the whole booking wizard around
+      <code>quote_token</code>; flipped <code>USE_MOCKS=false</code>. Closes the §10 integration gap. Verified E2E: a
+      real booking landed in the DB. Tests: 429 passing.</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
+    <div class="mh"><span>2026-09-26 · Local full-stack Docker + these docs</span><span class="tbl">ops + docs</span></div>
+    <table>
+      <tr><td>Dockerized db + Django + Next.js (<code>docker compose up</code>), loaded legacy data via the importers,
+      and authored this developer-docs page (overview, schema, endpoint reference, interactive app map, feature to-do).</td></tr>
+    </table>
+  </div>
+
+  <footer>Generated from the running stack · 2026-09-26 · source of truth is the code — regenerate after schema/route
+  changes. Local-only; no production secrets.</footer>
+</main>
+</div>
+
+<script>
+/* =========================================================================
+   App map data — two UI surfaces + the booking funnel. Extensible by design:
+   add a page = add an object; add a surface = add a *_TREE + a tab (see §11).
+   ========================================================================= */
+const CLIENT_TREE = {
+  id:'root', title:'Client Site', path:'/', type:'root', surface:'Next.js 15 · client-facing',
+  desc:'Public customer site (Next.js 15). Calls the Django JSON API from the browser.',
+  groups:[
+    {id:'home', title:'Home', path:'/', type:'group', status:'built', desc:'Hero + booking search widget.', children:[]},
+    {id:'marketing', title:'Marketing', path:'(marketing)', type:'group', desc:'Header + Footer layout group.', children:[
+      {title:'Fleet', path:'/fleet', status:'built', desc:'Ported from template (fleet-list.html).', api:'GET /api/vehicles/'},
+      {title:'Services', path:'/services', status:'built', desc:'Ported from template (service-grid.html).', api:'GET /api/pages/services/'},
+      {title:'About', path:'/about', status:'built', desc:'Ported from template (about-2.html).', api:'GET /api/pages/about/'},
+      {title:'Contact', path:'/contact', status:'built', desc:'Ported from template (contact.html); form not yet wired.', api:'POST /api/enquiries/'},
+      {title:'Terms', path:'/terms', status:'stub', desc:'Terms (CMS).', api:'GET /api/pages/terms/'},
+      {title:'Coming Soon', path:'/coming-soon', status:'stub', desc:'Placeholder.'},
+    ]},
+    {id:'auth', title:'Account & auth', path:'(auth) · /account', type:'auth', desc:'Sign in / register + the customer account.', children:[
+      {title:'Login', path:'/login', status:'built', desc:'Email/password sign-in + "Continue as guest".', api:'POST /api/auth/login/'},
+      {title:'Register', path:'/register', status:'built', desc:'New account (201 signs in; 202 neutral, anti-enumeration).', api:'POST /api/auth/register/'},
+      {title:'My account', path:'/account', status:'built', desc:'Bookings list + receipt PDF + sign out.', api:'GET /api/account/bookings/'},
+    ]},
+    {id:'booking', title:'Booking Wizard', path:'/booking', type:'wizard', desc:'5-step funnel · Zustand store (sessionStorage).', children:[
+      {title:'1 · Vehicle', path:'/booking/vehicle', status:'built', desc:'Prices all vehicles → shows real fares.', api:'POST /api/quotes/'},
+      {title:'2 · Extra', path:'/booking/extra', status:'built', desc:'Passengers, luggage, flight no., pickup sign, notes.'},
+      {title:'3 · Passenger', path:'/booking/passenger', status:'built', desc:'Guest name + email (or sign in).'},
+      {title:'4 · Payment', path:'/booking/payment', status:'built', desc:'Creates booking from quote token; Cash (works) or Card (pending Stripe).', api:'POST /api/bookings/ → pay-cash | payments/intent'},
+      {title:'5 · Confirmation', path:'/booking/confirmation', status:'built', desc:'Polls /bookings/{ref}/status/ until confirmed.'},
+    ]},
+    {id:'system', title:'System', path:'', type:'group', desc:'Framework routes.', children:[
+      {title:'404 Not Found', path:'/*', status:'built', desc:'not-found.tsx catch-all.'},
+    ]},
+  ]
+};
+const BACKOFFICE_TREE = {
+  id:'bo-root', title:'Back Office', path:'/dashboard/', type:'root', surface:'Django templates · server-rendered',
+  desc:'Staff dashboard (Django template engine). Role-gated (Dispatcher / Manager / Editor). Replaced Django admin.',
+  groups:[
+    {id:'bo-ops', title:'Operations', path:'/dashboard', type:'wizard', desc:'Dispatch & scheduling.', children:[
+      {title:'Overview', path:'/dashboard/', status:'built', desc:'Home / KPIs.'},
+      {title:'Dispatch board', path:'/dispatch/', status:'built', desc:'Assign drivers.'},
+      {title:'Calendar', path:'/calendar/', status:'built', desc:'Bookings by date.'},
+    ]},
+    {id:'bo-bookings', title:'Bookings', path:'/dashboard/bookings', type:'wizard', desc:'Booking record + actions.', children:[
+      {title:'Booking list', path:'/bookings/', status:'built', desc:'Search / filter.'},
+      {title:'Booking detail', path:'/bookings/{ref}/', status:'built', desc:'Record + status history.'},
+      {title:'Edit booking', path:'/bookings/{ref}/update/', status:'built', desc:'Amend trip / status.'},
+      {title:'Issue refund', path:'/bookings/{ref}/refund/', status:'built', desc:'Stripe refund.'},
+    ]},
+    {id:'bo-crm', title:'Enquiries', path:'/dashboard/enquiries', type:'group', desc:'Contact inbox.', children:[
+      {title:'Inbox', path:'/enquiries/', status:'built', desc:'Unread / replied.'},
+      {title:'Enquiry detail', path:'/enquiries/{pk}/', status:'built', desc:'Read + reply.'},
+    ]},
+    {id:'bo-manage', title:'Manage (CRUD)', path:'/dashboard/manage/<slug>', type:'group', desc:'Generic list/create/edit/delete engine (dashboard/managed.py) — one registry drives all of these.', children:[
+      {title:'Drivers', path:'manage/drivers/', status:'built'},
+      {title:'Vehicles', path:'manage/vehicles/', status:'built', desc:'+ distance bands.'},
+      {title:'Surcharges', path:'manage/surcharges/', status:'built'},
+      {title:'Blackout dates', path:'manage/blackout-dates/', status:'built'},
+      {title:'Pages', path:'manage/pages/', status:'built', desc:'CMS.'},
+      {title:'Testimonials', path:'manage/testimonials/', status:'built'},
+      {title:'Banners', path:'manage/banners/', status:'built'},
+      {title:'Gallery', path:'manage/gallery/', status:'built'},
+      {title:'Staff', path:'manage/staff/', status:'built', desc:'Users + roles.'},
+      {title:'Customers', path:'manage/customers/', status:'built'},
+    ]},
+    {id:'bo-settings', title:'Settings', path:'/dashboard/settings', type:'auth', desc:'Singleton config screens.', children:[
+      {title:'Pricing', path:'settings/pricing/', status:'built', desc:'Tax, quote TTL, cancellation.'},
+      {title:'Payments (Stripe)', path:'settings/payments/', status:'built'},
+      {title:'PayPal', path:'settings/paypal/', status:'built'},
+      {title:'Email (SMTP)', path:'settings/email/', status:'built'},
+      {title:'Site details', path:'settings/site/', status:'built', desc:'Contact, socials.'},
+    ]},
+  ]
+};
+let TREE = CLIENT_TREE;
+
+/* ---------------- layout ---------------- */
+const NODE_W=230, COLGAP=300, GROUP_Y=170, CHILD_Y0=290, CHILD_PITCH=72, CHILD_INDENT=22;
+let nodes=[];
+const world=document.getElementById('world'), svg=document.getElementById('edges');
+const groupsCollapsed={};
+function buildNodes(){
+  nodes=[]; world.querySelectorAll('.node').forEach(n=>n.remove());
+  const groups=TREE.groups, n=groups.length;
+  groups.forEach((g,i)=>g._x=i*COLGAP);
+  const rootX=((n-1)*COLGAP)/2;
+  makeNode(TREE, rootX, 30, 'root');
+  groups.forEach((g)=>{
+    const gx=g._x;
+    const gn=makeNode(g, gx, GROUP_Y, 'group'+(g.type==='auth'?' auth':g.type==='wizard'?' wizard':''));
+    if(g.children&&g.children.length&&!groupsCollapsed[g.id]){
+      g.children.forEach((c,j)=>makeNode(c, gx+CHILD_INDENT, CHILD_Y0+j*CHILD_PITCH, c.status||''));
+    }
+    if(g.children&&g.children.length){
+      const tg=document.createElement('div'); tg.className='toggle'; tg.textContent=groupsCollapsed[g.id]?'+':'–';
+      tg.onclick=(e)=>{e.stopPropagation();groupsCollapsed[g.id]=!groupsCollapsed[g.id];render();};
+      gn.appendChild(tg);
+    }
+  });
+  drawEdges();
+}
+function makeNode(data,x,y,cls){
+  const el=document.createElement('div'); el.className='node '+cls;
+  let tag = data.status==='built'?'<span class="tag built">built</span>' : data.status==='stub'?'<span class="tag stub">stub</span>':'';
+  el.innerHTML = tag+'<div class="title">'+data.title+'</div>'+
+    (data.path?'<div class="path">'+data.path+'</div>':'<div class="path" style="opacity:.4">—</div>');
+  el.style.left=x+'px'; el.style.top=y+'px'; el.onclick=()=>openDrawer(data,cls);
+  world.appendChild(el);
+  nodes.push({el,x,y,w:NODE_W,h:el.offsetHeight,data});
+  return el;
+}
+function drawEdges(){
+  const map=new Map(); nodes.forEach(r=>map.set(r.data,r));
+  let paths=''; const rootRec=map.get(TREE);
+  TREE.groups.forEach(g=>{
+    const gr=map.get(g); if(!gr) return;
+    paths+=bezier(rootRec.x+NODE_W/2, rootRec.y+rootRec.h, gr.x+NODE_W/2, gr.y, '#3a4356');
+    if(g.children&&g.children.length&&!groupsCollapsed[g.id]){
+      const busX=gr.x+14, groupBottom=gr.y+gr.h;
+      g.children.forEach(c=>{
+        const cr=map.get(c); if(!cr) return; const cy=cr.y+cr.h/2;
+        const color=c.status==='built'?'#2e6b3a':c.status==='stub'?'#7a5f1c':'#3a4356';
+        paths+=`<path d="M ${busX} ${groupBottom} L ${busX} ${cy-10} Q ${busX} ${cy} ${busX+12} ${cy} L ${cr.x} ${cy}" fill="none" stroke="${color}" stroke-width="1.6"/>`;
+      });
+    }
+  });
+  svg.innerHTML=paths;
+  let maxX=0,maxY=0; nodes.forEach(r=>{maxX=Math.max(maxX,r.x+r.w);maxY=Math.max(maxY,r.y+r.h);});
+  svg.setAttribute('width',maxX+200); svg.setAttribute('height',maxY+200);
+}
+function bezier(x1,y1,x2,y2,c){const dy=Math.abs(y2-y1)*0.5;return `<path d="M ${x1} ${y1} C ${x1} ${y1+dy} ${x2} ${y2-dy} ${x2} ${y2}" fill="none" stroke="${c}" stroke-width="1.8"/>`;}
+
+/* ---------------- pan / zoom ---------------- */
+let vx=40, vy=10, scale=1;
+const vp=document.getElementById('viewport');
+function apply(){world.style.transform=`translate(${vx}px,${vy}px) scale(${scale})`;}
+function render(){buildNodes();apply();}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function zoomAt(cx,cy,f){const ns=clamp(scale*f,.3,2.2);vx=cx-(cx-vx)*(ns/scale);vy=cy-(cy-vy)*(ns/scale);scale=ns;apply();}
+function zoomBtn(f){const r=vp.getBoundingClientRect();zoomAt(r.width/2,r.height/2,f);}
+vp.addEventListener('wheel',e=>{e.preventDefault();const r=vp.getBoundingClientRect();zoomAt(e.clientX-r.left,e.clientY-r.top,e.deltaY<0?1.1:1/1.1);},{passive:false});
+let dragging=false,sx,sy;
+vp.addEventListener('mousedown',e=>{if(e.target.closest('.node'))return;dragging=true;sx=e.clientX;sy=e.clientY;vp.classList.add('grabbing');});
+window.addEventListener('mousemove',e=>{if(!dragging)return;vx+=e.clientX-sx;vy+=e.clientY-sy;sx=e.clientX;sy=e.clientY;apply();});
+window.addEventListener('mouseup',()=>{dragging=false;vp.classList.remove('grabbing');});
+function fit(){
+  if(!nodes.length) return;
+  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+  nodes.forEach(r=>{minX=Math.min(minX,r.x);minY=Math.min(minY,r.y);maxX=Math.max(maxX,r.x+r.w);maxY=Math.max(maxY,r.y+r.h);});
+  const r=vp.getBoundingClientRect(), pad=48;
+  const sw=(r.width-pad*2)/(maxX-minX), sh=(r.height-pad*2)/(maxY-minY);
+  scale=clamp(Math.min(sw,sh),.3,1.3);
+  vx=pad-minX*scale+(r.width-pad*2-(maxX-minX)*scale)/2; vy=pad-minY*scale; apply();
+}
+/* ---------------- drawer ---------------- */
+const drawer=document.getElementById('drawer');
+function openDrawer(d,cls){
+  document.getElementById('d-title').textContent=d.title;
+  document.getElementById('d-path').textContent=d.path||'—';
+  const st=document.getElementById('d-status');
+  st.innerHTML = d.status?'<span class="pill '+d.status+'">'+d.status+'</span>':(d.type==='root'?'container':'section');
+  document.getElementById('d-group').textContent =
+    d.type==='auth'?'settings / auth group': d.type==='wizard'?'flow group': (cls&&cls.indexOf('group')>=0)?'section':'—';
+  document.getElementById('d-desc').textContent=d.desc||'—';
+  const ar=document.getElementById('d-api-row');
+  if(d.api){ar.style.display='';document.getElementById('d-api').innerHTML='<code>'+d.api.replace(/→/g,'</code> → <code>')+'</code>';}
+  else ar.style.display='none';
+  drawer.classList.add('open');
+}
+function closeDrawer(){drawer.classList.remove('open');}
+/* ---------------- journey ---------------- */
+const FLOW=[
+  {n:'entry',t:'Landing',path:'/',status:'built',api:'search → store'},
+  {n:'step 1',t:'Vehicle',path:'/booking/vehicle',status:'built',api:'GET /api/vehicles/\nPOST /api/quotes/'},
+  {n:'step 2',t:'Extra',path:'/booking/extra',status:'built',api:'trip details'},
+  {n:'step 3',t:'Passenger',path:'/booking/passenger',status:'built',api:'guest / account'},
+  {n:'step 4',t:'Payment',path:'/booking/payment',status:'built',api:'POST /api/bookings/\ncash | card'},
+  {n:'step 5',t:'Confirmation',path:'/booking/confirmation',status:'built',api:'store.reset()'},
+];
+function buildFlow(){
+  const f=document.getElementById('flow'); f.innerHTML='';
+  FLOW.forEach((s,i)=>{
+    const el=document.createElement('div'); el.className='stage '+s.status;
+    el.innerHTML=`<div class="n">${s.n}</div><div class="t">${s.t}</div><div class="path">${s.path}</div>`+(s.api?`<div class="api">${s.api.replace(/\n/g,'<br>')}</div>`:'');
+    f.appendChild(el);
+    if(i<FLOW.length-1){const a=document.createElement('div');a.className='arrow';a.textContent='→';f.appendChild(a);}
+  });
+}
+/* ---------------- view switch ---------------- */
+function showView(v){
+  const isMap=(v==='client'||v==='backoffice');
+  vp.style.display=isMap?'block':'none';
+  document.getElementById('map-ctrls').style.display=isMap?'flex':'none';
+  document.getElementById('journey').style.display=(v==='journey')?'block':'none';
+  document.getElementById('legend').style.display=isMap?'flex':'none';
+  document.getElementById('tab-client').classList.toggle('on',v==='client');
+  document.getElementById('tab-backoffice').classList.toggle('on',v==='backoffice');
+  document.getElementById('tab-journey').classList.toggle('on',v==='journey');
+  closeDrawer();
+  const hint=document.getElementById('maphint');
+  if(isMap){ TREE=(v==='backoffice')?BACKOFFICE_TREE:CLIENT_TREE; hint.textContent=TREE.title+' · '+TREE.surface; render(); fit(); }
+  else hint.textContent='booking funnel';
+}
+showView('client'); buildFlow();
+</script>
+
+<script>
+/* Client feature requests — persisted to localStorage (no backend). */
+(function(){
+  const KEY='mm-client-todos';
+  let items=[], filter='all', seq=0;
+  try{ items=JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ items=[]; }
+  const list=document.getElementById('td-list');
+  const input=document.getElementById('td-input');
+  const prio=document.getElementById('td-prio');
+  const count=document.getElementById('td-count');
+  const save=()=>localStorage.setItem(KEY,JSON.stringify(items));
+  const uid=()=> 'f'+Date.now().toString(36)+(seq++);
+  const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+  window.tdAdd=function(){
+    const t=input.value.trim(); if(!t) return;
+    items.unshift({id:uid(),text:t,prio:prio.value,done:false,created:today()});
+    input.value=''; save(); render();
+  };
+  input.addEventListener('keydown',e=>{ if(e.key==='Enter') tdAdd(); });
+  window.tdToggle=id=>{const it=items.find(i=>i.id===id); if(it){it.done=!it.done; save(); render();}};
+  window.tdDel=id=>{ items=items.filter(i=>i.id!==id); save(); render(); };
+  window.tdEdit=id=>{const it=items.find(i=>i.id===id); if(!it)return; const v=prompt('Edit request:',it.text); if(v!==null){ it.text=v.trim()||it.text; save(); render(); }};
+  window.tdClearDone=()=>{ items=items.filter(i=>!i.done); save(); render(); };
+  window.tdFilter=(f,btn)=>{ filter=f; document.querySelectorAll('.todo-filters button').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); render(); };
+  window.tdExport=()=>{ navigator.clipboard.writeText(JSON.stringify(items,null,2)).then(()=>{ const o=count.textContent; count.textContent='✓ copied JSON'; setTimeout(()=>{count.textContent=o;},1200); }); };
+  function render(){
+    const shown=items.filter(i=> filter==='all'?true:(filter==='open'?!i.done:i.done));
+    const open=items.filter(i=>!i.done).length;
+    count.textContent=`${open} open · ${items.length-open} done`;
+    if(!shown.length){ list.innerHTML='<li class="td-empty">Nothing here yet — add a client request above.</li>'; return; }
+    list.innerHTML=shown.map(i=>`<li class="td-item ${i.done?'done':''}">
+      <div class="td-check" onclick="tdToggle('${i.id}')"></div>
+      <div class="td-main">
+        <div class="td-text" ondblclick="tdEdit('${i.id}')">${esc(i.text)}</div>
+        <div class="td-meta"><span class="td-prio ${i.prio.toLowerCase()}">${i.prio}</span><span>added ${i.created}</span></div>
+      </div>
+      <button class="td-del" onclick="tdDel('${i.id}')" title="Delete">×</button>
+    </li>`).join('');
+  }
+  render();
+})();
+</script>
+</body>
+</html>

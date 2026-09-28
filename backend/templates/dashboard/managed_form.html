@@ -1,0 +1,129 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{% if instance %}Edit{% else %}New{% endif %} {{ entry.label|lower }}{% endblock %}
+{% block page_title %}{% if instance %}{{ instance }}{% else %}New {{ entry.label|lower }}{% endif %}{% endblock %}
+{% block lede %}
+  <p class="lede">
+    <a href="{% url 'dashboard:managed_list' entry.slug %}" class="text-decoration-none">
+      <i class="bi bi-arrow-left"></i> {{ entry.label_plural }}
+    </a>
+  </p>
+{% endblock %}
+
+{% block content %}
+
+{% if entry.form_note %}
+  <div class="alert alert-info d-flex gap-2">
+    <i class="bi bi-info-circle"></i><div>{{ entry.form_note }}</div>
+  </div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <div class="card mb-3">
+    <div class="card-header"><i class="bi {{ entry.icon }} me-2"></i>{{ entry.label }}</div>
+    <div class="card-body">
+      <div class="row g-3">
+        {% for field in form %}
+          <div class="{% if field.field.widget.input_type == 'checkbox' %}col-12{% else %}col-md-6{% endif %}">
+            {% if field.field.widget.input_type == 'checkbox' %}
+              <div class="form-check">
+                {{ field }}
+                <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              </div>
+            {% else %}
+              <label class="form-label small fw-semibold mb-1" for="{{ field.id_for_label }}">
+                {{ field.label }}{% if field.field.required %} <span class="text-danger">*</span>{% endif %}
+              </label>
+              {{ field }}
+            {% endif %}
+            {% if field.help_text %}
+              <div class="form-text small">{{ field.help_text }}</div>
+            {% endif %}
+            {% for error in field.errors %}
+              <div class="small text-danger mt-1">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {% if formset %}
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-rulers me-2"></i>{{ entry.inline_label }}</div>
+      <div class="card-body">
+        {% if entry.inline_note %}<p class="small text-secondary">{{ entry.inline_note }}</p>{% endif %}
+
+        {{ formset.management_form }}
+        {% if formset.non_form_errors %}
+          <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
+        {% endif %}
+
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                {% for field in formset.empty_form %}
+                  {% if not field.is_hidden %}<th class="small">{{ field.label }}</th>{% endif %}
+                {% endfor %}
+                <th class="small text-end">Remove</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for inline in formset %}
+                <tr>
+                  {{ inline.id }}
+                  {% for field in inline.visible_fields %}
+                    {% if field.name != 'DELETE' %}
+                      <td>
+                        {{ field }}
+                        {% for error in field.errors %}
+                          <div class="small text-danger">{{ error }}</div>
+                        {% endfor %}
+                      </td>
+                    {% endif %}
+                  {% endfor %}
+                  <td class="text-end">
+                    {% for field in inline.visible_fields %}
+                      {% if field.name == 'DELETE' %}{{ field }}{% endif %}
+                    {% endfor %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="d-flex gap-2 align-items-center">
+    <button type="submit" class="btn btn-brand">
+      <i class="bi bi-check-lg"></i> Save
+    </button>
+    <a class="btn btn-outline-secondary" href="{% url 'dashboard:managed_list' entry.slug %}">Cancel</a>
+
+    {% if instance and entry.can_delete %}
+      <span class="ms-auto"></span>
+    {% endif %}
+  </div>
+</form>
+
+{% if instance and entry.can_delete %}
+  {# A separate form: a delete button inside the edit form would submit it. #}
+  <form method="post" class="mt-3"
+        action="{% url 'dashboard:managed_delete' entry.slug instance.pk %}"
+        onsubmit="return confirm('Delete “{{ instance|escapejs }}”? This cannot be undone.')">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-sm btn-outline-danger">
+      <i class="bi bi-trash"></i> Delete this {{ entry.label|lower }}
+    </button>
+  </form>
+{% endif %}
+
+{% endblock %}

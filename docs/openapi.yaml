@@ -78,6 +78,24 @@ paths:
                 items:
                   $ref: '#/components/schemas/Vehicle'
           description: ''
+  /api/site-settings/:
+    get:
+      operationId: site_settings_retrieve
+      description: What the header and footer display. Staff edit these in the admin,
+        so a changed phone number does not need a deploy.
+      summary: Site-wide contact details and social links
+      tags:
+      - content
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteSettings'
+          description: ''
   /api/availability/:
     get:
       operationId: availability_retrieve
@@ -195,6 +213,40 @@ paths:
                 $ref: '#/components/schemas/Booking'
           description: ''
         '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+  /api/bookings/{reference}/status/:
+    get:
+      operationId: bookings_status_retrieve
+      description: |-
+        Whether a booking has been confirmed, for the page shown after payment.
+
+        Card payments are confirmed by Stripe's webhook, not by the browser, so the confirmation page polls this until the status turns `confirmed`.
+
+        Reachable without a session because guest checkout has no session: the reference is the capability, exactly as it is for `/api/payments/intent/`. The response is therefore limited to what the holder of the reference already knows — no addresses, no passenger details. An unknown reference returns 404.
+      summary: Confirmation status for one booking
+      parameters:
+      - in: path
+        name: reference
+        schema:
+          type: string
+        required: true
+      tags:
+      - bookings
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingStatus'
+          description: ''
+        '404':
           content:
             application/json:
               schema:
@@ -810,6 +862,49 @@ components:
           maxLength: 150
       required:
       - quote_token
+    BookingStatus:
+      type: object
+      description: |-
+        The minimum a confirmation page needs.
+
+        Deliberately narrow. This is the one booking endpoint reachable without a
+        session, so it carries no addresses, no passenger names and no notes --
+        only what someone holding the reference already knows.
+      properties:
+        reference:
+          type: string
+          readOnly: true
+          description: Customer-facing booking code.
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          readOnly: true
+        status_display:
+          type: string
+          readOnly: true
+        pickup_at:
+          type: string
+          format: date-time
+          readOnly: true
+        vehicle_name:
+          type: string
+          readOnly: true
+        total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        currency:
+          type: string
+          readOnly: true
+      required:
+      - currency
+      - pickup_at
+      - reference
+      - status
+      - status_display
+      - total
+      - vehicle_name
     Detail:
       type: object
       description: A human-readable message. Used for errors and simple acknowledgements.
@@ -1126,6 +1221,46 @@ components:
       required:
       - email
       - password
+    SiteSettings:
+      type: object
+      description: |-
+        Site-wide contact details and social links, for the header and footer.
+
+        `ops_notification_email` is deliberately absent. It is where new-booking
+        alerts land, it sits on the same model as the public address purely because
+        legacy kept both on the admin user row, and publishing it would hand every
+        scraper the one mailbox the business cannot afford to have flooded.
+      properties:
+        contact_email:
+          type: string
+          format: email
+          readOnly: true
+        contact_phone:
+          type: string
+          readOnly: true
+        facebook:
+          type: string
+          format: uri
+          readOnly: true
+        instagram:
+          type: string
+          format: uri
+          readOnly: true
+        twitter:
+          type: string
+          format: uri
+          readOnly: true
+        linkedin:
+          type: string
+          format: uri
+          readOnly: true
+      required:
+      - contact_email
+      - contact_phone
+      - facebook
+      - instagram
+      - linkedin
+      - twitter
     StatusEnum:
       enum:
       - pending

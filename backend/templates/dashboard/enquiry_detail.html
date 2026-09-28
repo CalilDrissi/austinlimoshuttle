@@ -24,7 +24,7 @@
         {% if enquiry.is_answered %}
           <p class="small text-secondary">
             Replied {{ enquiry.replied_at|date:"j M Y, H:i" }} by
-            {{ enquiry.replied_by.get_full_name|default:enquiry.replied_by.email|default:"unknown" }}.
+            {% if enquiry.replied_by %}{{ enquiry.replied_by.get_full_name|default:enquiry.replied_by.email }}{% else %}unknown{% endif %}.
           </p>
           <div style="white-space:pre-wrap">{{ enquiry.reply_body }}</div>
         {% else %}

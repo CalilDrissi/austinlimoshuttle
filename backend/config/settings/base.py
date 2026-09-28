@@ -69,7 +69,9 @@ MIDDLEWARE = [
     # Must precede CommonMiddleware so preflight requests are answered
     # before any redirect logic runs.
     "corsheaders.middleware.CorsMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
+    # Scoped so /api/ (storefront) and the dashboard/admin use separate session
+    # cookies and can't clobber each other on a shared host. See config.session.
+    "config.session.ScopedSessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -152,8 +154,12 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-LOGIN_URL = "admin:login"
-LOGIN_REDIRECT_URL = "/"
+# The branded staff sign-in, not Django's admin login: the gate is the first
+# screen anyone sees, and the admin one looks like a different product.
+LOGIN_URL = "dashboard:login"
+# There is no public site yet, so "/" would 404 anyone who signed in without a
+# ?next= to return to.
+LOGIN_REDIRECT_URL = "dashboard:home"
 
 # --------------------------------------------------------------------------
 # Internationalisation

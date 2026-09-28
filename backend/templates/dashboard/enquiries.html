@@ -2,7 +2,7 @@
 {% block title %}Enquiries{% endblock %}
 {% block page_title %}Enquiries{% endblock %}
 {% block lede %}
-  <p class="lede">{{ counts.unread }} unread · {{ counts.unanswered }} unanswered · {{ counts.all }} total</p>
+  <p class="lede">{{ counts.unread }} unread · {{ counts.unanswered }} unanswered · {{ counts.all }} total{% if page.paginator.num_pages > 1 %} · page {{ page.number }} of {{ page.paginator.num_pages }}{% endif %}</p>
 {% endblock %}
 
 {% block content %}
@@ -61,6 +61,7 @@
         </tbody>
       </table>
     </div>
+    {% include "dashboard/_pagination.html" %}
   </div>
 {% else %}
   <div class="card"><div class="empty-state">

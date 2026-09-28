@@ -54,7 +54,14 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "pricing.timesurcharge": ["view", "add", "change"],
         "pricing.blackoutdate": ["view", "add", "change", "delete"],
         "pricing.pricingsettings": ["view", "change"],
-        "content.page": ["view", "change"],
+        # The whole of website content. A Manager is the client's own account,
+        # and the point of the dashboard is that they never need Django's admin
+        # -- which means every model with a screen must be reachable by them.
+        "content.page": ["view", "add", "change", "delete"],
+        "content.banner": ["view", "add", "change", "delete"],
+        "content.testimonial": ["view", "add", "change", "delete"],
+        "content.galleryimage": ["view", "add", "change", "delete"],
+        "content.sitesettings": ["view", "change"],
     },
     EDITOR: {
         "content.page": ["view", "add", "change"],

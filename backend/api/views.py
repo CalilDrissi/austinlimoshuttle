@@ -18,8 +18,15 @@ from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
+from django.http import HttpResponse
 from django.utils import timezone
-from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
+from django.views.decorators.csrf import ensure_csrf_cookie
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+)
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.exceptions import ValidationError
@@ -29,10 +36,11 @@ from rest_framework.throttling import AnonRateThrottle, ScopedRateThrottle
 
 from accounts.forms import MigrationPasswordResetForm
 from bookings.models import Booking, BookingStatusChange
-from content.models import Page
+from content.models import Page, SiteSettings
 from enquiries.models import ContactMessage
 from fleet.models import Vehicle
 from notifications import mailer
+from notifications.pdf import render_booking_pdf
 from pricing.distance import DistanceLookupError
 from pricing.distance import lookup as measure_journey
 from pricing.engine import quote_all
@@ -43,6 +51,7 @@ from .serializers import (
     AvailabilitySerializer,
     BookingCreateSerializer,
     BookingSerializer,
+    BookingStatusSerializer,
     CancelBookingSerializer,
     DetailSerializer,
     EnquirySerializer,
@@ -52,6 +61,7 @@ from .serializers import (
     QuoteRequestSerializer,
     QuoteResponseSerializer,
     RegisterRequestSerializer,
+    SiteSettingsSerializer,
     UserSerializer,
     VehicleSerializer,
 )
@@ -110,6 +120,26 @@ def page_detail(request, slug):
 def page_list(request):
     pages = Page.objects.filter(is_published=True)
     return Response(PageSerializer(pages, many=True).data)
+
+
+@extend_schema(
+    tags=["content"],
+    summary="Site-wide contact details and social links",
+    description="What the header and footer display. Staff edit these in the "
+                "admin, so a changed phone number does not need a deploy.",
+    responses={200: SiteSettingsSerializer},
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def site_settings(request):
+    """
+    The singleton settings row.
+
+    `load()` rather than a query: the row may not exist yet on a fresh install,
+    and a frontend header that 500s because nobody has opened the admin page is
+    a worse failure than empty contact details.
+    """
+    return Response(SiteSettingsSerializer(SiteSettings.load()).data)
 
 
 @extend_schema(
@@ -359,6 +389,83 @@ def create_booking(request):
 
 @extend_schema(
     tags=["bookings"],
+    summary="Confirmation status for one booking",
+    description=(
+        "Whether a booking has been confirmed, for the page shown after "
+        "payment.\n\n"
+        "Card payments are confirmed by Stripe's webhook, not by the browser, "
+        "so the confirmation page polls this until the status turns "
+        "`confirmed`.\n\n"
+        "Reachable without a session because guest checkout has no session: "
+        "the reference is the capability, exactly as it is for "
+        "`/api/payments/intent/`. The response is therefore limited to what "
+        "the holder of the reference already knows — no addresses, no "
+        "passenger details. An unknown reference returns 404."
+    ),
+    parameters=[OpenApiParameter("reference", str, OpenApiParameter.PATH)],
+    responses={200: BookingStatusSerializer, 404: DetailSerializer},
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+@throttle_classes([AnonRateThrottle])
+def booking_status(request, reference):
+    """
+    Public confirmation status, keyed by reference.
+
+    A signed-in customer looking at someone else's reference gets the same 404
+    as an unknown one, matching `my_booking_detail`: a 403 would confirm that
+    the reference exists.
+    """
+    booking = Booking.objects.filter(reference=reference).first()
+    if booking is None:
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if booking.customer_id and request.user.is_authenticated \
+            and booking.customer_id != request.user.id:
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    return Response(BookingStatusSerializer(booking).data)
+
+
+@extend_schema(
+    tags=["bookings"],
+    summary="Download the booking receipt (PDF)",
+    description=(
+        "The confirmation as a PDF, rendered from the same template as the "
+        "confirmation email. Reachable by reference (guest checkout has no "
+        "session); a signed-in customer may only fetch their own."
+    ),
+    parameters=[OpenApiParameter("reference", str, OpenApiParameter.PATH)],
+    responses={200: OpenApiResponse(description="application/pdf"),
+               404: DetailSerializer, 503: DetailSerializer},
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+@throttle_classes([AnonRateThrottle])
+def booking_receipt(request, reference):
+    """The booking confirmation as a downloadable PDF."""
+    booking = Booking.objects.filter(reference=reference).first()
+    if booking is None:
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if booking.customer_id and request.user.is_authenticated \
+            and booking.customer_id != request.user.id:
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    pdf = render_booking_pdf(booking)
+    if pdf is None:
+        return Response({"detail": "The receipt could not be generated."},
+                        status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    response = HttpResponse(pdf, content_type="application/pdf")
+    response["Content-Disposition"] = (
+        f'attachment; filename="booking-{booking.reference}.pdf"'
+    )
+    return response
+
+
+@extend_schema(
+    tags=["bookings"],
     summary="The signed-in customer's bookings",
     responses={200: BookingSerializer(many=True), 403: DetailSerializer},
 )
@@ -512,7 +619,18 @@ def auth_register(request):
         phone=(request.data.get("phone") or "").strip()[:32],
     )
     login(request, user)
-    return Response({"email": user.email}, status=status.HTTP_201_CREATED)
+    # The same shape as /auth/login/ and /auth/me/. Returning only the address
+    # here made the frontend show "My account" to someone who had just typed
+    # their name in, because the header had nothing else to go on.
+    return Response(
+        {
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "phone": user.phone,
+        },
+        status=status.HTTP_201_CREATED,
+    )
 
 
 @extend_schema(
@@ -561,19 +679,48 @@ def auth_password_reset(request):
 
 
 @extend_schema(
-    tags=["auth"], summary="The signed-in customer",
+    tags=["auth"],
+    summary="Read or update the signed-in customer",
+    description="GET returns the current profile. PATCH updates the editable "
+                "fields (first_name, last_name, phone). Email is the login "
+                "identifier and is not editable here.",
+    request=UserSerializer,
     responses={200: UserSerializer, 403: DetailSerializer},
 )
-@api_view(["GET"])
+@api_view(["GET", "PATCH"])
 @permission_classes([IsAuthenticated])
 def auth_me(request):
     user = request.user
+    if request.method == "PATCH":
+        data = request.data
+        if "first_name" in data:
+            user.first_name = (data.get("first_name") or "").strip()[:150]
+        if "last_name" in data:
+            user.last_name = (data.get("last_name") or "").strip()[:150]
+        if "phone" in data:
+            user.phone = (data.get("phone") or "").strip()[:32]
+        user.save(update_fields=["first_name", "last_name", "phone"])
     return Response({
         "email": user.email,
         "first_name": user.first_name,
         "last_name": user.last_name,
         "phone": user.phone,
     })
+
+
+@extend_schema(
+    tags=["auth"],
+    summary="Prime the CSRF cookie",
+    description="Sets the `csrftoken` cookie so the SPA can echo it in an "
+                "`X-CSRFToken` header on authenticated writes. Safe to call "
+                "anonymously and as often as needed.",
+    responses={204: None},
+)
+@ensure_csrf_cookie
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def auth_csrf(request):
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 # -- enquiries --------------------------------------------------------------

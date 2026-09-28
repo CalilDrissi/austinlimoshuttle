@@ -1,0 +1,33 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Pricing settings{% endblock %}
+{% block page_title %}Pricing settings{% endblock %}
+{% block lede %}<p class="lede">Tax, currency, and the windows governing quotes and cancellations.</p>{% endblock %}
+
+{% block content %}
+<div class="alert alert-warning d-flex gap-2">
+  <i class="bi bi-exclamation-triangle"></i>
+  <div><strong>These apply to every future quote.</strong>
+    A mistyped tax rate misprices the whole fleet at once. Existing bookings keep
+    the figures they were quoted at.</div>
+</div>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+  <div class="card mb-3" style="max-width:620px">
+    <div class="card-header"><i class="bi bi-percent me-2"></i>Fare rules</div>
+    <div class="card-body">
+      <div class="row g-3">
+        {% for field in form %}
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<div class="form-text small">{{ field.help_text }}</div>{% endif %}
+            {% for error in field.errors %}<div class="small text-danger mt-1">{{ error }}</div>{% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <button type="submit" class="btn btn-brand"><i class="bi bi-check-lg"></i> Save</button>
+</form>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% comment %}
+  Pagination shared by the bookings and enquiries lists.
+
+  Expects `page` (a Django Page), `page_range` (from get_elided_page_range, so
+  2,000 pages do not render 2,000 links) and `querystring` — the current
+  filters, already URL-encoded and prefixed with "&". Without that last part,
+  turning the page silently drops the filters and shows a different result set
+  than the one being paged through.
+{% endcomment %}
+{% if page.paginator.num_pages > 1 %}
+<div class="card-footer bg-white d-flex flex-wrap align-items-center justify-content-between gap-2 py-2">
+
+  <div class="small text-secondary">
+    {{ page.start_index }}–{{ page.end_index }} of {{ page.paginator.count }}
+  </div>
+
+  <nav aria-label="Pagination">
+    <ul class="pagination pagination-sm mb-0">
+
+      <li class="page-item {% if not page.has_previous %}disabled{% endif %}">
+        <a class="page-link"
+           href="?page={% if page.has_previous %}{{ page.previous_page_number }}{% else %}1{% endif %}{{ querystring }}"
+           aria-label="Previous">
+          <i class="bi bi-chevron-left"></i>
+        </a>
+      </li>
+
+      {% for number in page_range %}
+        {% if number == page.paginator.ELLIPSIS %}
+          <li class="page-item disabled"><span class="page-link">{{ number }}</span></li>
+        {% elif number == page.number %}
+          <li class="page-item active" aria-current="page">
+            <span class="page-link">{{ number }}</span>
+          </li>
+        {% else %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ number }}{{ querystring }}">{{ number }}</a>
+          </li>
+        {% endif %}
+      {% endfor %}
+
+      <li class="page-item {% if not page.has_next %}disabled{% endif %}">
+        <a class="page-link"
+           href="?page={% if page.has_next %}{{ page.next_page_number }}{% else %}{{ page.paginator.num_pages }}{% endif %}{{ querystring }}"
+           aria-label="Next">
+          <i class="bi bi-chevron-right"></i>
+        </a>
+      </li>
+
+    </ul>
+  </nav>
+</div>
+{% endif %}

@@ -9,7 +9,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from bookings.models import Booking
-from content.models import Page
+from content.models import Page, SiteSettings
 from enquiries.models import ContactMessage
 from fleet.models import Vehicle
 
@@ -27,6 +27,25 @@ class PageSerializer(serializers.ModelSerializer):
             "slug", "url", "title", "page_type", "body",
             "meta_title", "meta_description", "meta_keywords",
         ]
+
+
+class SiteSettingsSerializer(serializers.ModelSerializer):
+    """
+    Site-wide contact details and social links, for the header and footer.
+
+    `ops_notification_email` is deliberately absent. It is where new-booking
+    alerts land, it sits on the same model as the public address purely because
+    legacy kept both on the admin user row, and publishing it would hand every
+    scraper the one mailbox the business cannot afford to have flooded.
+    """
+
+    class Meta:
+        model = SiteSettings
+        fields = [
+            "contact_email", "contact_phone",
+            "facebook", "instagram", "twitter", "linkedin",
+        ]
+        read_only_fields = fields
 
 
 class VehicleSerializer(serializers.ModelSerializer):
@@ -158,6 +177,27 @@ class DetailSerializer(serializers.Serializer):
     """A human-readable message. Used for errors and simple acknowledgements."""
 
     detail = serializers.CharField()
+
+
+class BookingStatusSerializer(serializers.ModelSerializer):
+    """
+    The minimum a confirmation page needs.
+
+    Deliberately narrow. This is the one booking endpoint reachable without a
+    session, so it carries no addresses, no passenger names and no notes --
+    only what someone holding the reference already knows.
+    """
+
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+    vehicle_name = serializers.CharField(source="vehicle_name_snapshot", read_only=True)
+
+    class Meta:
+        model = Booking
+        fields = [
+            "reference", "status", "status_display", "pickup_at",
+            "vehicle_name", "total", "currency",
+        ]
+        read_only_fields = fields
 
 
 class JourneySerializer(serializers.Serializer):

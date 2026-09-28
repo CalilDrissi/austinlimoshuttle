@@ -1,0 +1,91 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{{ entry.label_plural }}{% endblock %}
+{% block page_title %}{{ entry.label_plural }}{% endblock %}
+{% block lede %}
+  <p class="lede">{{ entry.lede }}{% if total %} · {{ total }} record{{ total|pluralize }}{% endif %}</p>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+  {% if entry.search_fields %}
+    <form method="get" class="d-flex gap-2">
+      <input type="search" name="q" value="{{ query }}" class="form-control form-control-sm"
+             style="min-width:230px" placeholder="Search {{ entry.label_plural|lower }}…">
+      <button class="btn btn-sm btn-outline-secondary" type="submit">
+        <i class="bi bi-search"></i>
+      </button>
+      {% if query %}
+        <a class="btn btn-sm btn-link text-secondary" href="{% url 'dashboard:managed_list' entry.slug %}">Clear</a>
+      {% endif %}
+    </form>
+  {% endif %}
+
+  {% if can_edit %}
+    <a class="btn btn-sm btn-brand ms-auto" href="{% url 'dashboard:managed_create' entry.slug %}">
+      <i class="bi bi-plus-lg"></i> New {{ entry.label|lower }}
+    </a>
+  {% endif %}
+</div>
+
+{% if rows %}
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            {% for column in entry.columns %}
+              <th {% if column.align_end %}class="text-end"{% endif %}>{{ column.header }}</th>
+            {% endfor %}
+            <th class="text-end">&nbsp;</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              {% for cell in row.cells %}
+                <td {% if cell.align_end %}class="text-end"{% endif %}>
+                  {% if cell.boolean %}
+                    {% if cell.value %}
+                      <span class="badge text-bg-success-subtle text-success-emphasis badge-status">Yes</span>
+                    {% else %}
+                      <span class="badge text-bg-secondary-subtle text-secondary-emphasis badge-status">No</span>
+                    {% endif %}
+                  {% else %}
+                    {% if can_edit and forloop.first %}
+                      <a class="fw-semibold" href="{% url 'dashboard:managed_edit' entry.slug row.pk %}">{{ cell.value }}</a>
+                    {% else %}
+                      {{ cell.value|default:"—" }}
+                    {% endif %}
+                    {% if cell.sub %}<div class="small text-secondary">{{ cell.sub }}</div>{% endif %}
+                  {% endif %}
+                </td>
+              {% endfor %}
+              <td class="text-end text-nowrap">
+                {% if can_edit %}
+                  <a class="btn btn-sm btn-outline-secondary"
+                     href="{% url 'dashboard:managed_edit' entry.slug row.pk %}">Edit</a>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include "dashboard/_pagination.html" %}
+  </div>
+{% else %}
+  <div class="card"><div class="empty-state">
+    <i class="bi {{ entry.icon }}"></i>
+    <div class="fw-semibold">
+      {% if query %}Nothing matches “{{ query }}”{% else %}No {{ entry.label_plural|lower }} yet{% endif %}
+    </div>
+    {% if can_edit and not query %}
+      <a class="btn btn-sm btn-brand mt-3" href="{% url 'dashboard:managed_create' entry.slug %}">
+        <i class="bi bi-plus-lg"></i> Add the first one
+      </a>
+    {% endif %}
+  </div></div>
+{% endif %}
+
+{% endblock %}
