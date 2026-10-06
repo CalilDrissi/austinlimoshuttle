@@ -7,11 +7,13 @@
 
 FROM node:22-slim
 
-ENV NEXT_TELEMETRY_DISABLED=1 \
-    NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
 WORKDIR /app
 
+# Install ALL deps (incl. devDependencies) — the build needs TypeScript, Tailwind
+# etc. Do NOT set NODE_ENV=production here, or npm omits them and `next build`
+# ignores the tsconfig path aliases (@/*). `next start` runs in prod mode anyway.
 COPY package.json package-lock.json ./
 RUN npm ci
 

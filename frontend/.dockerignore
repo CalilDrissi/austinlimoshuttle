@@ -1,5 +1,11 @@
 node_modules/
 .next/
 .git/
+.env*
+*.tsbuildinfo
 npm-debug.log*
 .DS_Store
+design-reference/
+.storybook/
+storybook-static/
+.storybook-static/
