@@ -6,9 +6,15 @@
 {% block content %}
 {% if not has_any_cards %}
   <div class="alert alert-warning d-flex gap-2">
-    <i class="bi bi-credit-card"></i>
-    <div>No customers have a card on file yet. A card is kept on file when a signed-in
-      customer pays by card and chooses to save it.</div>
+    <i class="bi bi-credit-card fs-5"></i>
+    <div>
+      <strong>The Customer list is empty because no customer has a card on file yet.</strong>
+      This page only bills a <em>saved</em> card — it is not a list of all your customers.
+      <div class="mt-2 small">A card is saved on file only when a <strong>signed-in customer pays online by
+      card and ticks “save my card”</strong>. Taking a card at the counter on a manual booking charges it once
+      but does <em>not</em> store it, so it won’t appear here. Once a customer has a saved card, they’ll show in
+      the dropdown below.</div>
+    </div>
   </div>
 {% endif %}
 
