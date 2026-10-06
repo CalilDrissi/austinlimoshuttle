@@ -78,6 +78,12 @@ class User(AbstractBaseUser, PermissionsMixin):
         help_text="Contact number used by dispatch.",
     )
 
+    stripe_customer_id = models.CharField(
+        max_length=64, blank=True, db_index=True,
+        help_text="Stripe Customer, created the first time a card is saved. "
+                  "Lets the customer reuse a card and lets staff charge it.",
+    )
+
     is_active = models.BooleanField(
         default=True,
         help_text="Unselect instead of deleting: bookings reference this row.",

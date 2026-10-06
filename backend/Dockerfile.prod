@@ -1,0 +1,24 @@
+# Backend production image — Django API + staff dashboard under gunicorn.
+#
+# Same Python 3.12 base as dev; installs requirements/prod.txt (base + gunicorn
+# + whitenoise). The entrypoint waits for the DB, migrates, syncs roles and —
+# because DJANGO_COLLECTSTATIC=1 in prod — creates the cache table and collects
+# static, then execs gunicorn.
+
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+COPY requirements/ requirements/
+RUN pip install -r requirements/prod.txt
+
+COPY . .
+
+ENTRYPOINT ["bash", "/app/docker-entrypoint.sh"]
+CMD ["gunicorn", "config.wsgi:application", \
+     "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "60", \
+     "--access-logfile", "-", "--error-logfile", "-"]

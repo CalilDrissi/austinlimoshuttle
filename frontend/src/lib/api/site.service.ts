@@ -15,6 +15,7 @@ export interface SiteSettings {
   instagram: string;
   twitter: string;
   linkedin: string;
+  google_maps_api_key: string;
 }
 
 const EMPTY: SiteSettings = {
@@ -24,6 +25,7 @@ const EMPTY: SiteSettings = {
   instagram: "",
   twitter: "",
   linkedin: "",
+  google_maps_api_key: "",
 };
 
 const http = {

@@ -1,0 +1,28 @@
+# Frontend production image — Next.js 15 built and served with `next start`.
+#
+# NEXT_PUBLIC_* vars are inlined into the client bundle at BUILD time, so the
+# API base URL is a build arg. The Google Maps key is NOT baked in: the app
+# fetches it at runtime from /api/site-settings/ (dashboard-managed), so it can
+# be changed without a rebuild.
+
+FROM node:22-slim
+
+ENV NEXT_TELEMETRY_DISABLED=1 \
+    NODE_ENV=production
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+
+ARG NEXT_PUBLIC_API_BASE_URL
+ARG NEXT_PUBLIC_USE_MOCKS=false
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL \
+    NEXT_PUBLIC_USE_MOCKS=$NEXT_PUBLIC_USE_MOCKS
+
+RUN npm run build
+
+EXPOSE 3000
+CMD ["npx", "next", "start", "-H", "0.0.0.0", "-p", "3000"]

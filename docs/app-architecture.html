@@ -871,6 +871,159 @@ Page ─┬─&lt; Banner                   ContactMessage &gt;─ User (replied
   <p class="muted">What has actually been built, newest first. Per the rule in §11, every change lands here.</p>
 
   <div class="modelcard">
+    <div class="mh"><span>2026-10-06 · Customers can edit their booking (within a configurable window)</span><span class="tbl">full-stack</span></div>
+    <table>
+      <tr><td>Signed-in customers can now edit their own booking's <b>non-price details</b> from
+      <code>/account</code> — passengers, luggage, flight number, pickup-sign name, notes and contact phone (phone
+      updates the account). Nothing that changes the fare (address/date/vehicle) is editable, so there's no re-quote
+      or payment reconciliation. <b>Admin-configurable cutoff:</b> new
+      <code>PricingSettings.amendment_window_hours</code> (default 24) on the <b>Settings → Pricing</b> screen —
+      "how many hours before pickup a customer may still change it" (72 = 3 days, 24 = 1 day, 6 = 6 hours).
+      <code>Booking.is_amendable</code> / <code>amendment_deadline</code> drive it; the account booking endpoint gained
+      a PATCH <code>action:"amend"</code> (alongside cancel) with a <code>BookingAmendSerializer</code>, enforcing the
+      window (<code>400</code> once closed) and writing an audit row. The <code>/account</code> ride cards show
+      <b>Edit details</b> (inline form) when amendable, or <i>"Online changes are closed — contact us"</i> otherwise.
+      Verified E2E: window math (far=editable, near=locked), API amend + rejection, and a live UI edit
+      (passengers 4→6). <i>(Fixed a self-inflicted bug mid-build: a serializer edit displaced
+      <code>get_price_lines</code> onto the wrong class → 500; moved back.)</i></td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
+    <div class="mh"><span>2026-10-06 · Wire the contact / enquiry form</span><span class="tbl">frontend</span></div>
+    <table>
+      <tr><td>The <code>/contact</code> form was a static stub (<code>&lt;form action="#"&gt;</code>, even the template's
+      "Ali Tufan" placeholder) — submissions went nowhere. Rebuilt it as a client component with a controlled form
+      (name, email, <b>phone</b> added, subject, message) that posts via <code>enquiryService</code> →
+      <code>POST /api/enquiries/</code>, with validation + sending/sent/error states. Submissions now land in the
+      back-office <b>Enquiries</b> inbox. <b>Injection-safe (verified):</b> the API saves through
+      <code>ContactMessage.objects.create(**validated_data)</code> — pure Django ORM (parameterised queries), and
+      there is no raw SQL anywhere in the enquiry path. Submitted a classic payload
+      (<code>'); DROP TABLE … ;--</code> + <code>DELETE FROM payments_payment</code> + an XSS
+      <code>&lt;script&gt;</code>): it was stored as literal text, the tables were untouched (no DROP/DELETE ran),
+      and the dashboard renders it HTML-escaped (Django auto-escaping) — no executable script.</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
+    <div class="mh"><span>2026-10-06 · Cards on file (built, dormant until Stripe is live)</span><span class="tbl">full-stack</span></div>
+    <table>
+      <tr><td>Groundwork for keeping a customer's card on file — for faster rebooking and for staff to bill a trip
+      extension. <b>Models:</b> <code>User.stripe_customer_id</code> + a <code>SavedCard</code> (Stripe PaymentMethod
+      ref + brand/last4/expiry only — no card data, same as <code>Payment</code>); <code>Payment.booking</code> made
+      nullable for standalone charges. <b>Gateway:</b> <code>get_or_create_customer</code>,
+      <code>save_card_for_user</code>, <code>charge_saved_card</code> (off-session), <code>detach_card</code>;
+      <code>create_payment_intent(save_card=…)</code> attaches the customer + <code>setup_future_usage</code>, and the
+      webhook persists the card on success. <b>Back office:</b> a standalone <b>Charge card</b> page (manager-only) —
+      pick a customer with a card on file, enter amount + description, charge their default card off-session; records
+      a <code>Payment</code>. <b>Client:</b> <code>GET/DELETE /api/account/cards/</code> + a <b>Payment cards</b> tab
+      on <code>/account</code> (list + remove). Everything degrades gracefully when Stripe is unconfigured (clean
+      "payments aren't set up", never a 500) — verified. <b>Dormant until activated</b> (see todo): needs Stripe
+      keys + Stripe Elements mounted on checkout + a "save this card" checkbox; only then do cards actually get
+      captured and saved.</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
+    <div class="mh"><span>2026-10-06 · Google Maps key editable in the dashboard</span><span class="tbl">full-stack</span></div>
+    <table>
+      <tr><td>The office can now change the Google Maps API key from <b>Settings → Site details</b> — no
+      <code>.env</code> edit or redeploy. Added <code>SiteSettings.google_maps_api_key</code> (migration 0002),
+      exposed on the public <code>/api/site-settings/</code> (a Maps JS key ships to the browser anyway) and added to
+      the Site-details form. <b>Both surfaces read it, DB-first with env fallback:</b> backend
+      <code>pricing/distance.py</code> uses it for Distance Matrix pricing, and the frontend Maps loader
+      (<code>lib/google/places.ts</code>) fetches it from <code>/api/site-settings/</code> before loading Maps JS,
+      falling back to <code>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code>. Verified E2E: set a key via the form → the public
+      API returns it, a quote prices through it (Round Rock→AUS, 23.9&nbsp;mi, $142), and the storefront autocomplete
+      loads Maps with that exact key. <i>(For production, a single public key here is fine for the browser; if a
+      separate IP-restricted server key is wanted for Distance Matrix, leave this blank and set the env key.)</i></td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
+    <div class="mh"><span>2026-10-06 · Edit existing booking details</span><span class="tbl">backend</span></div>
+    <table>
+      <tr><td>Staff can now edit the <b>whole booking</b>, not just status/driver. New <code>BookingEditForm</code>
+      (subclasses <code>ManualBookingForm</code>, relaxes the guest-required rules and drops status) + a
+      <code>booking_edit</code> view at <code>/bookings/{ref}/edit/</code>, reached via an <b>Edit details</b> button
+      on the detail page. Edits <b>cascade to related data</b>: changing the <b>vehicle</b> updates the
+      <code>vehicle_name_snapshot</code> (the model only fills it when blank, so edits would otherwise keep the old
+      name on the detail view/receipt); changing the <b>fare</b> replaces the stored price-line breakdown with a
+      single "Fare (adjusted by staff)" line and re-syncs <code>subtotal</code>. Every edit writes a
+      <code>BookingStatusChange</code> audit row naming the changed fields and the acting user. Status/driver stay
+      on the dedicated inline control (proper transitions). Gated on <code>bookings.change_booking</code> (Dispatcher
+      + Manager). Verified E2E: edited vehicle, fare, pax and pickup on a live booking — snapshot updated, fare line
+      replaced, audit row written. <i>(Payments are intentionally not auto-adjusted when the fare changes — that's a
+      financial action left to staff; the edit is on the audit trail.)</i></td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
+    <div class="mh"><span>2026-10-06 · Manual booking entry in the back office</span><span class="tbl">backend</span></div>
+    <table>
+      <tr><td>Staff can now create bookings for <b>phone / walk-in</b> customers — there was no create flow before
+      (only list/detail/edit/refund). New <code>ManualBookingForm</code> + <code>booking_create</code> view at
+      <code>/dashboard/bookings/new/</code> with a "New booking" button on the list. The dispatcher agrees a fare on
+      the call, so it's <b>entered directly</b> (no online quote): stored as the booking total with a single
+      "Fare (manual booking)" line and a <code>BookingStatusChange</code> audit row ("Created manually…"), so the
+      detail view and receipt read identically to a web booking. Stored as a guest booking (name → pickup sign,
+      phone + optional email as guest contact); phone is required. Reference/vehicle-name snapshot handled by the
+      model. Granted <b>Dispatcher</b> the <code>bookings.add_booking</code> permission (ran <code>sync_roles</code>)
+      so the people taking calls can use it. Verified E2E: form renders, POST creates a confirmed booking with the
+      fare, contact and audit trail. <i>(Gotcha fixed in-flight: the insert stranded <code>booking_update</code>'s
+      <code>@staff_required @require_POST</code> onto the new view — moved back.)</i></td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
+    <div class="mh"><span>2026-10-06 · Trim unwired content CRUD from the back office</span><span class="tbl">backend</span></div>
+    <table>
+      <tr><td>Removed <b>Pages, Testimonials, Banners, Gallery</b> from the dashboard — audited and found the
+      storefront consumes none of them (Testimonials/Banners/Gallery have no public API; <code>/api/pages/</code>
+      exists but nothing calls it; those sections are hardcoded React). Editing them changed nothing on the live
+      site. Unregistered the four <code>Managed</code> entries in <code>dashboard/managed.py</code>; the sidebar is
+      registry-driven so the links and the now-empty "Website content" group vanish automatically, and
+      <code>/dashboard/manage/pages/</code> &amp;c. now 404. Models, data, admin and the <code>/api/pages/</code>
+      endpoint are untouched — reversible by re-registering. Follow-up to wire the storefront to this content is
+      tracked in the todos. (Only <b>Vehicles</b> is fully storefront-wired; <b>Site details</b> feeds the footer.)</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
+    <div class="mh"><span>2026-10-06 · Mandatory contact phone on bookings</span><span class="tbl">full-stack</span></div>
+    <table>
+      <tr><td>Added a required <b>phone number</b> to the booking Details step (<code>/booking/passenger</code>) for
+      both guests and signed-in bookers — the booking form previously took only name + email. Frontend: new required
+      <code>tel</code> field (min 7 digits), carried on the store's <code>Contact.phone</code>; for signed-in users it
+      prefills from the account and is persisted back via <code>PATCH /api/auth/me/</code> so the booking's contact
+      phone resolves from the account. Backend: <code>BookingCreateSerializer.guest_phone</code>; <code>create_booking</code>
+      now rejects guest checkout without a phone (<code>400 guest_phone</code>) and stores it; new
+      <code>Booking.contact_phone</code> property (account phone → guest phone) and the dashboard booking detail now
+      shows the guest phone. Verified: 400 without / 201 with, phone persisted and shown. Also made the fleet cards
+      equal height (clamped description, flex image area, pinned footer) for a tidier grid.</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
+    <div class="mh"><span>2026-10-06 · Single vehicle detail page</span><span class="tbl">frontend</span></div>
+    <table>
+      <tr><td>Ported the theme's <code>fleet-single.html</code> into a new dynamic route
+      <code>/fleet/[slug]</code> (client component), wired to live catalog data. Added
+      <code>catalogService.getVehicle(slug)</code> (filters the public <code>/api/vehicles/</code> list — there's
+      no detail endpoint) and a shared slug&rarr;image map in <code>lib/fleet/images.ts</code> (the API serves no
+      photo). The page shows the breadcrumb, hero image, name/description, passenger &amp; luggage specs, a
+      "From&nbsp;$X" price (hidden when <code>minimum_fare</code> is 0), and a "We offer" tick-list parsed from the
+      vehicle's newline-separated <code>features</code> (falls back to a generic list when empty), plus the generic
+      perks cards and a Book&nbsp;Now CTA to the home search. The <code>/fleet</code> list page was also converted
+      from a hardcoded array to the live 4-vehicle catalog, each card linking to its detail page; removed the fake
+      10-page pagination. Verified E2E: list renders real slugs/capacities/images, Chrysler's multi-line features
+      become the offer list, Business Class shows From&nbsp;$95. The home <code>OurFleet</code> carousel was then
+      also converted from fictional class names to the live catalog, each card linking straight to its
+      <code>/fleet/[slug]</code> detail page.</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
     <div class="mh"><span>2026-09-28 · Google Places address autocomplete</span><span class="tbl">frontend</span></div>
     <table>
       <tr><td>Replaced the static Austin sample-list on the From/To search fields with live <b>Google Places</b>
@@ -879,7 +1032,7 @@ Page ─┬─&lt; Banner                   ContactMessage &gt;─ User (replied
       <code>AutocompleteService</code> is retired for keys minted in 2025+, so the key needs <b>Places API (New)</b>
       enabled). Keystrokes are debounced (250&nbsp;ms, min 3 chars) and grouped under an
       <code>AutocompleteSessionToken</code> for billing; predictions are region-restricted to the US and
-      location-biased to a ~50&nbsp;mi circle around Austin. Free text is still allowed (the backend geocodes the
+      location-biased to a 50&nbsp;km circle around Austin (the API's max <code>locationBias</code> radius). Free text is still allowed (the backend geocodes the
       submitted string) and the field degrades to a plain input if the key is missing/blocked. Key lives in
       <code>frontend/.env.local</code> as <code>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> (git-ignored; must be
       referrer-restricted in Cloud Console since Maps JS keys ship to the browser).</td></tr>
@@ -1035,7 +1188,8 @@ const CLIENT_TREE = {
   groups:[
     {id:'home', title:'Home', path:'/', type:'group', status:'built', desc:'Hero + booking search widget.', children:[]},
     {id:'marketing', title:'Marketing', path:'(marketing)', type:'group', desc:'Header + Footer layout group.', children:[
-      {title:'Fleet', path:'/fleet', status:'built', desc:'Ported from template (fleet-list.html).', api:'GET /api/vehicles/'},
+      {title:'Fleet', path:'/fleet', status:'built', desc:'Live catalog list (real vehicles); each card links to its detail page.', api:'GET /api/vehicles/'},
+      {title:'↳ Vehicle detail', path:'/fleet/[slug]', status:'built', desc:'Per-vehicle page ported from fleet-single.html — specs, from-price, features list. Dynamic route.', api:'GET /api/vehicles/'},
       {title:'Services', path:'/services', status:'built', desc:'Ported from template (service-grid.html).', api:'GET /api/pages/services/'},
       {title:'About', path:'/about', status:'built', desc:'Ported from template (about-2.html).', api:'GET /api/pages/about/'},
       {title:'Contact', path:'/contact', status:'built', desc:'Ported from template (contact.html); form not yet wired.', api:'POST /api/enquiries/'},
@@ -1050,7 +1204,7 @@ const CLIENT_TREE = {
     {id:'booking', title:'Booking Wizard', path:'/booking', type:'wizard', desc:'5-step funnel · Zustand store (sessionStorage).', children:[
       {title:'1 · Vehicle', path:'/booking/vehicle', status:'built', desc:'Prices all vehicles → shows real fares.', api:'POST /api/quotes/'},
       {title:'2 · Extra', path:'/booking/extra', status:'built', desc:'Passengers, luggage, flight no., pickup sign, notes.'},
-      {title:'3 · Passenger', path:'/booking/passenger', status:'built', desc:'Guest name + email (or sign in).'},
+      {title:'3 · Passenger', path:'/booking/passenger', status:'built', desc:'Guest details, book-for-someone-else, or sign in / register inline on the page.'},
       {title:'4 · Payment', path:'/booking/payment', status:'built', desc:'Creates booking from quote token; Cash (works) or Card (pending Stripe).', api:'POST /api/bookings/ → pay-cash | payments/intent'},
       {title:'5 · Confirmation', path:'/booking/confirmation', status:'built', desc:'Polls /bookings/{ref}/status/ until confirmed.'},
     ]},
@@ -1070,8 +1224,10 @@ const BACKOFFICE_TREE = {
     ]},
     {id:'bo-bookings', title:'Bookings', path:'/dashboard/bookings', type:'wizard', desc:'Booking record + actions.', children:[
       {title:'Booking list', path:'/bookings/', status:'built', desc:'Search / filter.'},
+      {title:'New booking', path:'/bookings/new/', status:'built', desc:'Manual phone/walk-in entry; staff enter the agreed fare directly.'},
       {title:'Booking detail', path:'/bookings/{ref}/', status:'built', desc:'Record + status history.'},
-      {title:'Edit booking', path:'/bookings/{ref}/update/', status:'built', desc:'Amend trip / status.'},
+      {title:'Edit details', path:'/bookings/{ref}/edit/', status:'built', desc:'Edit the whole booking (trip, contact, fare). Cascades: vehicle→name snapshot, fare→price lines; writes an audit row.'},
+      {title:'Status / driver', path:'/bookings/{ref}/update/', status:'built', desc:'Inline control on the detail page; records a status transition.'},
       {title:'Issue refund', path:'/bookings/{ref}/refund/', status:'built', desc:'Stripe refund.'},
     ]},
     {id:'bo-crm', title:'Enquiries', path:'/dashboard/enquiries', type:'group', desc:'Contact inbox.', children:[

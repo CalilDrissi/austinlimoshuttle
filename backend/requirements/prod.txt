@@ -1,5 +1,11 @@
-# Production install for InMotion shared hosting.
-# Deliberately identical to base -- no extra runtime dependencies, so the
-# deployment rehearsal in Phase 7 tests exactly what ships.
+# Production install.
+#
+# Base + the two things a containerised deploy behind a reverse proxy needs:
+# a WSGI server (gunicorn) and static-file serving from inside the container
+# (whitenoise). Both are pure-Python wheels, so the "no C compiler" constraint
+# from base.txt still holds.
 
 -r base.txt
+
+gunicorn>=22.0,<24.0
+whitenoise>=6.6,<7.0

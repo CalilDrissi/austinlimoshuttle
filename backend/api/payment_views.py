@@ -126,8 +126,16 @@ def create_intent(request):
         return Response({"detail": "This booking is already paid."},
                         status=status.HTTP_409_CONFLICT)
 
+    # Only a signed-in customer paying for their own booking may keep the card
+    # on file -- a guest has no account to attach it to.
+    save_card = (
+        bool(request.data.get("save_card"))
+        and request.user.is_authenticated
+        and booking.customer_id == request.user.id
+    )
+
     try:
-        payment = gateway.create_payment_intent(booking)
+        payment = gateway.create_payment_intent(booking, save_card=save_card)
         client_secret = gateway.client_secret_for(payment)
     except gateway.PaymentConfigurationError as exc:
         # An operator problem, not the customer's. Log loudly, stay vague.

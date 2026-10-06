@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M&M Austin Limousine — Sitemap</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --panel:#ffffff; --panel2:#eef1f6; --ink:#1b2130; --muted:#6b7482;
+    --line:#d9dee7; --accent:#b8860b; --blue:#2f6fd0; --green:#2f9e44; --amber:#c7901a;
+    --red:#e03131; --purple:#7a4dd1; --teal:#148f80;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;font-size:15px}
+  a{color:var(--blue);text-decoration:none} a:hover{text-decoration:underline}
+  .layout{display:flex;align-items:flex-start}
+  nav.side{position:sticky;top:0;height:100vh;width:250px;flex:0 0 250px;overflow-y:auto;
+    background:var(--panel);border-right:1px solid var(--line);padding:22px 16px}
+  nav.side h1{font-size:15px;margin:0 0 2px;color:var(--accent)}
+  nav.side .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+  nav.side a{display:block;color:var(--muted);padding:5px 8px;border-radius:6px;font-size:13.5px}
+  nav.side a:hover{background:var(--panel2);color:var(--ink);text-decoration:none}
+  nav.side .grp{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#5b6472;margin:16px 8px 4px}
+  main{flex:1;max-width:1020px;margin:0 auto;padding:36px 46px 120px}
+  h2{font-size:24px;margin:54px 0 6px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+  h2:first-of-type{margin-top:6px}
+  h3{font-size:17px;margin:26px 0 8px;color:var(--accent)}
+  h4{font-size:14px;margin:16px 0 6px}
+  p{color:#cfd5df} .muted{color:var(--muted)}
+  code{font-family:var(--mono);background:var(--panel2);padding:1px 6px;border-radius:4px;font-size:12.5px;color:#e8c07d}
+  pre{background:#070a0f;border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow:auto;font-family:var(--mono);font-size:12.5px;color:#d7dce4}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+  th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+  td code{background:transparent;padding:0;color:#e8c07d}
+  .pill{display:inline-block;font-size:11px;padding:1px 8px;border-radius:20px;font-weight:600}
+  .pill.built{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.35)}
+  .pill.stub{background:rgba(214,164,31,.15);color:var(--amber);border:1px solid rgba(214,164,31,.35)}
+  .callout{border-left:3px solid var(--accent);background:var(--panel);padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+  .callout.warn{border-color:var(--red)} .callout.warn b{color:var(--red)}
+  .callout.ok{border-color:var(--green)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin:12px 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .card h4{margin:0 0 4px;color:var(--accent)} .card .k{font-size:12px;color:var(--muted)}
+  .cols2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .er{font-family:var(--mono);font-size:12.5px;color:#d7dce4;white-space:pre;overflow:auto;background:#070a0f;border:1px solid var(--line);border-radius:8px;padding:16px}
+  .modelcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin:12px 0;overflow:hidden}
+  .modelcard .mh{background:var(--panel2);padding:8px 14px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+  .modelcard .mh .tbl{font-family:var(--mono);font-size:11.5px;color:var(--muted);font-weight:400}
+  .modelcard table{margin:0;border:0} .modelcard th,.modelcard td{border-left:0;border-right:0}
+  .fk{color:var(--blue);font-size:11px}
+  footer{color:#5b6472;font-size:12px;margin-top:60px;border-top:1px solid var(--line);padding-top:16px}
+  @media(max-width:860px){nav.side{display:none}.cols2{grid-template-columns:1fr}main{padding:22px}}
+
+  /* ===== embedded interactive App Map ===== */
+  .mapbox{position:relative;height:700px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg);margin:16px 0}
+  .map-top{position:absolute;top:0;left:0;right:0;height:48px;display:flex;align-items:center;gap:14px;
+    padding:0 14px;background:rgba(20,24,36,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);z-index:6}
+  .tabs{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:3px}
+  .tabs button{background:transparent;border:0;color:var(--muted);font:inherit;font-size:12.5px;padding:5px 12px;border-radius:7px;cursor:pointer}
+  .tabs button.on{background:var(--panel2);color:var(--ink)}
+  .legend{display:flex;gap:12px;align-items:center;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
+  .legend .lg{display:flex;align-items:center;gap:5px}
+  .dot{width:9px;height:9px;border-radius:3px;display:inline-block}
+  .maphint{color:var(--muted);font-size:11.5px;margin-left:auto;font-family:var(--mono)}
+  #viewport{position:absolute;inset:48px 0 0 0;overflow:hidden;cursor:grab}
+  #viewport.grabbing{cursor:grabbing}
+  #world{position:absolute;top:0;left:0;transform-origin:0 0}
+  #edges{position:absolute;top:0;left:0;overflow:visible;pointer-events:none}
+  .node{position:absolute;width:230px;background:var(--panel);border:1px solid var(--line);border-left-width:4px;
+    border-radius:12px;padding:10px 14px;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.35);transition:transform .08s,border-color .12s}
+  .node:hover{transform:translateY(-1px);border-color:#3a4356}
+  .node .title{font-weight:600;font-size:14px;line-height:1.2}
+  .node .path{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:2px}
+  .node .tag{position:absolute;top:-9px;right:10px;font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;text-transform:uppercase}
+  .node.root{border-left-color:var(--accent);background:linear-gradient(180deg,#1b2130,#141824)}
+  .node.group{border-left-color:var(--teal)} .node.group.auth{border-left-color:var(--purple)} .node.group.wizard{border-left-color:var(--blue)}
+  .node.built{border-left-color:var(--green)} .node.stub{border-left-color:var(--amber)}
+  .tag.built{background:rgba(63,185,80,.16);color:var(--green)} .tag.stub{background:rgba(214,164,31,.16);color:var(--amber)}
+  .node .toggle{position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:6px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--muted);font-size:13px;line-height:18px;text-align:center;cursor:pointer}
+  .node .toggle:hover{color:var(--ink)}
+  .ctrls{position:absolute;right:14px;bottom:14px;display:flex;flex-direction:column;gap:8px;z-index:7}
+  .ctrls button{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:16px;cursor:pointer}
+  .ctrls button:hover{background:var(--panel2)} .ctrls button.sm{font-size:11px;font-weight:700}
+  #drawer{position:absolute;top:48px;right:0;width:320px;height:calc(100% - 48px);background:var(--panel);
+    border-left:1px solid var(--line);transform:translateX(100%);transition:transform .18s;padding:20px;overflow-y:auto;z-index:8}
+  #drawer.open{transform:translateX(0)}
+  #drawer h3{margin:0 0 2px;font-size:17px;color:var(--ink)}
+  #drawer .dp{font-family:var(--mono);font-size:12.5px;color:var(--accent);margin-bottom:12px}
+  #drawer .row{margin:11px 0} #drawer .k{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:3px}
+  #drawer .v{font-size:13.5px;color:#d7dce4} #drawer .v code{display:inline-block;margin:2px 0}
+  #drawer .close{position:absolute;top:12px;right:14px;background:none;border:0;color:var(--muted);font-size:20px;cursor:pointer}
+  /* journey panel inside the box */
+  #journey{position:absolute;inset:48px 0 0 0;overflow:auto;padding:22px 24px;display:none}
+  #journey .jt{font-size:15px;font-weight:700;margin:0 0 2px}
+  #journey .js{color:var(--muted);font-size:12.5px;margin-bottom:16px}
+  .flow{display:flex;align-items:stretch;flex-wrap:nowrap;overflow-x:auto;padding-bottom:10px}
+  .stage{min-width:180px;flex:0 0 auto;background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--blue);border-radius:12px;padding:12px}
+  .stage.built{border-top-color:var(--green)} .stage.stub{border-top-color:var(--amber)}
+  .stage .n{font-size:11px;color:var(--muted)} .stage .t{font-weight:700;margin:2px 0 3px}
+  .stage .path{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+  .stage .api{margin-top:8px;font-family:var(--mono);font-size:10.5px;color:#e8c07d;background:var(--panel2);border-radius:6px;padding:5px 7px;line-height:1.5}
+  .arrow{flex:0 0 auto;align-self:center;color:var(--muted);font-size:20px;padding:0 6px}
+  .jnote{background:var(--panel);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:11px 15px;margin:16px 0;color:#cfd5df;font-size:13px;max-width:900px}
+  .jnote.warn{border-left-color:var(--amber)}
+  .branch{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+  .branch .b{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 15px;min-width:230px;flex:1}
+  .branch .b .t{font-weight:700;margin-bottom:3px} .branch .b .path{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  /* svg overview */
+  .svgwrap{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin:16px 0}
+  .svgwrap svg{width:100%;height:auto;display:block}
+  /* endpoint reference */
+  .ep{border:1px solid var(--line);border-radius:10px;margin:10px 0;overflow:hidden;background:var(--panel)}
+  .ep-h{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--panel2);flex-wrap:wrap}
+  .m{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;letter-spacing:.03em}
+  .m.get{background:rgba(63,185,80,.16);color:var(--green)}
+  .m.post{background:rgba(74,158,255,.16);color:var(--blue)}
+  .m.patch{background:rgba(214,164,31,.16);color:var(--amber)}
+  .m.delete{background:rgba(248,81,73,.16);color:var(--red)}
+  .ep-h .sig{font-family:var(--mono);font-size:13px;color:var(--ink)}
+  .ep-h .au{margin-left:auto;font-size:10.5px;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:1px 8px}
+  .ep-h .au.session{color:var(--purple);border-color:rgba(169,112,255,.4)}
+  .ep-b{padding:10px 14px;font-size:13px}
+  .ep-b .sm{color:var(--muted);margin:0 0 8px}
+  .ep-b .lab{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:8px 0 3px}
+  .ep-b table{margin:2px 0} .ep-b td{padding:4px 8px} .ep-b td.req{color:var(--amber);font-weight:600}
+  .fieldgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;font-family:var(--mono);font-size:11.5px}
+  .fieldgrid span{color:#cbd2dd} .fieldgrid .r::before{content:"*";color:var(--amber);margin-right:2px}
+  .fieldgrid .ty{color:var(--muted)}
+  .codes{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+  .code{font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-radius:5px;padding:1px 7px;color:var(--muted)}
+  .code.ok{color:var(--green);border-color:rgba(63,185,80,.3)}
+  /* client feature to-do */
+  .todo{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin:16px 0}
+  .todo-add{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .todo-add input[type=text]{flex:1;min-width:200px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 12px;color:var(--ink);font:inherit;font-size:14px}
+  .todo-add input[type=text]:focus{outline:none;border-color:var(--blue)}
+  .todo-add select{background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--ink);font:inherit;font-size:13px;padding:0 8px}
+  .todo-add button{background:var(--blue);border:0;color:#08131f;font:inherit;font-weight:700;font-size:13px;padding:0 18px;border-radius:8px;cursor:pointer}
+  .todo-bar{display:flex;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+  .todo-filters{display:flex;gap:3px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:3px}
+  .todo-filters button{background:transparent;border:0;color:var(--muted);font:inherit;font-size:12.5px;padding:4px 12px;border-radius:6px;cursor:pointer}
+  .todo-filters button.on{background:var(--bg);color:var(--ink)}
+  #td-count{font-size:12.5px;color:var(--muted);margin-right:auto}
+  .td-clear{background:var(--panel2);border:1px solid var(--line);color:var(--muted);font:inherit;font-weight:600;font-size:12px;padding:5px 12px;border-radius:7px;cursor:pointer}
+  .td-clear:hover{color:var(--ink)}
+  #td-list{list-style:none;margin:0;padding:0}
+  .td-item{display:flex;align-items:flex-start;gap:10px;padding:10px 6px;border-bottom:1px solid var(--line)}
+  .td-item:last-child{border-bottom:0}
+  .td-check{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--line);background:var(--bg);cursor:pointer;flex:0 0 auto;margin-top:2px;position:relative}
+  .td-item.done .td-check{background:var(--green);border-color:var(--green)}
+  .td-item.done .td-check::after{content:"✓";position:absolute;color:#08131f;font-size:12px;font-weight:800;left:3px;top:-3px}
+  .td-main{flex:1;min-width:0}
+  .td-text{font-size:14px;color:var(--ink);word-break:break-word;cursor:text}
+  .td-item.done .td-text{color:var(--muted);text-decoration:line-through}
+  .td-meta{font-size:11px;color:#5b6472;margin-top:3px;display:flex;gap:8px;align-items:center}
+  .td-prio{font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;text-transform:uppercase}
+  .td-prio.high{background:rgba(248,81,73,.16);color:var(--red)}
+  .td-prio.medium{background:rgba(214,164,31,.16);color:var(--amber)}
+  .td-prio.low{background:rgba(139,148,158,.14);color:var(--muted)}
+  .td-del{background:none;border:0;color:#5b6472;font-size:17px;line-height:1;cursor:pointer;flex:0 0 auto}
+  .td-del:hover{color:var(--red)}
+  .td-empty{color:var(--muted);font-size:13px;padding:18px 8px;text-align:center}
+  body{margin:0;padding:0;background:var(--bg);color:var(--ink)}
+  .sm-head{display:flex;align-items:baseline;gap:14px;padding:14px 20px;border-bottom:1px solid var(--line)}
+  .sm-head h1{margin:0;font-size:17px;letter-spacing:-.01em}
+  .sm-head .s{color:var(--muted);font-size:12.5px;font-family:var(--mono)}
+  .mapbox{height:calc(100vh - 52px);margin:0;border:0;border-radius:0}
+  /* light-mode fixes for hardcoded dark values */
+  .node{box-shadow:0 4px 14px rgba(27,33,48,.10)}
+  .node:hover{border-color:#b9c2cf}
+  .node.root{background:linear-gradient(180deg,#ffffff,#eef2f8)}
+  .map-top{background:rgba(255,255,255,.9)}
+  #drawer .v{color:#2a3140}
+  code,td code,.stage .api{color:#8a5a00}
+  pre,.er{background:#f0f2f6;color:#2a3140}
+  p{color:#3a4150}
+</style>
+</head>
+<body>
+<div class="sm-head">
+  <h1>M&amp;M Austin Limousine — Sitemap</h1>
+  <span class="s">interactive route map · pan · zoom · click a card · collapse a section</span>
+</div>
+  <div class="mapbox" id="mapbox">
+    <div class="map-top">
+      <div class="tabs">
+        <button id="tab-client" class="on" onclick="showView('client')">🌐 Client Site</button>
+        <button id="tab-backoffice" onclick="showView('backoffice')">🛠 Back Office</button>
+        <button id="tab-journey" onclick="showView('journey')">🚕 User Journey</button>
+      </div>
+      <div class="legend" id="legend">
+        <span class="lg"><span class="dot" style="background:var(--green)"></span>Built</span>
+        <span class="lg"><span class="dot" style="background:var(--amber)"></span>Stub</span>
+        <span class="lg"><span class="dot" style="background:var(--blue)"></span>Wizard</span>
+        <span class="lg"><span class="dot" style="background:var(--purple)"></span>Settings/Auth</span>
+      </div>
+      <div class="maphint" id="maphint"></div>
+    </div>
+    <div id="viewport"><div id="world"><svg id="edges"></svg></div></div>
+    <div class="ctrls" id="map-ctrls">
+      <button onclick="zoomBtn(1.2)">+</button>
+      <button onclick="zoomBtn(1/1.2)">−</button>
+      <button class="sm" onclick="fit()">FIT</button>
+    </div>
+    <div id="drawer">
+      <button class="close" onclick="closeDrawer()">×</button>
+      <h3 id="d-title"></h3><div class="dp" id="d-path"></div>
+      <div class="row"><div class="k">Status</div><div class="v" id="d-status"></div></div>
+      <div class="row"><div class="k">Section / layout</div><div class="v" id="d-group"></div></div>
+      <div class="row"><div class="k">Purpose</div><div class="v" id="d-desc"></div></div>
+      <div class="row" id="d-api-row"><div class="k">Backend it calls</div><div class="v" id="d-api"></div></div>
+    </div>
+    <div id="journey">
+      <div class="jt">Booking funnel — the primary customer journey</div>
+      <div class="js">Landing → search → 5-step wizard → confirmation. Mono lines are the API calls each step makes.</div>
+      <div class="flow" id="flow"></div>
+      <div class="jnote"><b>Live against the real backend</b> (<code>USE_MOCKS=false</code>). The funnel prices via
+        <code>POST /api/quotes/</code>, creates a booking from the <code>quote_token</code>, and settles with
+        <b>Cash — pay the driver</b> (<code>pay-cash</code>, confirmed instantly). Card is wired but disabled until
+        Stripe test keys are set.</div>
+      <div class="jnote"><b>Money (security spine):</b> the customer never sends a price. Step 1 calls
+        <code>POST /api/quotes/</code>; the server derives the fare and returns a signed <code>quote_token</code>
+        (~30&nbsp;min). Step 4 posts it to <code>POST /api/bookings/</code> and the server re-derives the total before charging.</div>
+      <div class="branch">
+        <div class="b"><div class="t">Signed-in customer</div><div class="path">/login · /register → /account (bookings + receipt PDF)</div></div>
+        <div class="b"><div class="t">Guest</div><div class="path">Continue as guest · guest_email → receipt PDF</div></div>
+        <div class="b"><div class="t">Enquiry</div><div class="path">/contact → POST /api/enquiries/ → back-office inbox</div></div>
+      </div>
+    </div>
+  </div>
+<script>
+/* =========================================================================
+   App map data — two UI surfaces + the booking funnel. Extensible by design:
+   add a page = add an object; add a surface = add a *_TREE + a tab (see §11).
+   ========================================================================= */
+const CLIENT_TREE = {
+  id:'root', title:'Client Site', path:'/', type:'root', surface:'Next.js 15 · client-facing',
+  desc:'Public customer site (Next.js 15). Calls the Django JSON API from the browser.',
+  groups:[
+    {id:'home', title:'Home', path:'/', type:'group', status:'built', desc:'Hero + booking search widget.', children:[]},
+    {id:'marketing', title:'Marketing', path:'(marketing)', type:'group', desc:'Header + Footer layout group.', children:[
+      {title:'Fleet', path:'/fleet', status:'built', desc:'Live catalog list (real vehicles); each card links to its detail page.', api:'GET /api/vehicles/'},
+      {title:'↳ Vehicle detail', path:'/fleet/[slug]', status:'built', desc:'Per-vehicle page ported from fleet-single.html — specs, from-price, features list. Dynamic route.', api:'GET /api/vehicles/'},
+      {title:'Services', path:'/services', status:'built', desc:'Ported from template (service-grid.html).', api:'GET /api/pages/services/'},
+      {title:'About', path:'/about', status:'built', desc:'Ported from template (about-2.html).', api:'GET /api/pages/about/'},
+      {title:'Contact', path:'/contact', status:'built', desc:'Ported from template (contact.html); form not yet wired.', api:'POST /api/enquiries/'},
+      {title:'Terms', path:'/terms', status:'stub', desc:'Terms (CMS).', api:'GET /api/pages/terms/'},
+      {title:'Coming Soon', path:'/coming-soon', status:'stub', desc:'Placeholder.'},
+    ]},
+    {id:'auth', title:'Account & auth', path:'(auth) · /account', type:'auth', desc:'Sign in / register + the customer account.', children:[
+      {title:'Login', path:'/login', status:'built', desc:'Email/password sign-in + "Continue as guest".', api:'POST /api/auth/login/'},
+      {title:'Register', path:'/register', status:'built', desc:'New account (201 signs in; 202 neutral, anti-enumeration).', api:'POST /api/auth/register/'},
+      {title:'My account', path:'/account', status:'built', desc:'Bookings list + receipt PDF + sign out.', api:'GET /api/account/bookings/'},
+    ]},
+    {id:'booking', title:'Booking Wizard', path:'/booking', type:'wizard', desc:'5-step funnel · Zustand store (sessionStorage).', children:[
+      {title:'1 · Vehicle', path:'/booking/vehicle', status:'built', desc:'Prices all vehicles → shows real fares.', api:'POST /api/quotes/'},
+      {title:'2 · Extra', path:'/booking/extra', status:'built', desc:'Passengers, luggage, flight no., pickup sign, notes.'},
+      {title:'3 · Passenger', path:'/booking/passenger', status:'built', desc:'Guest details, book-for-someone-else, or sign in / register inline on the page.'},
+      {title:'4 · Payment', path:'/booking/payment', status:'built', desc:'Creates booking from quote token; Cash (works) or Card (pending Stripe).', api:'POST /api/bookings/ → pay-cash | payments/intent'},
+      {title:'5 · Confirmation', path:'/booking/confirmation', status:'built', desc:'Polls /bookings/{ref}/status/ until confirmed.'},
+    ]},
+    {id:'system', title:'System', path:'', type:'group', desc:'Framework routes.', children:[
+      {title:'404 Not Found', path:'/*', status:'built', desc:'not-found.tsx catch-all.'},
+    ]},
+  ]
+};
+const BACKOFFICE_TREE = {
+  id:'bo-root', title:'Back Office', path:'/dashboard/', type:'root', surface:'Django templates · server-rendered',
+  desc:'Staff dashboard (Django template engine). Role-gated (Dispatcher / Manager / Editor). Replaced Django admin.',
+  groups:[
+    {id:'bo-ops', title:'Operations', path:'/dashboard', type:'wizard', desc:'Dispatch & scheduling.', children:[
+      {title:'Overview', path:'/dashboard/', status:'built', desc:'Home / KPIs.'},
+      {title:'Dispatch board', path:'/dispatch/', status:'built', desc:'Assign drivers.'},
+      {title:'Calendar', path:'/calendar/', status:'built', desc:'Bookings by date.'},
+    ]},
+    {id:'bo-bookings', title:'Bookings', path:'/dashboard/bookings', type:'wizard', desc:'Booking record + actions.', children:[
+      {title:'Booking list', path:'/bookings/', status:'built', desc:'Search / filter.'},
+      {title:'Booking detail', path:'/bookings/{ref}/', status:'built', desc:'Record + status history.'},
+      {title:'Edit booking', path:'/bookings/{ref}/update/', status:'built', desc:'Amend trip / status.'},
+      {title:'Issue refund', path:'/bookings/{ref}/refund/', status:'built', desc:'Stripe refund.'},
+    ]},
+    {id:'bo-crm', title:'Enquiries', path:'/dashboard/enquiries', type:'group', desc:'Contact inbox.', children:[
+      {title:'Inbox', path:'/enquiries/', status:'built', desc:'Unread / replied.'},
+      {title:'Enquiry detail', path:'/enquiries/{pk}/', status:'built', desc:'Read + reply.'},
+    ]},
+    {id:'bo-manage', title:'Manage (CRUD)', path:'/dashboard/manage/<slug>', type:'group', desc:'Generic list/create/edit/delete engine (dashboard/managed.py) — one registry drives all of these.', children:[
+      {title:'Drivers', path:'manage/drivers/', status:'built'},
+      {title:'Vehicles', path:'manage/vehicles/', status:'built', desc:'+ distance bands.'},
+      {title:'Surcharges', path:'manage/surcharges/', status:'built'},
+      {title:'Blackout dates', path:'manage/blackout-dates/', status:'built'},
+      {title:'Pages', path:'manage/pages/', status:'built', desc:'CMS.'},
+      {title:'Testimonials', path:'manage/testimonials/', status:'built'},
+      {title:'Banners', path:'manage/banners/', status:'built'},
+      {title:'Gallery', path:'manage/gallery/', status:'built'},
+      {title:'Staff', path:'manage/staff/', status:'built', desc:'Users + roles.'},
+      {title:'Customers', path:'manage/customers/', status:'built'},
+    ]},
+    {id:'bo-settings', title:'Settings', path:'/dashboard/settings', type:'auth', desc:'Singleton config screens.', children:[
+      {title:'Pricing', path:'settings/pricing/', status:'built', desc:'Tax, quote TTL, cancellation.'},
+      {title:'Payments (Stripe)', path:'settings/payments/', status:'built'},
+      {title:'PayPal', path:'settings/paypal/', status:'built'},
+      {title:'Email (SMTP)', path:'settings/email/', status:'built'},
+      {title:'Site details', path:'settings/site/', status:'built', desc:'Contact, socials.'},
+    ]},
+  ]
+};
+let TREE = CLIENT_TREE;
+
+/* ---------------- layout ---------------- */
+const NODE_W=230, COLGAP=300, GROUP_Y=170, CHILD_Y0=290, CHILD_PITCH=72, CHILD_INDENT=22;
+let nodes=[];
+const world=document.getElementById('world'), svg=document.getElementById('edges');
+const groupsCollapsed={};
+function buildNodes(){
+  nodes=[]; world.querySelectorAll('.node').forEach(n=>n.remove());
+  const groups=TREE.groups, n=groups.length;
+  groups.forEach((g,i)=>g._x=i*COLGAP);
+  const rootX=((n-1)*COLGAP)/2;
+  makeNode(TREE, rootX, 30, 'root');
+  groups.forEach((g)=>{
+    const gx=g._x;
+    const gn=makeNode(g, gx, GROUP_Y, 'group'+(g.type==='auth'?' auth':g.type==='wizard'?' wizard':''));
+    if(g.children&&g.children.length&&!groupsCollapsed[g.id]){
+      g.children.forEach((c,j)=>makeNode(c, gx+CHILD_INDENT, CHILD_Y0+j*CHILD_PITCH, c.status||''));
+    }
+    if(g.children&&g.children.length){
+      const tg=document.createElement('div'); tg.className='toggle'; tg.textContent=groupsCollapsed[g.id]?'+':'–';
+      tg.onclick=(e)=>{e.stopPropagation();groupsCollapsed[g.id]=!groupsCollapsed[g.id];render();};
+      gn.appendChild(tg);
+    }
+  });
+  drawEdges();
+}
+function makeNode(data,x,y,cls){
+  const el=document.createElement('div'); el.className='node '+cls;
+  let tag = data.status==='built'?'<span class="tag built">built</span>' : data.status==='stub'?'<span class="tag stub">stub</span>':'';
+  el.innerHTML = tag+'<div class="title">'+data.title+'</div>'+
+    (data.path?'<div class="path">'+data.path+'</div>':'<div class="path" style="opacity:.4">—</div>');
+  el.style.left=x+'px'; el.style.top=y+'px'; el.onclick=()=>openDrawer(data,cls);
+  world.appendChild(el);
+  nodes.push({el,x,y,w:NODE_W,h:el.offsetHeight,data});
+  return el;
+}
+function drawEdges(){
+  const map=new Map(); nodes.forEach(r=>map.set(r.data,r));
+  let paths=''; const rootRec=map.get(TREE);
+  TREE.groups.forEach(g=>{
+    const gr=map.get(g); if(!gr) return;
+    paths+=bezier(rootRec.x+NODE_W/2, rootRec.y+rootRec.h, gr.x+NODE_W/2, gr.y, '#3a4356');
+    if(g.children&&g.children.length&&!groupsCollapsed[g.id]){
+      const busX=gr.x+14, groupBottom=gr.y+gr.h;
+      g.children.forEach(c=>{
+        const cr=map.get(c); if(!cr) return; const cy=cr.y+cr.h/2;
+        const color=c.status==='built'?'#2e6b3a':c.status==='stub'?'#7a5f1c':'#3a4356';
+        paths+=`<path d="M ${busX} ${groupBottom} L ${busX} ${cy-10} Q ${busX} ${cy} ${busX+12} ${cy} L ${cr.x} ${cy}" fill="none" stroke="${color}" stroke-width="1.6"/>`;
+      });
+    }
+  });
+  svg.innerHTML=paths;
+  let maxX=0,maxY=0; nodes.forEach(r=>{maxX=Math.max(maxX,r.x+r.w);maxY=Math.max(maxY,r.y+r.h);});
+  svg.setAttribute('width',maxX+200); svg.setAttribute('height',maxY+200);
+}
+function bezier(x1,y1,x2,y2,c){const dy=Math.abs(y2-y1)*0.5;return `<path d="M ${x1} ${y1} C ${x1} ${y1+dy} ${x2} ${y2-dy} ${x2} ${y2}" fill="none" stroke="${c}" stroke-width="1.8"/>`;}
+
+/* ---------------- pan / zoom ---------------- */
+let vx=40, vy=10, scale=1;
+const vp=document.getElementById('viewport');
+function apply(){world.style.transform=`translate(${vx}px,${vy}px) scale(${scale})`;}
+function render(){buildNodes();apply();}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function zoomAt(cx,cy,f){const ns=clamp(scale*f,.3,2.2);vx=cx-(cx-vx)*(ns/scale);vy=cy-(cy-vy)*(ns/scale);scale=ns;apply();}
+function zoomBtn(f){const r=vp.getBoundingClientRect();zoomAt(r.width/2,r.height/2,f);}
+vp.addEventListener('wheel',e=>{e.preventDefault();const r=vp.getBoundingClientRect();zoomAt(e.clientX-r.left,e.clientY-r.top,e.deltaY<0?1.1:1/1.1);},{passive:false});
+let dragging=false,sx,sy;
+vp.addEventListener('mousedown',e=>{if(e.target.closest('.node'))return;dragging=true;sx=e.clientX;sy=e.clientY;vp.classList.add('grabbing');});
+window.addEventListener('mousemove',e=>{if(!dragging)return;vx+=e.clientX-sx;vy+=e.clientY-sy;sx=e.clientX;sy=e.clientY;apply();});
+window.addEventListener('mouseup',()=>{dragging=false;vp.classList.remove('grabbing');});
+function fit(){
+  if(!nodes.length) return;
+  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+  nodes.forEach(r=>{minX=Math.min(minX,r.x);minY=Math.min(minY,r.y);maxX=Math.max(maxX,r.x+r.w);maxY=Math.max(maxY,r.y+r.h);});
+  const r=vp.getBoundingClientRect(), pad=48;
+  const sw=(r.width-pad*2)/(maxX-minX), sh=(r.height-pad*2)/(maxY-minY);
+  scale=clamp(Math.min(sw,sh),.3,1.3);
+  vx=pad-minX*scale+(r.width-pad*2-(maxX-minX)*scale)/2; vy=pad-minY*scale; apply();
+}
+/* ---------------- drawer ---------------- */
+const drawer=document.getElementById('drawer');
+function openDrawer(d,cls){
+  document.getElementById('d-title').textContent=d.title;
+  document.getElementById('d-path').textContent=d.path||'—';
+  const st=document.getElementById('d-status');
+  st.innerHTML = d.status?'<span class="pill '+d.status+'">'+d.status+'</span>':(d.type==='root'?'container':'section');
+  document.getElementById('d-group').textContent =
+    d.type==='auth'?'settings / auth group': d.type==='wizard'?'flow group': (cls&&cls.indexOf('group')>=0)?'section':'—';
+  document.getElementById('d-desc').textContent=d.desc||'—';
+  const ar=document.getElementById('d-api-row');
+  if(d.api){ar.style.display='';document.getElementById('d-api').innerHTML='<code>'+d.api.replace(/→/g,'</code> → <code>')+'</code>';}
+  else ar.style.display='none';
+  drawer.classList.add('open');
+}
+function closeDrawer(){drawer.classList.remove('open');}
+/* ---------------- journey ---------------- */
+const FLOW=[
+  {n:'entry',t:'Landing',path:'/',status:'built',api:'search → store'},
+  {n:'step 1',t:'Vehicle',path:'/booking/vehicle',status:'built',api:'GET /api/vehicles/\nPOST /api/quotes/'},
+  {n:'step 2',t:'Extra',path:'/booking/extra',status:'built',api:'trip details'},
+  {n:'step 3',t:'Passenger',path:'/booking/passenger',status:'built',api:'guest / account'},
+  {n:'step 4',t:'Payment',path:'/booking/payment',status:'built',api:'POST /api/bookings/\ncash | card'},
+  {n:'step 5',t:'Confirmation',path:'/booking/confirmation',status:'built',api:'store.reset()'},
+];
+function buildFlow(){
+  const f=document.getElementById('flow'); f.innerHTML='';
+  FLOW.forEach((s,i)=>{
+    const el=document.createElement('div'); el.className='stage '+s.status;
+    el.innerHTML=`<div class="n">${s.n}</div><div class="t">${s.t}</div><div class="path">${s.path}</div>`+(s.api?`<div class="api">${s.api.replace(/\n/g,'<br>')}</div>`:'');
+    f.appendChild(el);
+    if(i<FLOW.length-1){const a=document.createElement('div');a.className='arrow';a.textContent='→';f.appendChild(a);}
+  });
+}
+/* ---------------- view switch ---------------- */
+function showView(v){
+  const isMap=(v==='client'||v==='backoffice');
+  vp.style.display=isMap?'block':'none';
+  document.getElementById('map-ctrls').style.display=isMap?'flex':'none';
+  document.getElementById('journey').style.display=(v==='journey')?'block':'none';
+  document.getElementById('legend').style.display=isMap?'flex':'none';
+  document.getElementById('tab-client').classList.toggle('on',v==='client');
+  document.getElementById('tab-backoffice').classList.toggle('on',v==='backoffice');
+  document.getElementById('tab-journey').classList.toggle('on',v==='journey');
+  closeDrawer();
+  const hint=document.getElementById('maphint');
+  if(isMap){ TREE=(v==='backoffice')?BACKOFFICE_TREE:CLIENT_TREE; hint.textContent=TREE.title+' · '+TREE.surface; render(); fit(); }
+  else hint.textContent='booking funnel';
+}
+showView('client'); buildFlow();
+</script>
+</body>
+</html>

@@ -85,17 +85,27 @@ def publishable_key() -> str:
     return config.publishable_key if config.is_enabled else ""
 
 
-def create_payment_intent(booking, *, idempotency_suffix: str = "") -> Payment:
+def create_payment_intent(booking, *, idempotency_suffix: str = "", save_card: bool = False) -> Payment:
     """
     Create (or reuse) a PaymentIntent for a booking.
 
     The amount comes from `booking.total`, which the pricing engine computed
     server-side. Nothing a client sent is used here.
+
+    When `save_card` is set and the booking belongs to a signed-in customer, the
+    intent is attached to their Stripe Customer with `setup_future_usage`, so the
+    card can be reused for later bookings and charged off-session by staff. The
+    card is persisted (see `save_card_for_user`) once payment succeeds.
     """
     config = _settings()
 
     if booking.total <= 0:
         raise PaymentGatewayError("This booking has no amount to charge.")
+
+    # Attach to the customer so the card can be kept on file.
+    customer_id = ""
+    if save_card and booking.customer_id:
+        customer_id = get_or_create_customer(booking.customer)
 
     # Reuse a live intent rather than stacking up abandoned ones on retries.
     existing = booking.payments.filter(
@@ -112,22 +122,29 @@ def create_payment_intent(booking, *, idempotency_suffix: str = "") -> Payment:
     client = _client(config)
     # A stable key means a retried request returns the same intent instead of
     # charging twice.
-    idempotency_key = f"booking-{booking.reference}-{booking.total}{idempotency_suffix}"
+    idempotency_key = f"booking-{booking.reference}-{booking.total}-{int(save_card)}{idempotency_suffix}"
+
+    params = {
+        "amount": to_cents(booking.total),
+        "currency": booking.currency.lower(),
+        "automatic_payment_methods": {"enabled": True},
+        "description": f"Booking {booking.reference}",
+        "statement_descriptor_suffix": config.statement_descriptor or None,
+        "metadata": {
+            "booking_reference": booking.reference,
+            "booking_id": str(booking.pk),
+            "pickup_at": booking.pickup_at.isoformat(),
+        },
+    }
+    if customer_id:
+        params["customer"] = customer_id
+        # Lets the card be reused and charged off-session later; also captures
+        # the mandate the customer agrees to when saving it.
+        params["setup_future_usage"] = "off_session"
 
     try:
         intent = client.payment_intents.create(
-            params={
-                "amount": to_cents(booking.total),
-                "currency": booking.currency.lower(),
-                "automatic_payment_methods": {"enabled": True},
-                "description": f"Booking {booking.reference}",
-                "statement_descriptor_suffix": config.statement_descriptor or None,
-                "metadata": {
-                    "booking_reference": booking.reference,
-                    "booking_id": str(booking.pk),
-                    "pickup_at": booking.pickup_at.isoformat(),
-                },
-            },
+            params=params,
             options={"idempotency_key": idempotency_key},
         )
     except stripe.StripeError as exc:
@@ -162,6 +179,130 @@ def client_secret_for(payment: Payment) -> str:
     except stripe.StripeError as exc:
         raise PaymentGatewayError("The payment could not be started.") from exc
     return intent.client_secret
+
+
+# -- customers & cards on file ----------------------------------------------
+
+def get_or_create_customer(user) -> str:
+    """The user's Stripe Customer id, created on first use and cached on the row."""
+    if user.stripe_customer_id:
+        return user.stripe_customer_id
+    client = _client(_settings())
+    try:
+        customer = client.customers.create(params={
+            "email": user.email,
+            "name": f"{user.first_name} {user.last_name}".strip() or user.email,
+            "metadata": {"user_id": str(user.pk)},
+        })
+    except stripe.StripeError as exc:
+        raise PaymentGatewayError("Could not create a customer record.") from exc
+    user.stripe_customer_id = customer.id
+    user.save(update_fields=["stripe_customer_id"])
+    return customer.id
+
+
+def save_card_for_user(user, payment_method_id: str):
+    """
+    Record a PaymentMethod as a reusable card for the user.
+
+    The PaymentMethod is already attached to the customer (Stripe does that when
+    an intent runs with `setup_future_usage`). Brand/last4/expiry are read back
+    from Stripe -- never trusted from the client.
+    """
+    from .models import SavedCard
+
+    client = _client(_settings())
+    try:
+        pm = client.payment_methods.retrieve(payment_method_id)
+    except stripe.StripeError as exc:
+        raise PaymentGatewayError("Could not read the card details.") from exc
+
+    card = getattr(pm, "card", None)
+    saved, _ = SavedCard.objects.update_or_create(
+        stripe_payment_method_id=payment_method_id,
+        defaults={
+            "customer": user,
+            "brand": getattr(card, "brand", "") or "",
+            "last4": getattr(card, "last4", "") or "",
+            "exp_month": getattr(card, "exp_month", None),
+            "exp_year": getattr(card, "exp_year", None),
+        },
+    )
+    if not user.saved_cards.filter(is_default=True).exclude(pk=saved.pk).exists():
+        saved.is_default = True
+        saved.save(update_fields=["is_default"])
+    return saved
+
+
+def charge_saved_card(saved_card, amount: Decimal, description: str, *, booking=None) -> Payment:
+    """
+    Charge a card on file off-session -- e.g. staff billing a trip extension.
+
+    Off-session relies on the mandate captured when the card was saved. Records
+    a Payment against the booking if given, otherwise standalone.
+    """
+    config = _settings()
+    amount = Decimal(amount)
+    if amount <= 0:
+        raise PaymentGatewayError("Enter an amount greater than zero.")
+
+    user = saved_card.customer
+    if not user.stripe_customer_id:
+        raise PaymentGatewayError("This customer has no Stripe record to charge.")
+
+    client = _client(config)
+    try:
+        intent = client.payment_intents.create(params={
+            "amount": to_cents(amount),
+            "currency": "usd",
+            "customer": user.stripe_customer_id,
+            "payment_method": saved_card.stripe_payment_method_id,
+            "off_session": True,
+            "confirm": True,
+            "description": description or "Trip extension",
+            "statement_descriptor_suffix": config.statement_descriptor or None,
+            "metadata": {
+                "saved_card_id": str(saved_card.pk),
+                "user_id": str(user.pk),
+                "booking_reference": booking.reference if booking else "",
+                "kind": "staff_offsession_charge",
+            },
+        })
+    except stripe.CardError as exc:
+        raise PaymentGatewayError(
+            getattr(exc, "user_message", None) or "The card was declined."
+        ) from exc
+    except stripe.StripeError as exc:
+        logger.error("Off-session charge failed: %s", exc)
+        raise PaymentGatewayError("The charge could not be completed.") from exc
+
+    return Payment.objects.create(
+        booking=booking,
+        provider=Payment.Provider.STRIPE,
+        payment_intent_id=intent.id,
+        amount=amount,
+        currency="USD",
+        status=STATUS_MAP.get(intent.status, Payment.Status.UNKNOWN),
+        card_brand=saved_card.brand,
+        card_last4=saved_card.last4,
+    )
+
+
+def detach_card(saved_card) -> None:
+    """Remove a card on file: detach the PaymentMethod at Stripe, delete locally."""
+    try:
+        _client(_settings()).payment_methods.detach(saved_card.stripe_payment_method_id)
+    except (stripe.StripeError, PaymentConfigurationError) as exc:
+        # Already gone at Stripe, or Stripe isn't configured -- still remove our
+        # local record so the customer can clear a stale card.
+        logger.warning("Could not detach %s: %s", saved_card.stripe_payment_method_id, exc)
+    was_default, user = saved_card.is_default, saved_card.customer
+    saved_card.delete()
+    if was_default:
+        nxt = user.saved_cards.first()
+        if nxt:
+            nxt.is_default = True
+            nxt.save(update_fields=["is_default"])
 
 
 def verify_webhook(payload: bytes, signature: str):
@@ -275,9 +416,25 @@ def apply_intent_to_payment(intent) -> Payment | None:
 
     payment.save()
 
-    booking = payment.booking
+    # If the customer chose to keep the card on file, persist it once the money
+    # has actually moved. Never fatal to the payment path.
     if (
         payment.status == Payment.Status.SUCCEEDED
+        and intent.get("setup_future_usage")
+        and intent.get("payment_method")
+        and intent.get("customer")
+        and payment.booking
+        and payment.booking.customer_id
+    ):
+        try:
+            save_card_for_user(payment.booking.customer, intent["payment_method"])
+        except Exception:
+            logger.exception("Could not save card from intent %s", intent.get("id"))
+
+    booking = payment.booking
+    if (
+        booking
+        and payment.status == Payment.Status.SUCCEEDED
         and booking.status == Booking.Status.PENDING
     ):
         BookingStatusChange.objects.create(

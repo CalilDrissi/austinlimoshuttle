@@ -114,6 +114,8 @@ export interface BookingCreateRequest {
   /** Guest checkout — required when not signed in. */
   guest_email?: string;
   guest_name?: string;
+  /** Contact phone — required for guest checkout. */
+  guest_phone?: string;
 }
 
 export type BookingStatusValue =
@@ -150,6 +152,10 @@ export interface Booking {
   currency: string;
   price_lines: BookingPriceLine[];
   created_at: string;
+  /** Whether the customer may still edit non-price details (within the window). */
+  is_amendable: boolean;
+  /** The cutoff after which online edits are blocked. */
+  amendment_deadline: string;
 }
 
 /** The narrow, public confirmation shape (no addresses/passenger data). */

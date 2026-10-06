@@ -15,11 +15,32 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { API_BASE_URL } from "@/lib/api/config";
+
 const SCRIPT_ID = "gmaps-js";
 const AUSTIN = { lat: 30.2672, lng: -97.7431 };
-const BIAS_RADIUS_M = 80_000; // ~50 miles around Austin
+// Places caps a locationBias circle radius at 50 km; this covers the Austin
+// metro (Round Rock, Cedar Park, Georgetown, San Marcos) without exceeding it.
+const BIAS_RADIUS_M = 50_000;
 
 let loader: Promise<any> | null = null;
+
+/**
+ * The key powering Maps JS. The dashboard-managed key (Site details) wins so the
+ * office can swap it without a redeploy; the build-time env var is the fallback.
+ */
+async function resolveApiKey(): Promise<string> {
+  try {
+    const r = await fetch(`${API_BASE_URL}/site-settings/`, { credentials: "include" });
+    if (r.ok) {
+      const data = await r.json();
+      if (data?.google_maps_api_key) return data.google_maps_api_key as string;
+    }
+  } catch {
+    /* fall through to the env var */
+  }
+  return process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
+}
 
 /** Load the Maps JS API (with Places) once; resolves to the `google` global. */
 export function loadGoogleMaps(): Promise<any> {
@@ -28,12 +49,10 @@ export function loadGoogleMaps(): Promise<any> {
   if (w.google?.maps?.importLibrary) return Promise.resolve(w.google);
   if (loader) return loader;
 
-  const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-  loader = new Promise((resolve, reject) => {
-    if (!key) {
-      reject(new Error("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not set"));
-      return;
-    }
+  loader = (async () => {
+    const key = await resolveApiKey();
+    if (!key) throw new Error("No Google Maps API key configured.");
+    return await new Promise((resolve, reject) => {
     const ready = async () => {
       try {
         await w.google.maps.importLibrary("places");
@@ -57,7 +76,8 @@ export function loadGoogleMaps(): Promise<any> {
     s.onload = ready;
     s.onerror = () => reject(new Error("Google Maps failed to load"));
     document.head.appendChild(s);
-  });
+    });
+  })();
   return loader;
 }
 

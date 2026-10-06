@@ -190,11 +190,40 @@ class Booking(models.Model):
         return self.pickup_at > timezone.now()
 
     @property
+    def amendment_deadline(self):
+        """
+        Latest moment a customer may change this booking's details online.
+
+        The window (hours before pickup) is set by the office in pricing
+        settings, so "3 days before" vs "6 hours before" is a config change.
+        """
+        from datetime import timedelta
+
+        from pricing.models import PricingSettings
+
+        hours = PricingSettings.load().amendment_window_hours
+        return self.pickup_at - timedelta(hours=hours)
+
+    @property
+    def is_amendable(self) -> bool:
+        """Whether the customer can still edit non-price details online."""
+        if self.status in {self.Status.CANCELLED, self.Status.COMPLETED}:
+            return False
+        return timezone.now() < self.amendment_deadline
+
+    @property
     def contact_email(self) -> str:
         """Where correspondence for this booking goes."""
         if self.customer and self.customer.email:
             return self.customer.email
         return self.guest_email
+
+    @property
+    def contact_phone(self) -> str:
+        """The booker's phone -- account phone for customers, guest phone otherwise."""
+        if self.customer and self.customer.phone:
+            return self.customer.phone
+        return self.guest_phone
 
     @property
     def customer_name(self) -> str:

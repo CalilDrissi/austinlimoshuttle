@@ -10,6 +10,7 @@ from rest_framework import serializers
 
 from bookings.models import Booking
 from content.models import Page, SiteSettings
+from payments.models import SavedCard
 from enquiries.models import ContactMessage
 from fleet.models import Vehicle
 
@@ -44,6 +45,7 @@ class SiteSettingsSerializer(serializers.ModelSerializer):
         fields = [
             "contact_email", "contact_phone",
             "facebook", "instagram", "twitter", "linkedin",
+            "google_maps_api_key",
         ]
         read_only_fields = fields
 
@@ -124,12 +126,15 @@ class BookingCreateSerializer(serializers.Serializer):
     # Guest checkout
     guest_email = serializers.EmailField(required=False, allow_blank=True)
     guest_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    guest_phone = serializers.CharField(max_length=32, required=False, allow_blank=True)
 
 
 class BookingSerializer(serializers.ModelSerializer):
     vehicle_name = serializers.CharField(source="vehicle_name_snapshot", read_only=True)
     price_lines = serializers.SerializerMethodField()
     status_display = serializers.CharField(source="get_status_display", read_only=True)
+    is_amendable = serializers.BooleanField(read_only=True)
+    amendment_deadline = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = Booking
@@ -140,7 +145,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "passenger_count", "luggage_count", "flight_number", "pickup_sign",
             "meet_and_greet", "notes", "vehicle_name",
             "subtotal", "surcharge_total", "tax", "total", "currency",
-            "price_lines", "created_at",
+            "price_lines", "created_at", "is_amendable", "amendment_deadline",
         ]
         read_only_fields = fields
 
@@ -151,6 +156,21 @@ class BookingSerializer(serializers.ModelSerializer):
             {"kind": line.kind, "label": line.label, "amount": f"{line.amount:.2f}"}
             for line in obj.price_lines.all()
         ]
+
+
+class BookingAmendSerializer(serializers.Serializer):
+    """
+    Customer-editable, non-price booking details. Everything is optional (a
+    partial update) and nothing here can change the fare — no address, date or
+    vehicle. `phone` updates the account's contact number.
+    """
+
+    passenger_count = serializers.IntegerField(min_value=1, max_value=MAX_PASSENGERS, required=False)
+    luggage_count = serializers.IntegerField(min_value=0, max_value=MAX_PASSENGERS, required=False)
+    flight_number = serializers.CharField(max_length=32, required=False, allow_blank=True)
+    pickup_sign = serializers.CharField(max_length=120, required=False, allow_blank=True)
+    notes = serializers.CharField(required=False, allow_blank=True)
+    phone = serializers.CharField(max_length=32, required=False, allow_blank=True)
 
 
 class EnquirySerializer(serializers.ModelSerializer):
@@ -308,3 +328,16 @@ class PasswordResetRequestSerializer(serializers.Serializer):
 
 class CancelBookingSerializer(serializers.Serializer):
     action = serializers.ChoiceField(choices=["cancel"])
+
+
+class SavedCardSerializer(serializers.ModelSerializer):
+    """A customer's card on file. Display bits only -- never anything to charge with."""
+
+    label = serializers.CharField(read_only=True)
+    expiry = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = SavedCard
+        fields = ["id", "brand", "last4", "exp_month", "exp_year",
+                  "is_default", "label", "expiry"]
+        read_only_fields = fields

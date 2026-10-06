@@ -8,7 +8,6 @@ the order they appear in the sidebar.
 from __future__ import annotations
 
 from bookings.models import Driver
-from content.models import Banner, GalleryImage, Page, Testimonial
 from fleet.models import Vehicle
 from pricing.models import BlackoutDate, TimeSurcharge
 
@@ -126,85 +125,12 @@ register(Managed(
 ))
 
 # -- website content --------------------------------------------------------
-
-register(Managed(
-    slug="pages",
-    model=Page,
-    form_class=forms.PageForm,
-    label="Page",
-    label_plural="Pages",
-    permission="content.change_page",
-    icon="bi-file-earmark-text",
-    lede="Website pages and their search-engine metadata.",
-    form_note=(
-        "Changing a page's address breaks its search ranking and every link "
-        "pointing at it. Treat an existing address as permanent."
-    ),
-    search_fields=["title", "slug", "body", "meta_description"],
-    ordering=["display_order", "title"],
-    columns=[
-        Column("Title", "title", sub="url_path"),
-        Column("Type", "get_page_type_display"),
-        Column("Menu", "get_menu_placement_display"),
-        Column("Published", "is_published", boolean=True),
-    ],
-))
-
-register(Managed(
-    slug="testimonials",
-    model=Testimonial,
-    form_class=forms.TestimonialForm,
-    label="Testimonial",
-    label_plural="Testimonials",
-    permission="content.change_testimonial",
-    icon="bi-chat-quote",
-    lede="Customer quotes shown on the website.",
-    search_fields=["customer_name", "quote"],
-    ordering=["display_order", "-created_at"],
-    columns=[
-        Column("Customer", "customer_name"),
-        Column("Quote", lambda t: _truncate(t.quote)),
-        Column("Rating", lambda t: f"{t.rating}/5" if t.rating else "—"),
-        Column("Published", "is_published", boolean=True),
-    ],
-))
-
-register(Managed(
-    slug="banners",
-    model=Banner,
-    form_class=forms.BannerForm,
-    label="Banner",
-    label_plural="Banners",
-    permission="content.change_banner",
-    icon="bi-image",
-    lede="Promotional banners. Leaving the page empty puts one on the homepage.",
-    search_fields=["title", "description"],
-    ordering=["display_order", "id"],
-    select_related=["page"],
-    columns=[
-        Column("Title", "__str__", sub=lambda b: b.page.title if b.page else "Homepage"),
-        Column("Links to", "link_url"),
-        Column("Active", "is_active", boolean=True),
-    ],
-))
-
-register(Managed(
-    slug="gallery",
-    model=GalleryImage,
-    form_class=forms.GalleryImageForm,
-    label="Image",
-    label_plural="Gallery & logos",
-    permission="content.change_galleryimage",
-    icon="bi-images",
-    lede="Gallery photographs and partner logos.",
-    search_fields=["title", "description"],
-    ordering=["category", "display_order"],
-    columns=[
-        Column("Title", "__str__"),
-        Column("Category", "get_category_display"),
-        Column("Active", "is_active", boolean=True),
-    ],
-))
+# Pages, Testimonials, Banners and Gallery were removed from the dashboard on
+# 2026-10-06. The storefront renders that content hardcoded and consumes none of
+# it: Testimonials/Banners/Gallery have no public API, and /api/pages/ exists but
+# nothing on the frontend calls it. Editing these changed nothing on the live
+# site. The models, data and admin are untouched -- re-register them here once
+# the storefront is wired to that content (tracked in the project todos).
 
 # -- people -----------------------------------------------------------------
 

@@ -23,7 +23,7 @@ EDITOR = "Editor"
 # app_label.model -> permission codenames granted
 ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
     DISPATCHER: {
-        "bookings.booking": ["view", "change"],
+        "bookings.booking": ["view", "add", "change"],
         "bookings.driver": ["view", "add", "change"],
         "bookings.bookingstatuschange": ["view", "add"],
         "bookings.bookingpriceline": ["view"],

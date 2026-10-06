@@ -26,10 +26,11 @@ export interface Trip {
   passengerPhone?: string;
 }
 
-/** Guest contact — ignored once the customer is signed in. */
+/** The booker's contact details. Phone is required for every booking. */
 export interface Contact {
   name?: string;
   email?: string;
+  phone?: string;
 }
 
 interface BookingState {

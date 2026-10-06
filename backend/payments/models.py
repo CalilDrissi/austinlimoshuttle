@@ -42,7 +42,9 @@ class Payment(models.Model):
 
     booking = models.ForeignKey(
         "bookings.Booking", on_delete=models.PROTECT, related_name="payments",
-        help_text="PROTECT: financial records are never cascade-deleted.",
+        null=True, blank=True,
+        help_text="PROTECT: financial records are never cascade-deleted. Null for "
+                  "an off-session charge not tied to a booking (e.g. a trip extension).",
     )
     provider = models.CharField(
         max_length=12, choices=Provider.choices, default=Provider.STRIPE,
@@ -121,6 +123,50 @@ class Refund(models.Model):
 
     def __str__(self):
         return f"Refund {self.amount} on {self.payment.booking.reference}"
+
+
+class SavedCard(models.Model):
+    """
+    A customer's reusable card, kept on file for rebooking and for staff to
+    bill a trip extension.
+
+    Like `Payment`, this holds no card data -- only the Stripe PaymentMethod
+    reference and the display bits (brand, last four, expiry) Stripe returns.
+    The card itself lives at Stripe; charging it later is off-session, which the
+    customer consented to when the card was saved.
+    """
+
+    customer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name="saved_cards",
+    )
+    stripe_payment_method_id = models.CharField(max_length=64, unique=True)
+    brand = models.CharField(max_length=20, blank=True)
+    last4 = models.CharField(
+        max_length=4, blank=True,
+        validators=[RegexValidator(r"^\d{4}$", "Exactly four digits.")],
+    )
+    exp_month = models.PositiveSmallIntegerField(null=True, blank=True)
+    exp_year = models.PositiveSmallIntegerField(null=True, blank=True)
+    is_default = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-is_default", "-created_at"]
+
+    def __str__(self):
+        return f"{self.label} ({self.customer.email})"
+
+    @property
+    def label(self) -> str:
+        brand = self.brand.title() if self.brand else "Card"
+        return f"{brand} •••• {self.last4}" if self.last4 else brand
+
+    @property
+    def expiry(self) -> str:
+        if self.exp_month and self.exp_year:
+            return f"{self.exp_month:02d}/{str(self.exp_year)[-2:]}"
+        return ""
 
 
 class PaymentSettings(models.Model):

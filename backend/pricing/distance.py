@@ -70,10 +70,16 @@ def lookup(origin: str, destination: str, *, use_cache: bool = True) -> Journey:
     if use_cache and (cached := cache.get(key)) is not None:
         return Journey(**cached)
 
-    api_key = getattr(settings, "GOOGLE_MAPS_API_KEY", "")
+    # Prefer the key set in the dashboard (Site details) so the office can swap
+    # it without a deploy; fall back to the server's env-configured key.
+    from content.models import SiteSettings
+
+    api_key = SiteSettings.load().google_maps_api_key or getattr(
+        settings, "GOOGLE_MAPS_API_KEY", ""
+    )
     if not api_key:
         raise DistanceLookupError(
-            "Distance lookup is not configured (GOOGLE_MAPS_API_KEY is unset)."
+            "Distance lookup is not configured (no Google Maps API key set)."
         )
 
     try:

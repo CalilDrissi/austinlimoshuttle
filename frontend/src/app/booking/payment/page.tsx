@@ -54,6 +54,7 @@ export default function BookingPaymentPage() {
         notes,
         guest_email: contact.email,
         guest_name: contact.name,
+        guest_phone: contact.phone,
       });
       setReference(booking.reference);
 

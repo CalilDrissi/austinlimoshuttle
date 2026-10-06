@@ -1,6 +1,41 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
+import { enquiryService } from "@/lib/api/enquiry.service";
 
 export default function ContactPage() {
+  const [form, setForm] = useState({ name: "", email: "", phone: "", subject: "", message: "" });
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [error, setError] = useState("");
+
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (!form.name.trim() || !form.email.includes("@") || form.message.trim().length < 10) {
+      setError("Please enter your name, a valid email, and a message of at least 10 characters.");
+      return;
+    }
+    setStatus("sending");
+    try {
+      await enquiryService.submit({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim() || undefined,
+        subject: form.subject.trim() || undefined,
+        message: form.message.trim(),
+      });
+      setStatus("sent");
+      setForm({ name: "", email: "", phone: "", subject: "", message: "" });
+    } catch (err) {
+      setStatus("error");
+      setError(err instanceof Error ? err.message : "Could not send your message. Please try again.");
+    }
+  };
+
   return (
     <>
       <div className="section pt-60 pb-60 bg-primary">
@@ -79,34 +114,51 @@ export default function ContactPage() {
           <div className="mw-770">
             <h2 className="heading-44-medium mb-60 text-center wow fadeInDown">Leave us your info</h2>
             <div className="form-contact form-comment wow fadeInUp">
-              <form action="#">
+              {status === "sent" ? (
+                <div className="box-info-book-border" style={{ textAlign: "center", padding: "36px 24px" }}>
+                  <h5 className="heading-20-medium mb-10">Thanks — we&rsquo;ve got your message.</h5>
+                  <p className="text-16 color-grey mb-20">Our team will get back to you shortly.</p>
+                  <button className="btn btn-primary hover-up" onClick={() => setStatus("idle")}>Send another</button>
+                </div>
+              ) : (
+              <form onSubmit={submit} noValidate>
                 <div className="row">
                   <div className="col-lg-6 col-md-6">
-                    <div className="form-group focused">
-                      <label className="form-label" htmlFor="fullname">Full Name</label>
-                      <input className="form-control filled" id="fullname" type="text" defaultValue="Ali Tufan" />
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="fullname">Full Name <span style={{ color: "#c0392b" }}>*</span></label>
+                      <input className="form-control" id="fullname" type="text" value={form.name} onChange={set("name")} />
                     </div>
                   </div>
                   <div className="col-lg-6 col-md-6">
                     <div className="form-group">
-                      <label className="form-label" htmlFor="email">Email</label>
-                      <input className="form-control" id="email" type="text" placeholder="" />
+                      <label className="form-label" htmlFor="email">Email <span style={{ color: "#c0392b" }}>*</span></label>
+                      <input className="form-control" id="email" type="email" value={form.email} onChange={set("email")} />
                     </div>
                   </div>
-                  <div className="col-lg-12">
+                  <div className="col-lg-6 col-md-6">
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="phone">Phone</label>
+                      <input className="form-control" id="phone" type="tel" value={form.phone} onChange={set("phone")} />
+                    </div>
+                  </div>
+                  <div className="col-lg-6 col-md-6">
                     <div className="form-group">
                       <label className="form-label" htmlFor="subject">Subject</label>
-                      <input className="form-control" id="subject" type="text" placeholder="" />
+                      <input className="form-control" id="subject" type="text" value={form.subject} onChange={set("subject")} />
                     </div>
                   </div>
                   <div className="col-lg-12">
                     <div className="form-group">
-                      <label className="form-label" htmlFor="message">Message</label>
-                      <textarea className="form-control" id="message"></textarea>
+                      <label className="form-label" htmlFor="message">Message <span style={{ color: "#c0392b" }}>*</span></label>
+                      <textarea className="form-control" id="message" rows={5} value={form.message} onChange={set("message")}></textarea>
                     </div>
                   </div>
+                  {error && (
+                    <div className="col-lg-12"><p className="text-14" style={{ color: "#c0392b" }}>{error}</p></div>
+                  )}
                   <div className="col-lg-12">
-                    <button className="btn btn-primary" type="submit">Get In Touch
+                    <button className="btn btn-primary" type="submit" disabled={status === "sending"}>
+                      {status === "sending" ? "Sending…" : "Get In Touch"}
                       <svg className="icon-16 ml-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25" />
                       </svg>
@@ -114,6 +166,7 @@ export default function ContactPage() {
                   </div>
                 </div>
               </form>
+              )}
             </div>
           </div>
         </div>

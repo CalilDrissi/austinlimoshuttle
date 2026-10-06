@@ -20,4 +20,13 @@ python manage.py migrate --noinput
 echo "==> sync_roles"
 python manage.py sync_roles
 
+# Production only (DatabaseCache table + collected static for WhiteNoise). Both
+# idempotent, so re-running on every boot is safe.
+if [ "${DJANGO_COLLECTSTATIC:-0}" = "1" ]; then
+  echo "==> createcachetable"
+  python manage.py createcachetable || true
+  echo "==> collectstatic"
+  python manage.py collectstatic --noinput
+fi
+
 exec "$@"

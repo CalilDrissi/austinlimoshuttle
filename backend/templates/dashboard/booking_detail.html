@@ -6,6 +6,11 @@
 {% endblock %}
 {% block actions %}
   {% include "dashboard/_status.html" with status=booking.status label=booking.get_status_display %}
+  {% if perms.bookings.change_booking %}
+  <a href="{% url 'dashboard:booking_edit' booking.reference %}" class="btn btn-brand btn-sm ms-2">
+    <i class="bi bi-pencil"></i> Edit details
+  </a>
+  {% endif %}
   <a href="{% url 'dashboard:bookings' %}" class="btn btn-outline-secondary btn-sm ms-2">
     <i class="bi bi-arrow-left"></i> All bookings
   </a>
@@ -97,6 +102,7 @@
           {% else %}
             <dt>Account</dt><dd class="text-secondary">Guest booking</dd>
             {% if booking.guest_email %}<dt>Email</dt><dd>{{ booking.guest_email }}</dd>{% endif %}
+            <dt>Phone</dt><dd>{{ booking.guest_phone|default:"—" }}</dd>
           {% endif %}
         </dl>
       </div>

@@ -1,34 +1,26 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 import "swiper/css/navigation";
-
-const FLEET = [
-  {
-    title: "Business Class",
-    desc: "Mercedes-Benz E-Class, BMW 5 Series, Cadillac XTS or similar",
-    img: "/assets/imgs/page/homepage1/e-class.png",
-  },
-  {
-    title: "First Class",
-    desc: "Mercedes-Benz EQS, BMW 7 Series, Audi A8 or similar",
-    img: "/assets/imgs/page/homepage1/eqs.png",
-  },
-  {
-    title: "Business Van/SUV",
-    desc: "Mercedes-Benz V-Class, Chevrolet Suburban, Cadillac Escalade, Toyota Alphard or similar",
-    img: "/assets/imgs/page/homepage1/suv.png",
-  },
-  {
-    title: "Limousine",
-    desc: "Lincoln Stretch Limousine, Chrysler 300 Limousine or similar",
-    img: "/assets/imgs/page/homepage1/v-class.png",
-  },
-];
+import { catalogService } from "@/lib/api/catalog.service";
+import { vehicleImage } from "@/lib/fleet/images";
+import type { Vehicle } from "@/types/api";
 
 export default function OurFleet() {
+  const [fleet, setFleet] = useState<Vehicle[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    catalogService
+      .listVehicles()
+      .then((v) => active && setFleet(v))
+      .catch(() => active && setFleet([]));
+    return () => { active = false; };
+  }, []);
+
   return (
     <section className="section pt-120 pb-120 bg-our-fleet">
       <div className="container-sub">
@@ -75,31 +67,31 @@ export default function OurFleet() {
               1200: { slidesPerView: 3 },
             }}
           >
-            {FLEET.map((car, i) => (
-              <SwiperSlide key={i}>
+            {fleet.map((v) => (
+              <SwiperSlide key={v.slug}>
                 <div className="cardFleet wow fadeInDown">
                   <div className="cardInfo">
-                    <Link href="/fleet">
-                      <h3 className="text-20-medium color-text mb-10">{car.title}</h3>
+                    <Link href={`/fleet/${v.slug}`}>
+                      <h3 className="text-20-medium color-text mb-10">{v.name}</h3>
                     </Link>
-                    <p className="text-14 color-text mb-30">{car.desc}</p>
+                    <p className="text-14 color-text mb-30">{v.description || "Professional chauffeur service across Central Texas."}</p>
                   </div>
                   <div className="cardImage mb-30">
-                    <Link href="/fleet">
-                      <img src={car.img} alt="Luxride" />
+                    <Link href={`/fleet/${v.slug}`}>
+                      <img src={vehicleImage(v.slug)} alt={v.name} />
                     </Link>
                   </div>
                   <div className="cardInfoBottom">
                     <div className="passenger">
                       <span className="icon-circle icon-passenger"></span>
                       <span className="text-14">
-                        Passengers<span>4</span>
+                        Passengers<span>{v.passenger_capacity}</span>
                       </span>
                     </div>
                     <div className="luggage">
                       <span className="icon-circle icon-luggage"></span>
                       <span className="text-14">
-                        Luggage<span>2</span>
+                        Luggage<span>{v.luggage_capacity}</span>
                       </span>
                     </div>
                   </div>

@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 const NEWS = [
   {
     day: "14.",

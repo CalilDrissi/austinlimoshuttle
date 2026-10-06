@@ -176,6 +176,12 @@ class SiteSettings(models.Model):
         blank=True, help_text="Where new-booking alerts are sent.",
     )
 
+    google_maps_api_key = models.CharField(
+        max_length=120, blank=True,
+        help_text="Google Maps key for address autocomplete and distance pricing. "
+                  "Leave blank to use the server's configured key.",
+    )
+
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

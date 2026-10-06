@@ -22,6 +22,7 @@ export default function BookingPassengerPage() {
 
   const [name, setName] = useState(contact.name ?? "");
   const [email, setEmail] = useState(contact.email ?? "");
+  const [phone, setPhone] = useState(contact.phone ?? "");
   const [forElse, setForElse] = useState(!!trip.forSomeoneElse);
   const [paxName, setPaxName] = useState(trip.passengerName ?? "");
   const [paxPhone, setPaxPhone] = useState(trip.passengerPhone ?? "");
@@ -43,6 +44,7 @@ export default function BookingPassengerPage() {
     if (user) {
       setName((n) => n || `${user.first_name} ${user.last_name}`.trim());
       setEmail((e) => e || user.email);
+      setPhone((p) => p || user.phone || "");
     }
   }, [user]);
 
@@ -74,18 +76,31 @@ export default function BookingPassengerPage() {
     setAuthBusy(false);
   };
 
-  const next = () => {
+  const next = async () => {
     if (!user && (!name.trim() || !email.includes("@"))) {
       setError("Please enter your name and a valid email.");
+      return;
+    }
+    if (phone.replace(/\D/g, "").length < 7) {
+      setError("Please enter a valid contact phone number.");
       return;
     }
     if (forElse && !paxName.trim()) {
       setError("Please enter the passenger's name.");
       return;
     }
+    // For signed-in bookers the booking takes its contact phone from the account,
+    // so persist it when it's new or changed (best-effort — still proceed on error).
+    if (user && phone.trim() !== (user.phone ?? "")) {
+      try {
+        await authService.updateProfile({ phone: phone.trim() });
+        await refreshAuth();
+      } catch { /* non-fatal: also carried in contact below */ }
+    }
     setContact({
       name: (name || (user ? `${user.first_name} ${user.last_name}`.trim() : "")).trim(),
       email: (email || user?.email || "").trim(),
+      phone: phone.trim(),
     });
     setTrip({
       forSomeoneElse: forElse,
@@ -183,6 +198,19 @@ export default function BookingPassengerPage() {
                   <div className="col-12 mb-20">
                     <label className="text-14 color-grey">Your email <span className="color-grey">(receipt goes here)</span></label>
                     <input type="email" className="form-control" value={email} onChange={(e) => setEmail(e.target.value)} />
+                  </div>
+                  <div className="col-12 mb-20">
+                    <label className="text-14 color-grey">Your phone number <span style={{ color: "#c0392b" }}>*</span> <span className="color-grey">(so the driver can reach you)</span></label>
+                    <input type="tel" className="form-control" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. (512) 555-0142" required />
+                  </div>
+                </div>
+              )}
+
+              {user && (
+                <div className="row">
+                  <div className="col-12 mb-20">
+                    <label className="text-14 color-grey">Your phone number <span style={{ color: "#c0392b" }}>*</span> <span className="color-grey">(so the driver can reach you)</span></label>
+                    <input type="tel" className="form-control" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. (512) 555-0142" required />
                   </div>
                 </div>
               )}

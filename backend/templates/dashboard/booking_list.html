@@ -15,9 +15,16 @@
     <a class="btn {% if not active_quick and not filters.from and not filters.to %}btn-brand{% else %}btn-outline-secondary{% endif %}"
        href="{% url 'dashboard:bookings' %}">All</a>
   </div>
-  <a class="btn btn-sm btn-outline-secondary ms-auto" href="{% url 'dashboard:calendar' %}">
-    <i class="bi bi-calendar3"></i> Calendar view
-  </a>
+  <div class="ms-auto d-flex gap-2">
+    {% if perms.bookings.add_booking %}
+    <a class="btn btn-sm btn-brand" href="{% url 'dashboard:booking_create' %}">
+      <i class="bi bi-plus-lg"></i> New booking
+    </a>
+    {% endif %}
+    <a class="btn btn-sm btn-outline-secondary" href="{% url 'dashboard:calendar' %}">
+      <i class="bi bi-calendar3"></i> Calendar view
+    </a>
+  </div>
 </div>
 
 <div class="card mb-3">

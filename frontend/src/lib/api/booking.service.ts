@@ -21,4 +21,18 @@ export const bookingService = {
 
   cancel: (reference: string) =>
     apiPatch<Booking>(`/account/bookings/${reference}/`, { action: "cancel" }),
+
+  /** Edit non-price details (within the office-set window). */
+  amend: (reference: string, changes: BookingAmendRequest) =>
+    apiPatch<Booking>(`/account/bookings/${reference}/`, { action: "amend", ...changes }),
 };
+
+/** Customer-editable, non-price fields. */
+export interface BookingAmendRequest {
+  passenger_count?: number;
+  luggage_count?: number;
+  flight_number?: string;
+  pickup_sign?: string;
+  notes?: string;
+  phone?: string;
+}

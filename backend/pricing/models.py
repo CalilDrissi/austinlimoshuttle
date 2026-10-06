@@ -124,6 +124,12 @@ class PricingSettings(models.Model):
         help_text="Free cancellation up to this many hours before pickup. "
                   "Legacy fleet copy advertised 1 hour.",
     )
+    amendment_window_hours = models.PositiveSmallIntegerField(
+        default=24,
+        help_text="How many hours before pickup a customer may still change "
+                  "their booking's details online. 72 = 3 days, 24 = 1 day, "
+                  "6 = 6 hours. After this they must contact the office.",
+    )
     quote_ttl_minutes = models.PositiveSmallIntegerField(
         default=30, help_text="How long a fare quote stays valid.",
     )

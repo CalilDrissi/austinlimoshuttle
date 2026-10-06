@@ -15,6 +15,12 @@ DEBUG = False
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS")
 
+# WhiteNoise serves the collected static files from inside the container, so the
+# reverse proxy doesn't need a static-file mapping. Must sit directly after
+# SecurityMiddleware.
+MIDDLEWARE = list(MIDDLEWARE)  # noqa: F405 -- from base via star import
+MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
+
 # --------------------------------------------------------------------------
 # HTTPS / transport
 # --------------------------------------------------------------------------
@@ -52,7 +58,8 @@ MEDIA_ROOT = env("DJANGO_MEDIA_ROOT", default="/home/austi118/media")
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage",
+        # Hashed names + gzip/brotli, served by WhiteNoise.
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
 

@@ -180,6 +180,12 @@
          href="{% url 'dashboard:bookings' %}">
         <i class="bi bi-journal-text"></i><span>Bookings</span>
       </a>
+      {% if is_manager %}
+      <a class="nav-link {% if request.resolver_match.url_name == 'charge_card' %}active{% endif %}"
+         href="{% url 'dashboard:charge_card' %}">
+        <i class="bi bi-credit-card-2-front"></i><span>Charge card</span>
+      </a>
+      {% endif %}
       <a class="nav-link {% if request.resolver_match.url_name in 'enquiries enquiry_detail' %}active{% endif %}"
          href="{% url 'dashboard:enquiries' %}">
         <i class="bi bi-envelope"></i><span>Enquiries</span>

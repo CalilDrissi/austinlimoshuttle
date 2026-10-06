@@ -1,11 +1,13 @@
 """Dashboard forms."""
 
+from decimal import Decimal
+
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.auth.password_validation import validate_password
 
-from bookings.models import Driver
+from bookings.models import Booking, Driver
 from content.models import Banner, GalleryImage, Page, SiteSettings, Testimonial
 from fleet.models import DistanceBand, Vehicle
 from notifications.models import EmailSettings
@@ -36,6 +38,87 @@ class BootstrapFormMixin:
             else:
                 css = "form-control"
             widget.attrs["class"] = f"{existing} {css}".strip()
+
+
+class ManualBookingForm(BootstrapFormMixin, forms.ModelForm):
+    """
+    Staff-entered booking for phone and walk-in customers.
+
+    The fare is entered directly rather than quoted -- a dispatcher taking a call
+    has already agreed a price. It's recorded as the booking total with a single
+    fare line and an audit row, so the detail view and receipt read the same as a
+    web booking. Stored as a guest booking: the name goes on the pickup sign, the
+    phone and (optional) email as the guest contact.
+    """
+
+    class Meta:
+        model = Booking
+        fields = [
+            "pickup_sign", "guest_phone", "guest_email",
+            "vehicle", "pickup_at", "pickup_address", "dropoff_address",
+            "passenger_count", "luggage_count", "flight_number",
+            "meet_and_greet", "total", "status", "notes",
+        ]
+        labels = {
+            "pickup_sign": "Customer name",
+            "guest_phone": "Customer phone",
+            "guest_email": "Customer email",
+            "pickup_at": "Pickup date & time",
+            "total": "Total fare ($)",
+            "notes": "Notes for the driver",
+        }
+        help_texts = {
+            "pickup_sign": "Who the ride is for -- shown to the driver.",
+            "dropoff_address": "Leave blank for an hourly hire.",
+            "total": "The agreed fare for this booking.",
+            "guest_email": "Optional -- the receipt is emailed here if given.",
+        }
+        widgets = {
+            "pickup_at": forms.DateTimeInput(
+                attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M",
+            ),
+            "notes": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["vehicle"].queryset = (
+            Vehicle.objects.filter(is_active=True).order_by("display_order", "name")
+        )
+        self.fields["pickup_at"].input_formats = ["%Y-%m-%dT%H:%M", "%Y-%m-%dT%H:%M:%S"]
+        self.fields["pickup_sign"].required = True
+        self.fields["guest_phone"].required = True
+        self.fields["total"].required = True
+        # A manual booking is one staff just took; only these statuses make sense.
+        self.fields["status"].choices = [
+            (Booking.Status.CONFIRMED, Booking.Status.CONFIRMED.label),
+            (Booking.Status.PENDING, Booking.Status.PENDING.label),
+        ]
+        self.initial.setdefault("status", Booking.Status.CONFIRMED)
+        self.initial.setdefault("passenger_count", 1)
+
+    def clean_total(self):
+        total = self.cleaned_data.get("total")
+        if total is None or total < 0:
+            raise forms.ValidationError("Enter the agreed fare as a positive amount.")
+        return total
+
+
+class BookingEditForm(ManualBookingForm):
+    """
+    Edit an existing booking's details.
+
+    Same fields as manual entry, with two differences: the guest-contact fields
+    aren't forced (the booking may belong to an account, where the contact lives
+    on the user), and status is left to the dedicated status/driver control on
+    the detail page -- which records a proper transition with a note.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["pickup_sign"].required = False
+        self.fields["guest_phone"].required = False
+        self.fields.pop("status", None)
 
 
 class PaymentSettingsForm(BootstrapFormMixin, forms.ModelForm):
@@ -434,10 +517,18 @@ class PricingSettingsForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = PricingSettings
         fields = [
-            "tax_rate", "currency", "cancellation_window_hours", "quote_ttl_minutes",
+            "tax_rate", "currency", "cancellation_window_hours",
+            "amendment_window_hours", "quote_ttl_minutes",
         ]
+        labels = {
+            "amendment_window_hours": "Customer edit window (hours before pickup)",
+        }
         help_texts = {
             "tax_rate": "Applied to every quote. Changing it changes every future fare.",
+            "amendment_window_hours": (
+                "How close to pickup a customer can still change their booking "
+                "online. 72 = 3 days, 24 = 1 day, 6 = 6 hours."
+            ),
         }
 
 
@@ -490,10 +581,19 @@ class SiteSettingsForm(BootstrapFormMixin, forms.ModelForm):
         fields = [
             "contact_phone", "contact_email", "ops_notification_email",
             "facebook", "instagram", "twitter", "linkedin",
+            "google_maps_api_key",
         ]
+        labels = {
+            "google_maps_api_key": "Google Maps API key",
+        }
         help_texts = {
             "contact_phone": "Shown in the header and footer of the public site.",
             "ops_notification_email": "Where new-booking alerts go. Never shown publicly.",
+            "google_maps_api_key": (
+                "Powers address autocomplete and distance-based pricing. Needs "
+                "Maps JavaScript API, Places API (New) and Distance Matrix API "
+                "enabled. Leave blank to fall back to the server's configured key."
+            ),
         }
 
 
@@ -559,3 +659,40 @@ class CustomerForm(BootstrapFormMixin, forms.ModelForm):
         model = User
         fields = ["email", "title", "first_name", "last_name", "phone",
                   "marketing_opt_in", "is_active"]
+
+
+class ChargeCardForm(BootstrapFormMixin, forms.Form):
+    """
+    Charge a customer's card on file off-session -- e.g. a trip extension.
+
+    Only customers who have saved a card are selectable; the charge goes to that
+    customer's default card. The amount is staff-entered (a negotiated extra),
+    unlike a web booking where the server computes it.
+    """
+
+    customer = forms.ModelChoiceField(
+        queryset=User.objects.none(), label="Customer",
+        help_text="Only customers with a card on file are listed.",
+    )
+    amount = forms.DecimalField(
+        min_value=Decimal("0.01"), max_digits=10, decimal_places=2,
+        label="Amount to charge ($)",
+    )
+    description = forms.CharField(
+        max_length=160, label="Description",
+        help_text='Shown on the receipt, e.g. "Extra hour" or "Airport wait time".',
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["customer"].queryset = (
+            User.objects.filter(saved_cards__isnull=False)
+            .distinct().order_by("first_name", "last_name", "email")
+        )
+        self.fields["customer"].label_from_instance = self._label
+
+    @staticmethod
+    def _label(user) -> str:
+        card = user.saved_cards.first()
+        who = user.get_full_name() or user.email
+        return f"{who} — {card.label}" if card else who

@@ -41,6 +41,8 @@ from enquiries.models import ContactMessage
 from fleet.models import Vehicle
 from notifications import mailer
 from notifications.pdf import render_booking_pdf
+from payments import gateway as payments_gateway
+from payments.models import SavedCard
 from pricing.distance import DistanceLookupError
 from pricing.distance import lookup as measure_journey
 from pricing.engine import quote_all
@@ -49,6 +51,7 @@ from pricing.models import BlackoutDate, TimeSurcharge
 from . import quotes
 from .serializers import (
     AvailabilitySerializer,
+    BookingAmendSerializer,
     BookingCreateSerializer,
     BookingSerializer,
     BookingStatusSerializer,
@@ -61,6 +64,7 @@ from .serializers import (
     QuoteRequestSerializer,
     QuoteResponseSerializer,
     RegisterRequestSerializer,
+    SavedCardSerializer,
     SiteSettingsSerializer,
     UserSerializer,
     VehicleSerializer,
@@ -344,6 +348,12 @@ def create_booking(request):
         raise ValidationError(
             {"guest_email": "Sign in or provide an email address for the booking."}
         )
+    # A contact phone is mandatory. Signed-in bookings take it from the account
+    # (set on the Details step); guests must supply one here.
+    if customer is None and not data.get("guest_phone"):
+        raise ValidationError(
+            {"guest_phone": "A contact phone number is required."}
+        )
 
     vehicle = Vehicle.objects.get(pk=quote_request.vehicle_id)
 
@@ -369,6 +379,7 @@ def create_booking(request):
             pickup_sign=data.get("pickup_sign") or data.get("guest_name", ""),
             notes=data.get("notes", ""),
             guest_email=data.get("guest_email", "") if customer is None else "",
+            guest_phone=data.get("guest_phone", "") if customer is None else "",
             # Every figure below comes from the server-side recomputation.
             subtotal=recomputed.subtotal,
             surcharge_total=recomputed.surcharge_total,
@@ -481,6 +492,33 @@ def my_bookings(request):
 
 
 @extend_schema(
+    tags=["account"],
+    summary="The signed-in customer's cards on file",
+    responses={200: SavedCardSerializer(many=True), 403: DetailSerializer},
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def my_cards(request):
+    cards = request.user.saved_cards.all()
+    return Response(SavedCardSerializer(cards, many=True).data)
+
+
+@extend_schema(
+    tags=["account"],
+    summary="Remove a card on file",
+    responses={204: None, 404: DetailSerializer},
+)
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def my_card_delete(request, pk):
+    card = request.user.saved_cards.filter(pk=pk).first()
+    if card is None:
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+    payments_gateway.detach_card(card)  # detaches at Stripe and deletes locally
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(
     tags=["bookings"],
     summary="Read or cancel one of your bookings",
     description=(
@@ -514,22 +552,55 @@ def my_booking_detail(request, reference):
 
     if request.method == "PATCH":
         action = request.data.get("action")
-        if action != "cancel":
-            raise ValidationError({"action": "Only 'cancel' is supported."})
-        if not booking.is_cancellable:
-            raise ValidationError(
-                {"detail": "This booking can no longer be cancelled online."}
+        if action == "cancel":
+            if not booking.is_cancellable:
+                raise ValidationError(
+                    {"detail": "This booking can no longer be cancelled online."}
+                )
+            BookingStatusChange.objects.create(
+                booking=booking, from_status=booking.status,
+                to_status=Booking.Status.CANCELLED,
+                changed_by=request.user, note="Cancelled by customer",
+            )
+            booking.status = Booking.Status.CANCELLED
+            booking.cancelled_at = timezone.now()
+            booking.save()
+            mailer.send_booking_cancelled(booking)
+
+        elif action == "amend":
+            # Non-price details only, within the office-set edit window. Nothing
+            # here changes the fare, so no re-quote or payment reconciliation.
+            if not booking.is_amendable:
+                raise ValidationError({
+                    "detail": "Changes to this booking are no longer allowed "
+                              "online. Please contact us."
+                })
+            amend = BookingAmendSerializer(data=request.data)
+            amend.is_valid(raise_exception=True)
+            data = amend.validated_data
+
+            changed = []
+            for field in ("passenger_count", "luggage_count", "flight_number",
+                          "pickup_sign", "notes"):
+                if field in data:
+                    setattr(booking, field, data[field])
+                    changed.append(field)
+            if changed:
+                booking.save()
+            if "phone" in data:  # contact number lives on the account
+                request.user.phone = data["phone"].strip()
+                request.user.save(update_fields=["phone"])
+                changed.append("phone")
+
+            BookingStatusChange.objects.create(
+                booking=booking, from_status=booking.status, to_status=booking.status,
+                changed_by=request.user,
+                note="Details amended by customer"
+                     + (": " + ", ".join(changed) if changed else ""),
             )
 
-        BookingStatusChange.objects.create(
-            booking=booking, from_status=booking.status,
-            to_status=Booking.Status.CANCELLED,
-            changed_by=request.user, note="Cancelled by customer",
-        )
-        booking.status = Booking.Status.CANCELLED
-        booking.cancelled_at = timezone.now()
-        booking.save()
-        mailer.send_booking_cancelled(booking)
+        else:
+            raise ValidationError({"action": "Only 'cancel' or 'amend' is supported."})
 
     return Response(BookingSerializer(booking).data)
 

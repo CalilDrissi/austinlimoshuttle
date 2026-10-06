@@ -28,6 +28,8 @@ urlpatterns = [
     path("account/bookings/", views.my_bookings, name="my_bookings"),
     path("account/bookings/<str:reference>/", views.my_booking_detail,
          name="my_booking_detail"),
+    path("account/cards/", views.my_cards, name="my_cards"),
+    path("account/cards/<int:pk>/", views.my_card_delete, name="my_card_delete"),
 
     # Auth
     path("auth/csrf/", views.auth_csrf, name="csrf"),
