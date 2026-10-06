@@ -288,6 +288,62 @@ def charge_saved_card(saved_card, amount: Decimal, description: str, *, booking=
     )
 
 
+def charge_booking_with_payment_method(booking, payment_method_id: str):
+    """
+    Charge a booking's total with a card collected at the counter (on-session).
+
+    Confirms immediately with the given PaymentMethod. Returns (Payment, status).
+    A plain test card (4242…) succeeds outright; a card that needs 3-D Secure
+    comes back "requires_action" and the caller surfaces that.
+    """
+    config = _settings()
+    if booking.total <= 0:
+        raise PaymentGatewayError("This booking has no amount to charge.")
+
+    client = _client(config)
+    try:
+        intent = client.payment_intents.create(params={
+            "amount": to_cents(booking.total),
+            "currency": booking.currency.lower(),
+            "payment_method": payment_method_id,
+            "confirm": True,
+            # Card only -- we confirm server-side, so no redirect-based methods.
+            "automatic_payment_methods": {"enabled": True, "allow_redirects": "never"},
+            "description": f"Booking {booking.reference} (counter)",
+            "statement_descriptor_suffix": config.statement_descriptor or None,
+            "metadata": {
+                "booking_reference": booking.reference,
+                "booking_id": str(booking.pk),
+                "kind": "backoffice_card",
+            },
+        })
+    except stripe.CardError as exc:
+        raise PaymentGatewayError(
+            getattr(exc, "user_message", None) or "The card was declined."
+        ) from exc
+    except stripe.StripeError as exc:
+        logger.error("Counter charge failed for %s: %s", booking.reference, exc)
+        raise PaymentGatewayError("The charge could not be completed.") from exc
+
+    payment = Payment.objects.create(
+        booking=booking,
+        provider=Payment.Provider.STRIPE,
+        payment_intent_id=intent.id,
+        amount=booking.total,
+        currency=booking.currency,
+        status=STATUS_MAP.get(intent.status, Payment.Status.UNKNOWN),
+    )
+    # Brand/last4 for the receipt -- read back from Stripe, never the client.
+    try:
+        card = getattr(client.payment_methods.retrieve(payment_method_id), "card", None)
+        payment.card_brand = (getattr(card, "brand", "") or "")[:20]
+        payment.card_last4 = (getattr(card, "last4", "") or "")[:4]
+        payment.save(update_fields=["card_brand", "card_last4"])
+    except stripe.StripeError:
+        pass
+    return payment, intent.status
+
+
 def detach_card(saved_card) -> None:
     """Remove a card on file: detach the PaymentMethod at Stripe, delete locally."""
     try:

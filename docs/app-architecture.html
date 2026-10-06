@@ -871,6 +871,31 @@ Page ─┬─&lt; Banner                   ContactMessage &gt;─ User (replied
   <p class="muted">What has actually been built, newest first. Per the rule in §11, every change lands here.</p>
 
   <div class="modelcard">
+    <div class="mh"><span>2026-10-06 · Manual booking: address autocomplete + take a card at the counter</span><span class="tbl">back office</span></div>
+    <table>
+      <tr><td>The staff <b>New booking</b> form (<code>/dashboard/bookings/new/</code>) gained two things.
+      <b>(1) Google Places autocomplete</b> on the pickup/drop-off address fields — a custom dropdown built on the
+      <i>Places (New)</i> <code>AutocompleteSuggestion.fetchAutocompleteSuggestions</code> API, biased to Austin
+      (50&nbsp;km) and limited to US results; it degrades to plain text if the Maps key is absent or the referrer
+      isn't allow-listed. <b>(2) Card payment</b> — a Cash/Card toggle; choosing <i>Charge card now</i> mounts
+      Stripe Elements, and on submit the browser tokenises the card
+      (<code>stripe.createPaymentMethod</code>) and the server charges the agreed fare on-session via the new
+      <code>gateway.charge_booking_with_payment_method()</code> (PaymentIntent, <code>confirm=True</code>,
+      <code>allow_redirects:"never"</code>). On success the booking is set <b>Confirmed</b>, a <code>Payment</code>
+      row + audit note ("Card charged $X (Visa •••• 4242)") are written; any failure rolls the whole booking back
+      inside one <code>transaction.atomic()</code> so there's never a half-paid record. The card option is hidden
+      unless Stripe is enabled in <b>Settings → Payments</b>.
+      <b>CSP:</b> <code>config/middleware.py</code> now allow-lists <code>js.stripe.com</code> /
+      <code>api.stripe.com</code> (incl. a <code>frame-src</code> for the card iframe) and the Maps/Places hosts —
+      <i>without</i> granting <code>script-src 'unsafe-inline'</code>; the booking-form JS lives in an external
+      <code>static/js/booking-form.js</code> (config passed via <code>data-*</code> attributes) precisely so the
+      strict no-inline-script policy holds. Verified E2E on localhost with Playwright: live address suggestions
+      returned, and a real test charge (<code>4242</code>, $149.50) → PaymentIntent <code>succeeded</code>, booking
+      Confirmed, payment recorded. All 15 security-header tests still pass.</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
     <div class="mh"><span>2026-10-06 · Customers can edit their booking (within a configurable window)</span><span class="tbl">full-stack</span></div>
     <table>
       <tr><td>Signed-in customers can now edit their own booking's <b>non-price details</b> from

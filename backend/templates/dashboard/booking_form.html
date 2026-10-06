@@ -1,4 +1,5 @@
 {% extends "dashboard/base.html" %}
+{% load static %}
 {% block title %}{% if booking %}Edit {{ booking.reference }}{% else %}New booking{% endif %}{% endblock %}
 {% block page_title %}{% if booking %}Edit {{ booking.reference }}{% else %}New booking{% endif %}{% endblock %}
 {% block lede %}
@@ -28,7 +29,7 @@
   </div>
 {% endif %}
 
-<form method="post" novalidate>
+<form method="post" novalidate id="booking-form" data-stripe-pk="{{ stripe_pk }}">
   {% csrf_token %}
 
   {% if form.non_field_errors %}
@@ -60,9 +61,41 @@
     </div>
   </div>
 
+  {% if not booking %}
+  <div class="card mb-3">
+    <div class="card-header"><i class="bi bi-credit-card me-2"></i>Payment</div>
+    <div class="card-body">
+      <div class="btn-group mb-3" role="group" aria-label="Payment method">
+        <input type="radio" class="btn-check" name="payment_method" id="pm-cash" value="cash" autocomplete="off" checked>
+        <label class="btn btn-outline-secondary btn-sm" for="pm-cash"><i class="bi bi-cash me-1"></i>Cash / pay later</label>
+        <input type="radio" class="btn-check" name="payment_method" id="pm-card" value="card" autocomplete="off" {% if not stripe_pk %}disabled{% endif %}>
+        <label class="btn btn-outline-secondary btn-sm" for="pm-card"><i class="bi bi-credit-card-2-front me-1"></i>Charge card now</label>
+      </div>
+      {% if not stripe_pk %}
+        <div class="form-text text-warning"><i class="bi bi-exclamation-triangle me-1"></i>Card payments aren’t enabled — add Stripe keys in Settings → Payments.</div>
+      {% endif %}
+      <div id="card-wrap" style="display:none;">
+        <label class="form-label small fw-semibold mb-1">Card details</label>
+        <div id="card-element" class="form-control" style="padding:12px;"></div>
+        <div id="card-errors" class="small text-danger mt-1"></div>
+        <div class="form-text">The card is charged the total above when you create the booking. Test card: <code>4242 4242 4242 4242</code>, any future expiry, any CVC.</div>
+      </div>
+      <input type="hidden" name="stripe_payment_method_id" id="stripe_payment_method_id">
+    </div>
+  </div>
+  {% endif %}
+
   <div class="d-flex gap-2">
-    <button type="submit" class="btn btn-brand"><i class="bi bi-check-lg me-1"></i>Create booking</button>
-    <a href="{% url 'dashboard:bookings' %}" class="btn btn-outline-secondary">Cancel</a>
+    <button type="submit" id="submit-btn" class="btn btn-brand">
+      <i class="bi bi-check-lg me-1"></i>{% if booking %}Save changes{% else %}Create booking{% endif %}
+    </button>
+    <a href="{% if booking %}{% url 'dashboard:booking_detail' booking.reference %}{% else %}{% url 'dashboard:bookings' %}{% endif %}" class="btn btn-outline-secondary">Cancel</a>
   </div>
 </form>
+{% endblock %}
+
+{% block extra_js %}
+{% if stripe_pk %}<script src="https://js.stripe.com/v3/"></script>{% endif %}
+<script src="{% static 'js/booking-form.js' %}"></script>
+{% if maps_key %}<script src="https://maps.googleapis.com/maps/api/js?key={{ maps_key }}&libraries=places&loading=async&callback=__initPlaces" async defer></script>{% endif %}
 {% endblock %}

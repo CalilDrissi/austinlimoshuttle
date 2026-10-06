@@ -14,14 +14,24 @@ requires when payments are wired up.
 from django.utils.deprecation import MiddlewareMixin
 
 # Django's admin uses inline styles heavily, so 'unsafe-inline' is unavoidable
-# for style-src. Scripts are deliberately not granted it.
+# for style-src. Scripts are deliberately NOT granted it.
+#
+# Stripe Elements and the Google Maps/Places JS used by the manual-booking form
+# load scripts and open connections (and, for Stripe, an iframe) to a handful of
+# trusted third-party hosts. Those hosts are allow-listed explicitly below; no
+# inline script is ever permitted.
+STRIPE_JS = "https://js.stripe.com"
+STRIPE_API = "https://api.stripe.com"
+MAPS_HOSTS = "https://maps.googleapis.com https://maps.gstatic.com https://places.googleapis.com"
+
 CSP_DIRECTIVES = {
     "default-src": "'self'",
-    "script-src": "'self'",
+    "script-src": f"'self' {STRIPE_JS} https://maps.googleapis.com https://maps.gstatic.com",
     "style-src": "'self' 'unsafe-inline'",
-    "img-src": "'self' data:",
+    "img-src": "'self' data: https://*.googleapis.com https://*.gstatic.com",
     "font-src": "'self'",
-    "connect-src": "'self'",
+    "connect-src": f"'self' {STRIPE_API} {MAPS_HOSTS}",
+    "frame-src": STRIPE_JS,
     "frame-ancestors": "'none'",
     "form-action": "'self'",
     "base-uri": "'self'",
