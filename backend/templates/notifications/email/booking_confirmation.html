@@ -9,12 +9,8 @@
 {% include "notifications/email/_itinerary.html" %}
 
 <table style="width:100%;border-collapse:collapse;font-size:14.5px;border-top:1px solid #e2e7ec;padding-top:8px">
-  {% for line in lines %}
-    <tr><td style="padding:5px 0;color:#5b636d">{{ line.label }}</td>
-        <td style="padding:5px 0;text-align:right">${{ line.amount }}</td></tr>
-  {% endfor %}
-  <tr><td style="padding:9px 0;border-top:1px solid #e2e7ec"><strong>Total paid</strong></td>
-      <td style="padding:9px 0;border-top:1px solid #e2e7ec;text-align:right"><strong>${{ booking.total }} {{ booking.currency }}</strong></td></tr>
+  <tr><td style="padding:9px 0"><strong>Total paid</strong></td>
+      <td style="padding:9px 0;text-align:right"><strong>${{ booking.total }} {{ booking.currency }}</strong></td></tr>
 </table>
 
 <p style="margin:20px 0 0;color:#5b636d;font-size:14px">

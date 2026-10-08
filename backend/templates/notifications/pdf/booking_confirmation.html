@@ -36,9 +36,6 @@
   </table>
 
   <table class="totals">
-    {% for line in booking.price_lines.all %}
-      <tr><td>{{ line.label }}</td><td class="right">${{ line.amount }}</td></tr>
-    {% endfor %}
     <tr class="total-row"><td>Total paid</td>
         <td class="right">${{ booking.total }} {{ booking.currency }}</td></tr>
   </table>

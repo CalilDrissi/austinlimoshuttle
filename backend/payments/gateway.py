@@ -48,6 +48,17 @@ class PaymentGatewayError(Exception):
     """Stripe rejected the request or could not be reached."""
 
 
+def _is_missing_customer(exc) -> bool:
+    """True when Stripe rejected a request because the `customer` id is unknown.
+
+    Happens when a cached `stripe_customer_id` is stale -- e.g. after switching
+    the account's keys from test to live, or restoring a database against a
+    different Stripe account. The id is valid-looking but doesn't exist here.
+    """
+    return getattr(exc, "code", None) == "resource_missing" \
+        and getattr(exc, "param", None) == "customer"
+
+
 def _settings() -> PaymentSettings:
     config = PaymentSettings.load()
 
@@ -148,10 +159,31 @@ def create_payment_intent(booking, *, idempotency_suffix: str = "", save_card: b
             options={"idempotency_key": idempotency_key},
         )
     except stripe.StripeError as exc:
-        logger.error("Stripe intent creation failed for %s: %s", booking.reference, exc)
-        raise PaymentGatewayError(
-            getattr(exc, "user_message", None) or "The payment could not be started."
-        ) from exc
+        # A stale cached customer id shouldn't wedge checkout. Drop it, make a
+        # fresh customer and retry once (new idempotency key -- the body changed).
+        if customer_id and _is_missing_customer(exc):
+            logger.warning("Stale Stripe customer %s for user %s -- recreating.",
+                           customer_id, booking.customer_id)
+            booking.customer.stripe_customer_id = ""
+            booking.customer.save(update_fields=["stripe_customer_id"])
+            customer_id = get_or_create_customer(booking.customer)
+            params["customer"] = customer_id
+            try:
+                intent = client.payment_intents.create(
+                    params=params,
+                    options={"idempotency_key": f"{idempotency_key}-recustomer"},
+                )
+            except stripe.StripeError as retry_exc:
+                logger.error("Stripe intent creation failed for %s after customer reset: %s",
+                             booking.reference, retry_exc)
+                raise PaymentGatewayError(
+                    getattr(retry_exc, "user_message", None) or "The payment could not be started."
+                ) from retry_exc
+        else:
+            logger.error("Stripe intent creation failed for %s: %s", booking.reference, exc)
+            raise PaymentGatewayError(
+                getattr(exc, "user_message", None) or "The payment could not be started."
+            ) from exc
 
     payment, _ = Payment.objects.update_or_create(
         payment_intent_id=intent.id,

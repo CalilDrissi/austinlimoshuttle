@@ -13,8 +13,7 @@ Passengers: {{ booking.passenger_count }}
 {% endif %}{% if booking.pickup_sign %}Placard   : {{ booking.pickup_sign }}
 {% endif %}
 Fare
-{% for line in lines %}  {{ line.label }}: ${{ line.amount }}
-{% endfor %}  TOTAL PAID: ${{ booking.total }} {{ booking.currency }}
+  TOTAL PAID: ${{ booking.total }} {{ booking.currency }}
 
 A PDF copy is attached.
 

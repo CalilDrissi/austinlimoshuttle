@@ -871,6 +871,34 @@ Page ─┬─&lt; Banner                   ContactMessage &gt;─ User (replied
   <p class="muted">What has actually been built, newest first. Per the rule in §11, every change lands here.</p>
 
   <div class="modelcard">
+    <div class="mh"><span>2026-10-06 · Storefront card payments (card saved by default for account holders)</span><span class="tbl">full-stack</span></div>
+    <table>
+      <tr><td>The online checkout can now <b>take a card</b>, not just cash. The payment step
+      (<code>/booking/payment</code>) mounts Stripe Elements (<code>CardElement</code>), creates a PaymentIntent via
+      <code>POST /api/payments/intent/</code>, and confirms with <code>stripe.confirmCardPayment</code> — card data goes
+      straight to Stripe, never our server. Card is the default method when Stripe is enabled; the booking is created
+      once and reused on retry so a decline never spawns duplicate bookings. As before, the <b>webhook</b>
+      (<code>/api/payments/webhook/</code>) is authoritative: it flips the booking to <i>confirmed</i> and persists the
+      saved card — the browser return is only a hint.
+      <b>Save-is-default:</b> per the client, a signed-in customer paying their own booking <u>always</u> keeps the card
+      on file — <code>create_intent</code> sets <code>setup_future_usage=off_session</code> for any authenticated owner
+      (no opt-in checkbox); guests save nothing. The UI tells signed-in users their card is saved (removable in their
+      account) and nudges guests to sign in. Saved cards then populate the back-office <b>Charge a card on file</b> page.
+      <b>Hardening:</b> a stale cached <code>stripe_customer_id</code> (e.g. after a test→live key switch or a DB restore
+      against a different Stripe account) no longer wedges checkout — the gateway detects Stripe's
+      <code>resource_missing</code> on <code>customer</code>, drops the id, makes a fresh customer and retries once.
+      Verified E2E on localhost: real test charge (<code>4242</code>, $124.79) → PaymentIntent <code>succeeded</code>
+      with <code>setup_future_usage</code> + customer; simulated webhook → booking <i>confirmed</i> + <b>Visa •••• 4242</b>
+      saved as default. <b>Prod dependency:</b> the Stripe webhook endpoint + signing secret must be configured
+      (Stripe dashboard → <code>…/api/payments/webhook/</code>, secret saved in Settings → Payments) or bookings stay
+      <i>pending</i> and cards aren't saved after a real charge.
+      <b>Also:</b> the per-line fare breakdown (distance bands) was removed from the checkout review box and from the
+      email/PDF receipts — customers now see only the vehicle and the total. (Staff still see the full breakdown on the
+      dashboard booking detail.)</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
     <div class="mh"><span>2026-10-06 · Manual booking: address autocomplete + take a card at the counter</span><span class="tbl">back office</span></div>
     <table>
       <tr><td>The staff <b>New booking</b> form (<code>/dashboard/bookings/new/</code>) gained two things.

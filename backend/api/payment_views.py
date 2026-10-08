@@ -126,11 +126,12 @@ def create_intent(request):
         return Response({"detail": "This booking is already paid."},
                         status=status.HTTP_409_CONFLICT)
 
-    # Only a signed-in customer paying for their own booking may keep the card
-    # on file -- a guest has no account to attach it to.
+    # A signed-in customer paying for their own booking ALWAYS keeps the card on
+    # file -- it is the default for account holders, not an opt-in, so their next
+    # booking is one tap and staff can bill agreed extras later. A guest has no
+    # account to attach it to, so nothing is saved for them.
     save_card = (
-        bool(request.data.get("save_card"))
-        and request.user.is_authenticated
+        request.user.is_authenticated
         and booking.customer_id == request.user.id
     )
 
