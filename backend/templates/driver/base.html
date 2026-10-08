@@ -1,0 +1,81 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0d5c46">
+  <title>{% block title %}Driver{% endblock %} · M&amp;M Austin Limo</title>
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap-icons.min.css' %}">
+  <style>
+    :root { --brand:#0d5c46; --brand-dark:#0a4636; --ink:#0E0E0E; }
+    html, body { background:#eef1f4; color:var(--ink); -webkit-text-size-adjust:100%; }
+    .drv-top {
+      position:sticky; top:0; z-index:20; background:var(--brand); color:#fff;
+      padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
+      padding-top:max(14px, env(safe-area-inset-top));
+    }
+    .drv-top .brand { font-weight:700; letter-spacing:.3px; font-size:17px; }
+    .drv-top .brand i { margin-right:6px; }
+    .drv-out { color:#fff; background:transparent; border:1px solid rgba(255,255,255,.45);
+      border-radius:8px; padding:5px 10px; font-size:13px; }
+    .drv-wrap { max-width:560px; margin:0 auto; padding:16px; }
+
+    .drv-card { background:#fff; border:1px solid #e6e9ec; border-radius:14px;
+      padding:16px; margin-bottom:12px; display:block; color:inherit; text-decoration:none; }
+    a.drv-card { transition:background .1s; }
+    a.drv-card:active { background:#f4f7f6; }
+    .drv-time { font-size:20px; font-weight:700; line-height:1.1; }
+    .drv-route { font-size:15px; color:#2a2f36; margin-top:6px; }
+    .drv-route i { color:var(--brand); margin-right:4px; }
+    .drv-meta { font-size:13px; color:#6b7280; margin-top:8px; }
+    .drv-meta .dot { margin:0 6px; color:#c7cdd4; }
+
+    .daybar { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
+    .daybar .lbl { text-align:center; flex:1; }
+    .daybar .lbl .big { font-size:17px; font-weight:700; }
+    .daybar .lbl .sm { font-size:12px; color:#6b7280; }
+    .daybar a, .daybar span.disabled {
+      width:44px; height:44px; border-radius:11px; display:flex; align-items:center;
+      justify-content:center; background:#fff; border:1px solid #e0e4e8; color:var(--ink); font-size:20px; }
+    .daybar span.disabled { opacity:.35; }
+    .quickdays { display:flex; gap:8px; margin-bottom:16px; }
+    .quickdays a { flex:1; text-align:center; padding:9px; border-radius:10px;
+      background:#fff; border:1px solid #e0e4e8; text-decoration:none; color:var(--ink); font-size:14px; font-weight:600; }
+    .quickdays a.on { background:var(--brand); color:#fff; border-color:var(--brand); }
+
+    .label { font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#8a9099; margin-bottom:2px; }
+    .big-row { font-size:16px; font-weight:600; }
+    .drv-btn { display:block; width:100%; text-align:center; padding:16px; border-radius:12px;
+      font-size:17px; font-weight:600; border:0; text-decoration:none; margin-bottom:10px; }
+    .drv-btn i { margin-right:7px; }
+    .btn-brand-drv { background:var(--brand); color:#fff; }
+    .btn-call { background:#0b74c4; color:#fff; }
+    .btn-ok { background:#1a7f43; color:#fff; }
+    .btn-noshow { background:#fff; color:#b23; border:1.5px solid #e4b6bd; }
+    .empty { text-align:center; color:#8a9099; padding:48px 16px; }
+    .empty i { font-size:40px; display:block; margin-bottom:10px; color:#c7cdd4; }
+    .badge-status { font-size:12px; padding:5px 9px; border-radius:999px; }
+  </style>
+</head>
+<body>
+  <div class="drv-top">
+    <span class="brand"><i class="bi bi-car-front-fill"></i>M&amp;M Driver</span>
+    {% if driver %}
+      <form method="post" action="{% url 'driver:logout' %}" style="margin:0">
+        {% csrf_token %}
+        <button type="submit" class="drv-out"><i class="bi bi-box-arrow-right"></i> Sign out</button>
+      </form>
+    {% endif %}
+  </div>
+  <div class="drv-wrap">
+    {% if messages %}
+      {% for m in messages %}
+        <div class="alert alert-{% if m.level_tag == 'error' %}danger{% else %}{{ m.level_tag }}{% endif %} py-2 px-3">{{ m }}</div>
+      {% endfor %}
+    {% endif %}
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

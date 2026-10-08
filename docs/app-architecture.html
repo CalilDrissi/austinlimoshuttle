@@ -871,6 +871,32 @@ Page ─┬─&lt; Banner                   ContactMessage &gt;─ User (replied
   <p class="muted">What has actually been built, newest first. Per the rule in §11, every change lands here.</p>
 
   <div class="modelcard">
+    <div class="mh"><span>2026-10-06 · Driver app (mobile-first) at /driver/</span><span class="tbl">back office</span></div>
+    <table>
+      <tr><td>A new server-rendered, mobile-first portal where a chauffeur sees their own runs and reports the
+      outcome — a third Django surface alongside the dashboard and storefront (new <code>driver</code> app,
+      <code>/driver/</code>). JavaScript-free: it reuses Django auth/session and the dashboard's Bootstrap, so there's
+      no API or SPA to maintain.
+      <b>Identity:</b> <code>Driver.user</code> is a new <code>OneToOneField</code> to a (non-staff) <code>User</code>;
+      staff provision access from <b>Dashboard → Driver access</b>, which creates/links the account and emails the
+      standard password-set link (the same reset flow migrated customers use — no second password mechanism). A driver
+      only ever sees bookings assigned to their own record; opening someone else's trip is a 404, and a logged-in
+      non-driver (staff) gets a polite "no access" page rather than being logged out (the <code>sessionid</code> cookie
+      is shared, so authorization — not the cookie — is the gate).
+      <b>My runs:</b> one day at a time in pickup order, with <b>Today / Tomorrow</b> quick tabs and ◀ ▶ to page to any
+      upcoming day (and up to 7 days back). <b>Trip detail:</b> pickup/drop-off each with a tap-to-navigate Google Maps
+      link, tap-to-call the passenger, placard name, flight, passenger/luggage counts, meet-&-greet and notes.
+      <b>Status:</b> one-tap <b>Completed</b> or <b>No-show</b>, each written as a <code>BookingStatusChange</code> audit
+      row attributed to the driver so dispatch sees it live. Added a new <code>Booking.Status.NO_SHOW</code> (kept
+      distinct from <code>cancelled</code>, which carries refund/fee meaning) with its own status badge.
+      Verified E2E on localhost at a phone viewport: login scoping, staff-blocked, Today/Tomorrow + day paging,
+      navigate/call links, Completed → status + audit row, and cross-driver 404.
+      <b>Prod routing:</b> the nginx proxy template must send <code>/driver/</code> <i>and</i> <code>/accounts/</code>
+      (password reset) to Django (127.0.0.1:8001), not Next.js.</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
     <div class="mh"><span>2026-10-06 · Storefront card payments (card saved by default for account holders)</span><span class="tbl">full-stack</span></div>
     <table>
       <tr><td>The online checkout can now <b>take a card</b>, not just cash. The payment step

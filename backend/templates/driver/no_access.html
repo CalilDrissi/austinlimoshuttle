@@ -1,0 +1,14 @@
+{% extends "driver/base.html" %}
+{% block title %}No driver access{% endblock %}
+{% block content %}
+<div class="drv-card" style="margin-top:24px;text-align:center;">
+  <i class="bi bi-shield-lock" style="font-size:40px;color:#c7cdd4;display:block;margin-bottom:10px;"></i>
+  <h1 style="font-size:20px;font-weight:700;">No driver access</h1>
+  <p style="color:#6b7280;font-size:14px;">This account isn’t set up as a driver. If you’re staff, use the
+  <a href="{% url 'dashboard:home' %}">dashboard</a> instead.</p>
+  <form method="post" action="{% url 'driver:logout' %}" style="margin-top:12px;">
+    {% csrf_token %}
+    <button type="submit" class="drv-btn btn-brand-drv">Sign in as a driver</button>
+  </form>
+</div>
+{% endblock %}

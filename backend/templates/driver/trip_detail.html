@@ -1,0 +1,75 @@
+{% extends "driver/base.html" %}
+{% block title %}{{ booking.pickup_at|time:"g:i A" }} run{% endblock %}
+{% block content %}
+
+<p style="margin-bottom:12px;"><a href="{% url 'driver:runs' %}?date={{ booking.pickup_at|date:'Y-m-d' }}" style="text-decoration:none;color:#6b7280;"><i class="bi bi-chevron-left"></i> Back to runs</a></p>
+
+<div class="drv-card">
+  <div class="d-flex justify-content-between align-items-start">
+    <div>
+      <div class="drv-time" style="font-size:26px;">{{ booking.pickup_at|time:"g:i A" }}</div>
+      <div style="color:#6b7280;font-size:14px;">{{ booking.pickup_at|date:"l, j F Y" }}</div>
+    </div>
+    {% include "dashboard/_status.html" with status=booking.status label=booking.get_status_display %}
+  </div>
+  <div style="margin-top:4px;color:#8a9099;font-size:13px;">Ref {{ booking.reference }}</div>
+</div>
+
+<div class="drv-card">
+  <div class="label">Pickup</div>
+  <div class="big-row mb-2">{{ booking.pickup_address }}</div>
+  <a class="drv-btn btn-brand-drv" href="https://www.google.com/maps/dir/?api=1&destination={{ booking.pickup_address|urlencode }}" target="_blank" rel="noopener">
+    <i class="bi bi-cursor-fill"></i> Navigate to pickup
+  </a>
+  {% if booking.dropoff_address %}
+    <div class="label" style="margin-top:8px;">Drop-off</div>
+    <div class="big-row mb-2">{{ booking.dropoff_address }}</div>
+    <a class="drv-btn btn-brand-drv" href="https://www.google.com/maps/dir/?api=1&destination={{ booking.dropoff_address|urlencode }}" target="_blank" rel="noopener">
+      <i class="bi bi-cursor-fill"></i> Navigate to drop-off
+    </a>
+  {% endif %}
+</div>
+
+<div class="drv-card">
+  <div class="label">Passenger</div>
+  <div class="big-row">{{ booking.pickup_sign|default:booking.customer_name }}</div>
+  {% if booking.contact_phone %}
+    <a class="drv-btn btn-call" style="margin-top:10px;" href="tel:{{ booking.contact_phone }}">
+      <i class="bi bi-telephone-fill"></i> Call {{ booking.contact_phone }}
+    </a>
+  {% endif %}
+  <div class="drv-meta" style="margin-top:12px;font-size:14px;color:#2a2f36;line-height:1.9;">
+    <div><i class="bi bi-car-front" style="color:var(--brand);margin-right:7px;"></i>{{ booking.vehicle_name_snapshot|default:booking.vehicle.name }}</div>
+    <div><i class="bi bi-person" style="color:var(--brand);margin-right:7px;"></i>{{ booking.passenger_count }} passenger{{ booking.passenger_count|pluralize }} <span style="color:#c7cdd4;">·</span> <i class="bi bi-luggage" style="color:var(--brand);margin:0 7px;"></i>{{ booking.luggage_count }} bag{{ booking.luggage_count|pluralize }}</div>
+    {% if booking.flight_number %}<div><i class="bi bi-airplane" style="color:var(--brand);margin-right:7px;"></i>Flight {{ booking.flight_number }}</div>{% endif %}
+    {% if booking.meet_and_greet %}<div><i class="bi bi-person-badge" style="color:var(--brand);margin-right:7px;"></i>Meet &amp; greet</div>{% endif %}
+  </div>
+  {% if booking.notes %}
+    <div class="label" style="margin-top:12px;">Notes</div>
+    <div style="font-size:14px;">{{ booking.notes|linebreaksbr }}</div>
+  {% endif %}
+</div>
+
+{% if booking.status == 'completed' %}
+  <div class="drv-card" style="text-align:center;color:#1a7f43;font-weight:600;"><i class="bi bi-check-circle-fill"></i> Trip completed</div>
+{% elif booking.status == 'no_show' %}
+  <div class="drv-card" style="text-align:center;color:#b23;font-weight:600;"><i class="bi bi-person-x-fill"></i> Marked as no-show</div>
+{% else %}
+  <div class="drv-card">
+    <div class="label" style="margin-bottom:10px;">When the trip is done</div>
+    <form method="post" action="{% url 'driver:trip_action' booking.reference %}">
+      {% csrf_token %}
+      <button type="submit" name="action" value="completed" class="drv-btn btn-ok">
+        <i class="bi bi-check-lg"></i> Mark completed
+      </button>
+    </form>
+    <form method="post" action="{% url 'driver:trip_action' booking.reference %}">
+      {% csrf_token %}
+      <button type="submit" name="action" value="no_show" class="drv-btn btn-noshow" style="margin-bottom:0;">
+        <i class="bi bi-person-x"></i> Passenger no-show
+      </button>
+    </form>
+  </div>
+{% endif %}
+
+{% endblock %}

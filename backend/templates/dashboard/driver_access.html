@@ -1,0 +1,50 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Driver app access{% endblock %}
+{% block page_title %}Driver app access{% endblock %}
+{% block lede %}<p class="lede">Give a driver a login for the mobile driver app at <code>/driver/</code>. They set their own password from the emailed link.</p>{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table mb-0 align-middle">
+      <thead>
+        <tr><th>Driver</th><th>Email</th><th>App access</th><th class="text-end">Action</th></tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td class="fw-semibold">{{ row.driver.full_name }}</td>
+            <td>{{ row.driver.email|default:"—" }}</td>
+            <td>
+              {% if row.state == 'no_email' %}
+                <span class="badge text-bg-secondary">No email</span>
+              {% elif row.state == 'not_invited' %}
+                <span class="badge text-bg-warning-subtle text-warning-emphasis">Not invited</span>
+              {% elif row.state == 'invited' %}
+                <span class="badge text-bg-info-subtle text-info-emphasis">Invited — awaiting password</span>
+              {% else %}
+                <span class="badge text-bg-success-subtle text-success-emphasis">Active</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              {% if row.state == 'no_email' %}
+                <a href="{% url 'dashboard:managed_edit' 'drivers' row.driver.pk %}" class="btn btn-sm btn-outline-secondary">Add email</a>
+              {% else %}
+                <form method="post" style="display:inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="driver_id" value="{{ row.driver.pk }}">
+                  <button type="submit" class="btn btn-sm btn-brand">
+                    {% if row.state == 'not_invited' %}Create login &amp; send setup link{% else %}Resend setup link{% endif %}
+                  </button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="text-center text-secondary py-4">No active drivers. Add them under <a href="{% url 'dashboard:managed_list' 'drivers' %}">Drivers</a>.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

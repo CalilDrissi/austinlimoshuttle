@@ -191,6 +191,12 @@
         <i class="bi bi-envelope"></i><span>Enquiries</span>
         {% if nav_unread_enquiries %}<span class="badge rounded-pill text-bg-warning">{{ nav_unread_enquiries }}</span>{% endif %}
       </a>
+      {% if is_manager %}
+      <a class="nav-link {% if request.resolver_match.url_name == 'driver_access' %}active{% endif %}"
+         href="{% url 'dashboard:driver_access' %}">
+        <i class="bi bi-phone"></i><span>Driver access</span>
+      </a>
+      {% endif %}
 
       {% for group in nav_managed %}
         <div class="nav-label">{{ group.label }}</div>

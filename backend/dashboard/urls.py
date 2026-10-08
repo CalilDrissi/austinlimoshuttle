@@ -43,6 +43,9 @@ urlpatterns = [
     path("enquiries/", views.enquiry_inbox, name="enquiries"),
     path("enquiries/<int:pk>/", views.enquiry_detail, name="enquiry_detail"),
 
+    # Give drivers a login for the mobile driver app.
+    path("drivers/access/", views.driver_access, name="driver_access"),
+
     # Site-wide configuration that used to live in Django's admin.
     path("settings/site/", views.site_settings, name="site_settings"),
     path("settings/pricing/", views.pricing_settings, name="pricing_settings"),

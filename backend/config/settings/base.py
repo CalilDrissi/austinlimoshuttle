@@ -57,6 +57,7 @@ LOCAL_APPS = [
     "content",
     "enquiries",
     "dashboard",
+    "driver",
     "api",
     "legacy_import",
     "notifications",

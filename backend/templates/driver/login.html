@@ -1,0 +1,24 @@
+{% extends "driver/base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block content %}
+<div class="drv-card" style="margin-top:24px;">
+  <h1 style="font-size:22px;font-weight:700;margin-bottom:4px;">Driver sign in</h1>
+  <p style="color:#6b7280;font-size:14px;margin-bottom:18px;">See your runs and update dispatch.</p>
+
+  {% if error %}<div class="alert alert-danger py-2 px-3">{{ error }}</div>{% endif %}
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <label class="label" for="email">Email</label>
+    <input class="form-control form-control-lg mb-3" type="email" name="email" id="email"
+           autocomplete="username" inputmode="email" autocapitalize="off" required>
+    <label class="label" for="password">Password</label>
+    <input class="form-control form-control-lg mb-3" type="password" name="password" id="password"
+           autocomplete="current-password" required>
+    <button type="submit" class="drv-btn btn-brand-drv">Sign in</button>
+  </form>
+  <p style="text-align:center;margin-top:14px;font-size:14px;">
+    <a href="{% url 'accounts:password_reset' %}">Set or reset your password</a>
+  </p>
+</div>
+{% endblock %}

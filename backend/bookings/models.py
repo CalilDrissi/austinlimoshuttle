@@ -42,6 +42,16 @@ class Driver(models.Model):
     is_active = models.BooleanField(default=True)
     notes = models.TextField(blank=True, help_text="Internal only.")
 
+    # Login for the mobile driver app. Null until an account is provisioned:
+    # most of a driver's life (assignment, payout) is staff-managed and needs no
+    # login. SET_NULL so deleting the account never erases the driver record the
+    # booking history points at.
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="driver_profile",
+        help_text="Login account for the driver app. Blank = no app access yet.",
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -68,6 +78,7 @@ class Booking(models.Model):
         PENDING = "pending", "Pending payment"
         CONFIRMED = "confirmed", "Confirmed"
         COMPLETED = "completed", "Completed"
+        NO_SHOW = "no_show", "No-show"
         CANCELLED = "cancelled", "Cancelled"
 
     class TripType(models.TextChoices):

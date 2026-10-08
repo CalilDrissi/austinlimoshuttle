@@ -1035,3 +1035,77 @@ def pricing_settings(request):
         "roles": role_names(request.user),
         "is_manager": True,
     })
+
+
+# -- driver app access ------------------------------------------------------
+
+def _driver_access_state(driver):
+    """How a driver stands re: the mobile app, for the access screen."""
+    if not driver.email:
+        return "no_email"
+    if not driver.user_id:
+        return "not_invited"
+    return "active" if driver.user.has_usable_password() else "invited"
+
+
+@login_required(login_url="dashboard:login")
+@permission_required("bookings.change_driver", raise_exception=True)
+def driver_access(request):
+    """
+    Give drivers a login for the mobile driver app.
+
+    Provisioning links the Driver to a (non-staff) User and sends the standard
+    password-set link -- the same reset flow migrated customers use, so there is
+    no second password mechanism to secure. A driver with no email can't be
+    invited until one is added on their record.
+    """
+    from django.contrib.auth.tokens import default_token_generator
+
+    from accounts.forms import MigrationPasswordResetForm
+    from accounts.models import User
+
+    if request.method == "POST":
+        driver = get_object_or_404(Driver, pk=request.POST.get("driver_id"))
+        if not driver.email:
+            messages.error(request, f"Add an email to {driver.full_name} first.")
+            return redirect("dashboard:driver_access")
+
+        with transaction.atomic():
+            if not driver.user_id:
+                email = driver.email.strip().lower()
+                user = User.objects.filter(email__iexact=email).first()
+                if user is None:
+                    parts = driver.full_name.split()
+                    user = User(
+                        email=email, is_staff=False, is_active=True,
+                        first_name=parts[0] if parts else "",
+                        last_name=" ".join(parts[1:]),
+                        phone=driver.phone or "",
+                    )
+                    user.set_unusable_password()
+                    user.save()
+                driver.user = user
+                driver.save(update_fields=["user"])
+
+        form = MigrationPasswordResetForm({"email": driver.user.email})
+        if form.is_valid():
+            form.save(
+                request=request,
+                use_https=request.is_secure(),
+                token_generator=default_token_generator,
+                subject_template_name="accounts/email/password_reset_subject.txt",
+                email_template_name="accounts/email/password_reset.txt",
+                html_email_template_name="accounts/email/password_reset.html",
+            )
+        messages.success(
+            request,
+            f"Sent {driver.full_name} a sign-in setup link at {driver.user.email}.",
+        )
+        return redirect("dashboard:driver_access")
+
+    drivers = Driver.objects.select_related("user").filter(is_active=True)
+    rows = [{"driver": d, "state": _driver_access_state(d)} for d in drivers]
+    return render(request, "dashboard/driver_access.html", {
+        "rows": rows,
+        "roles": role_names(request.user),
+    })

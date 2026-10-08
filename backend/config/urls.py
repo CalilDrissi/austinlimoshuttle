@@ -22,6 +22,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("accounts.urls")),
     path("dashboard/", include("dashboard.urls")),
+    path("driver/", include("driver.urls")),
     path("api/", include("api.urls")),
     path("api/", include(("api.docs_urls", "api-docs"), namespace="api-docs")),
 ]
