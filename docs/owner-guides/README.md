@@ -15,6 +15,12 @@ Distinct from `docs/app-architecture.html` (for developers) and
 
 ## Videos
 
+- [`videos/add-vehicle-and-see-on-site.mp4`](videos/add-vehicle-and-see-on-site.mp4) —
+  **full walkthrough with captions:** sign in → add a vehicle (name, description,
+  features, passenger/luggage capacity, hourly + meet-&-greet + minimum fare,
+  **photo upload**, per-mile rate card) → Save → it appears on the website's
+  Our Fleet page and vehicle detail page, automatically. The step-by-step guide
+  for staff.
 - [`videos/add-vehicle-and-pricing.mp4`](videos/add-vehicle-and-pricing.mp4) —
   admin adds a vehicle + rate card + photo, and it appears for the customer.
 - [`videos/city-to-city-pricing.mp4`](videos/city-to-city-pricing.mp4) —
