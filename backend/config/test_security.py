@@ -99,7 +99,16 @@ class TestProductionHardening:
     """Legacy finding: PHP 5.4, no CSRF, no HSTS, secrets in the web root."""
 
     def test_csrf_middleware_is_enabled(self):
-        assert "django.middleware.csrf.CsrfViewMiddleware" in settings.MIDDLEWARE
+        # We run a path-scoped subclass (so a storefront login can't rotate the
+        # token out from under a dashboard/driver form), but CSRF protection is
+        # the stock CsrfViewMiddleware's -- only the cookie name is per-path.
+        from django.middleware.csrf import CsrfViewMiddleware
+        from django.utils.module_loading import import_string
+        assert any(
+            isinstance(import_string(m), type)
+            and issubclass(import_string(m), CsrfViewMiddleware)
+            for m in settings.MIDDLEWARE
+        )
 
     def test_clickjacking_protection_is_enabled(self):
         assert "django.middleware.clickjacking.XFrameOptionsMiddleware" in settings.MIDDLEWARE

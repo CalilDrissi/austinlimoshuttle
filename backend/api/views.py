@@ -20,7 +20,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.http import HttpResponse
 from django.utils import timezone
-from django.views.decorators.csrf import ensure_csrf_cookie
+from config.session import scoped_ensure_csrf_cookie
 from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiParameter,
@@ -191,6 +191,30 @@ def availability(request):
 
 
 # -- quoting ---------------------------------------------------------------
+
+
+def _enforce_capacity(vehicle, passenger_count, luggage_count):
+    """Reject counts above the vehicle's seat/bag limits. Server-side truth.
+
+    A capacity of 0 means "not configured" rather than "seats nobody" -- it's
+    the field default -- so it's treated as no limit. An operator who hasn't set
+    a limit doesn't accidentally block every booking for that vehicle.
+    """
+    errors = {}
+    if vehicle.passenger_capacity and passenger_count > vehicle.passenger_capacity:
+        errors["passenger_count"] = (
+            f"{vehicle.name} seats up to {vehicle.passenger_capacity} "
+            f"passenger{'' if vehicle.passenger_capacity == 1 else 's'}. "
+            "Please choose a larger vehicle."
+        )
+    if vehicle.luggage_capacity and luggage_count > vehicle.luggage_capacity:
+        errors["luggage_count"] = (
+            f"{vehicle.name} holds up to {vehicle.luggage_capacity} "
+            f"bag{'' if vehicle.luggage_capacity == 1 else 's'}. "
+            "Please choose a larger vehicle."
+        )
+    if errors:
+        raise ValidationError(errors)
 
 
 @extend_schema(
@@ -364,6 +388,10 @@ def create_booking(request):
         )
 
     vehicle = Vehicle.objects.get(pk=quote_request.vehicle_id)
+
+    # The vehicle's seat/bag limits are a hard constraint, not a hint: a quote
+    # token can be replayed with any counts, so enforce them here on the server.
+    _enforce_capacity(vehicle, data["passenger_count"], data["luggage_count"])
 
     # Stamp the route only if it's still active (mirrors what redeem() priced).
     city_route_id = (
@@ -596,6 +624,13 @@ def my_booking_detail(request, reference):
             amend = BookingAmendSerializer(data=request.data)
             amend.is_valid(raise_exception=True)
             data = amend.validated_data
+
+            # Honour the vehicle's seat/bag limits on edits too.
+            _enforce_capacity(
+                booking.vehicle,
+                data.get("passenger_count", booking.passenger_count),
+                data.get("luggage_count", booking.luggage_count),
+            )
 
             changed = []
             recomputed = None
@@ -836,7 +871,7 @@ def auth_me(request):
                 "anonymously and as often as needed.",
     responses={204: None},
 )
-@ensure_csrf_cookie
+@scoped_ensure_csrf_cookie
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def auth_csrf(request):

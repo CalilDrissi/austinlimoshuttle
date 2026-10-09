@@ -586,7 +586,7 @@ Page ─┬─&lt; Banner                   ContactMessage &gt;─ User (replied
   <h3>Authentication</h3>
   <ol class="muted">
     <li><code>POST /api/auth/login/</code> <code>{email, password}</code> sent with <code>credentials:"include"</code>.</li>
-    <li>Django responds with the <code>User</code> and a <code>Set-Cookie: mm_store_sessionid</code> (httpOnly, SameSite=Lax, Secure in prod). The storefront session cookie is deliberately <b>not</b> the default <code>sessionid</code> — that name is reserved for the staff dashboard/admin, so a customer login on a shared host (all <code>localhost</code> in dev) can never clobber or 403 a staff session. See <code>config.session.ScopedSessionMiddleware</code> (cookie name chosen per path: <code>/api/</code> → <code>mm_store_sessionid</code>, everything else → <code>sessionid</code>).</li>
+    <li>Django responds with the <code>User</code> and a <code>Set-Cookie: mm_store_sessionid</code> (httpOnly, SameSite=Lax, Secure in prod). The storefront session cookie is deliberately <b>not</b> the default <code>sessionid</code> — that name is reserved for the staff dashboard/admin, so a customer login on a shared host (all <code>localhost</code> in dev) can never clobber or 403 a staff session. See <code>config.session.ScopedSessionMiddleware</code> (cookie name chosen per path: <code>/api/</code> → <code>mm_store_sessionid</code>, everything else → <code>sessionid</code>). The <b>CSRF cookie is scoped the same way</b> (<code>ScopedCsrfMiddleware</code>: <code>/api/</code> → <code>mm_store_csrftoken</code>, else <code>csrftoken</code>) — otherwise a storefront <code>login()</code>, which rotates the CSRF token, would invalidate the token in an open dashboard/driver form. See Changelog (§13).</li>
     <li>Every later request auto-carries the cookie — <b>no token handling in JS</b>.</li>
     <li><code>GET /api/auth/me/</code> resolves the current user; wrap it in <code>useQuery</code> for app-wide auth state.</li>
     <li><code>POST /api/auth/logout/</code> clears the cookie server-side.</li>
@@ -869,6 +869,31 @@ Page ─┬─&lt; Banner                   ContactMessage &gt;─ User (replied
   <!-- ============================== 13 ============================== -->
   <h2 id="changelog">13 · Changelog</h2>
   <p class="muted">What has actually been built, newest first. Per the rule in §11, every change lands here.</p>
+
+  <div class="modelcard">
+    <div class="mh"><span>2026-10-09 · Fix: driver/dashboard login 403 (scoped CSRF cookie) + vehicle capacity enforced</span><span class="tbl">full-stack</span></div>
+    <table>
+      <tr><td><b>Driver login "CSRF verification failed" (403) fixed.</b> Symptom: signing in at
+      <code>/driver/login/</code> (and potentially the dashboard) failed with <i>"CSRF token from POST incorrect"</i>.
+      <b>Cause:</b> the session cookie was already scoped per path (<code>mm_store_sessionid</code> for <code>/api/</code> vs
+      <code>sessionid</code> elsewhere) but the <b>CSRF cookie was still one site-wide <code>csrftoken</code></b> (Path=/).
+      Django's <code>login()</code> rotates the CSRF token to defeat fixation, so a customer signing in on the storefront
+      (<code>/api/</code>) rotated the very token baked into an already-open dashboard/driver form — the next staff/driver
+      POST then failed CSRF. <b>Fix:</b> new <code>config.session.ScopedCsrfMiddleware</code> (mirrors
+      <code>ScopedSessionMiddleware</code>) gives <code>/api/</code> its own <code>mm_store_csrftoken</code> cookie; everything
+      else keeps <code>csrftoken</code>. The storefront's priming endpoint uses a matching
+      <code>scoped_ensure_csrf_cookie</code> decorator, and the fetch client reads <code>mm_store_csrftoken</code>. Proven
+      end-to-end: a storefront login now rotates only the storefront token and leaves the staff token intact. 4 new
+      regression tests (<code>config/test_csrf_scope.py</code>).</td></tr>
+      <tr><td><b>Vehicle passenger/luggage capacity is now enforced, not just displayed.</b> Previously the seat/bag limits
+      showed on the vehicle cards but nothing stopped a customer (or a replayed quote token) exceeding them.
+      <b>Server-side</b> <code>api.views._enforce_capacity</code> rejects over-capacity counts on booking create and on
+      customer amend; <code>ManualBookingForm.clean()</code> enforces it in the back office. <b>Storefront</b> Extras step
+      shows the selected vehicle's limits, flags an over-limit count inline, and blocks Continue. A capacity of <b>0 means
+      "not configured" → no limit</b>, so an operator who leaves it blank doesn't accidentally block every booking. 2 new
+      API tests.</td></tr>
+    </table>
+  </div>
 
   <div class="modelcard">
     <div class="mh"><span>2026-10-09 · SMS: booking confirmations + pickup reminders (Twilio, dashboard-managed)</span><span class="tbl">full-stack</span></div>

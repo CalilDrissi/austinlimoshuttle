@@ -218,6 +218,36 @@ class TestQuoteTokenIntegrity:
         )
         assert response.status_code == 400
 
+    def test_booking_over_passenger_capacity_is_rejected(self, client, vehicle, future):
+        """A quote token can be replayed with any counts -- the vehicle's seat
+        limit is enforced server-side, not just in the browser."""
+        vehicle.passenger_capacity = 3
+        vehicle.luggage_capacity = 4
+        vehicle.save(update_fields=["passenger_capacity", "luggage_capacity"])
+        token = get_quote(client, future).json()["quotes"][0]["quote_token"]
+        response = client.post(
+            reverse("api:create_booking"),
+            {"quote_token": token, "guest_email": "g@example.com",
+             "guest_phone": "+15125550000", "passenger_count": 6},
+            content_type="application/json",
+        )
+        assert response.status_code == 400
+        assert "passenger_count" in response.json()
+        assert not Booking.objects.exists()
+
+    def test_booking_at_capacity_is_allowed(self, client, vehicle, future):
+        vehicle.passenger_capacity = 3
+        vehicle.luggage_capacity = 4
+        vehicle.save(update_fields=["passenger_capacity", "luggage_capacity"])
+        token = get_quote(client, future).json()["quotes"][0]["quote_token"]
+        response = client.post(
+            reverse("api:create_booking"),
+            {"quote_token": token, "guest_email": "g@example.com",
+             "guest_phone": "+15125550000", "passenger_count": 3, "luggage_count": 4},
+            content_type="application/json",
+        )
+        assert response.status_code == 201
+
     def test_surcharge_is_recomputed_at_booking_time(self, client, vehicle, future):
         """
         A quote issued before a surcharge existed must not lock in the old price

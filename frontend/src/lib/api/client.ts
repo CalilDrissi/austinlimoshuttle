@@ -40,13 +40,17 @@ function getCookie(name: string): string | null {
 
 /**
  * Django's SessionAuthentication enforces CSRF on authenticated unsafe requests.
- * The token rides in the `csrftoken` cookie and must be echoed in `X-CSRFToken`.
+ * The token rides in a cookie and must be echoed in `X-CSRFToken`. The storefront
+ * uses its own path-scoped cookie (`mm_store_csrftoken`) so a customer login here
+ * can't rotate the token the dashboard/driver forms rely on — mirrors the scoped
+ * session cookie. See backend config/session.py ScopedCsrfMiddleware.
  * Anonymous requests (guest checkout, login, register) don't need it, so a
  * missing cookie is fine — we just send it when present.
  */
+const CSRF_COOKIE = "mm_store_csrftoken";
 let csrfPrimed = false;
 export async function ensureCsrf(): Promise<void> {
-  if (csrfPrimed || getCookie("csrftoken")) {
+  if (csrfPrimed || getCookie(CSRF_COOKIE)) {
     csrfPrimed = true;
     return;
   }
@@ -62,7 +66,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const method = (init.method ?? "GET").toUpperCase();
 
   if (!SAFE.has(method)) await ensureCsrf();
-  const csrf = getCookie("csrftoken");
+  const csrf = getCookie(CSRF_COOKIE);
 
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...init,

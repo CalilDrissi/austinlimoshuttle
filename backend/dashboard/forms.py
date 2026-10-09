@@ -103,6 +103,21 @@ class ManualBookingForm(BootstrapFormMixin, forms.ModelForm):
             raise forms.ValidationError("Enter the agreed fare as a positive amount.")
         return total
 
+    def clean(self):
+        cleaned = super().clean()
+        vehicle = cleaned.get("vehicle")
+        if vehicle:
+            pax = cleaned.get("passenger_count")
+            lug = cleaned.get("luggage_count")
+            # Capacity of 0 means "not configured" -> no limit (see api.views).
+            if vehicle.passenger_capacity and pax is not None and pax > vehicle.passenger_capacity:
+                self.add_error("passenger_count",
+                               f"{vehicle.name} seats up to {vehicle.passenger_capacity}.")
+            if vehicle.luggage_capacity and lug is not None and lug > vehicle.luggage_capacity:
+                self.add_error("luggage_count",
+                               f"{vehicle.name} holds up to {vehicle.luggage_capacity} bags.")
+        return cleaned
+
 
 class BookingEditForm(ManualBookingForm):
     """

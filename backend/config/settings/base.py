@@ -74,7 +74,9 @@ MIDDLEWARE = [
     # cookies and can't clobber each other on a shared host. See config.session.
     "config.session.ScopedSessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
+    # Scoped for the same reason as the session cookie: a storefront login
+    # rotates the CSRF token, which must not invalidate dashboard/driver forms.
+    "config.session.ScopedCsrfMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",

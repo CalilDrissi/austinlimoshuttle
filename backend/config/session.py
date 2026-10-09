@@ -100,3 +100,94 @@ class ScopedSessionMiddleware(SessionMiddleware):
         if need_vary_cookie:
             patch_vary_headers(response, ("Cookie",))
         return response
+
+
+# ---------------------------------------------------------------------------
+# Path-scoped CSRF cookie
+# ---------------------------------------------------------------------------
+# The session cookie is scoped per path (above); the CSRF cookie must be too,
+# for the same reason. Django's ``login()`` rotates the CSRF token to defeat
+# token fixation. With one site-wide ``csrftoken`` cookie (Path=/), a customer
+# signing in on the storefront (/api/) rotates the token that the dashboard and
+# driver portal already baked into any open form -- so the next staff/driver
+# POST fails with "CSRF token from POST incorrect". Giving /api/ its own CSRF
+# cookie keeps the two surfaces' tokens independent, exactly as with sessions.
+
+from django.middleware.csrf import (  # noqa: E402
+    CSRF_TOKEN_LENGTH,
+    CsrfViewMiddleware,
+    _check_token_format,
+    _unmask_cipher_token,
+    get_token,
+)
+from django.utils.decorators import decorator_from_middleware  # noqa: E402
+
+STOREFRONT_CSRF_COOKIE_NAME = "mm_store_csrftoken"
+
+
+def csrf_cookie_name_for(request) -> str:
+    if request.path.startswith(STOREFRONT_PATH_PREFIX):
+        return STOREFRONT_CSRF_COOKIE_NAME
+    return settings.CSRF_COOKIE_NAME
+
+
+class ScopedCsrfMiddleware(CsrfViewMiddleware):
+    """CsrfViewMiddleware with a per-path cookie name (see section docstring).
+
+    Only the cookie read/write is overridden; token generation, the Origin and
+    Referer checks, and the header lookup are untouched. The session-backed
+    variant (CSRF_USE_SESSIONS) needs no scoping -- the session is already
+    scoped -- so it defers to the parent there.
+    """
+
+    def _get_secret(self, request):
+        if settings.CSRF_USE_SESSIONS:
+            return super()._get_secret(request)
+        try:
+            csrf_secret = request.COOKIES[csrf_cookie_name_for(request)]
+        except KeyError:
+            return None
+        # Can raise InvalidTokenFormat, which process_request handles by
+        # minting a fresh cookie -- identical to the stock middleware.
+        _check_token_format(csrf_secret)
+        if len(csrf_secret) == CSRF_TOKEN_LENGTH:
+            csrf_secret = _unmask_cipher_token(csrf_secret)
+        return csrf_secret
+
+    def _set_csrf_cookie(self, request, response):
+        if settings.CSRF_USE_SESSIONS:
+            return super()._set_csrf_cookie(request, response)
+        response.set_cookie(
+            csrf_cookie_name_for(request),
+            request.META["CSRF_COOKIE"],
+            max_age=settings.CSRF_COOKIE_AGE,
+            domain=settings.CSRF_COOKIE_DOMAIN,
+            path=settings.CSRF_COOKIE_PATH,
+            secure=settings.CSRF_COOKIE_SECURE,
+            httponly=settings.CSRF_COOKIE_HTTPONLY,
+            samesite=settings.CSRF_COOKIE_SAMESITE,
+        )
+        patch_vary_headers(response, ("Cookie",))
+
+
+class _ScopedEnsureCsrfCookie(ScopedCsrfMiddleware):
+    """Scoped counterpart of Django's private _EnsureCsrfCookie.
+
+    Django's ``@ensure_csrf_cookie`` is a per-view decorator built on the stock
+    middleware, so it would set the default ``csrftoken`` cookie even for the
+    storefront's priming endpoint under /api/. This variant forces the cookie
+    the same way but through the scoped middleware, so /api/ gets its own cookie.
+    """
+
+    def _reject(self, request, reason):
+        return None
+
+    def process_view(self, request, callback, callback_args, callback_kwargs):
+        retval = super().process_view(request, callback, callback_args, callback_kwargs)
+        get_token(request)  # force process_response to send the cookie
+        return retval
+
+
+# Drop-in replacement for django.views.decorators.csrf.ensure_csrf_cookie that
+# honours the per-path cookie name. Used by the storefront's /api/auth/csrf/.
+scoped_ensure_csrf_cookie = decorator_from_middleware(_ScopedEnsureCsrfCookie)
