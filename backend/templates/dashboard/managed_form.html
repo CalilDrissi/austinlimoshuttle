@@ -39,6 +39,12 @@
               <label class="form-label small fw-semibold mb-1" for="{{ field.id_for_label }}">
                 {{ field.label }}{% if field.field.required %} <span class="text-danger">*</span>{% endif %}
               </label>
+              {% if field.field.widget.input_type == 'file' and field.value %}
+                <div class="mb-2">
+                  <img src="{{ field.value.url }}" alt="{{ field.label }}"
+                       style="max-height:140px;max-width:100%;border-radius:8px;border:1px solid #e4e8ec;object-fit:cover;">
+                </div>
+              {% endif %}
               {{ field }}
             {% endif %}
             {% if field.help_text %}
