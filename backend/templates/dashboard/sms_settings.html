@@ -1,0 +1,129 @@
+{% extends "dashboard/base.html" %}
+{% block title %}SMS settings{% endblock %}
+{% block page_title %}SMS settings{% endblock %}
+{% block lede %}<p class="lede">Text confirmations and pickup reminders via Twilio.</p>{% endblock %}
+
+{% block content %}
+{% if settings_obj.is_configured %}
+  <div class="alert alert-success d-flex gap-2"><i class="bi bi-check-circle"></i>
+    <div><strong>SMS is on.</strong>
+      {% if settings_obj.confirmation_enabled %}Confirmations{% endif %}{% if settings_obj.confirmation_enabled and settings_obj.reminder_enabled %} and {% endif %}{% if settings_obj.reminder_enabled %}reminders{% endif %} will be texted.</div></div>
+{% elif settings_obj.is_enabled %}
+  <div class="alert alert-warning d-flex gap-2"><i class="bi bi-exclamation-triangle"></i>
+    <div><strong>SMS is enabled but not fully configured.</strong> Add the Account SID, auth token and From number below.</div></div>
+{% else %}
+  <div class="alert alert-secondary d-flex gap-2"><i class="bi bi-info-circle"></i>
+    <div><strong>SMS is off.</strong> Bookings still work; no texts are sent. Add your Twilio details and turn it on.</div></div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-phone me-2"></i>Current configuration</div>
+      <div class="card-body">
+        <dl class="kv" style="grid-template-columns:150px 1fr">
+          <dt>From number</dt>
+          <dd>{% if settings_obj.from_number %}<code>{{ settings_obj.from_number }}</code>{% else %}<span class="text-secondary">not set</span>{% endif %}</dd>
+          <dt>Account SID</dt>
+          <dd class="small">{{ settings_obj.account_sid|default:"—" }}</dd>
+          <dt>Auth token</dt>
+          <dd>{% if settings_obj.has_auth_token %}<code>{{ settings_obj.auth_token_masked }}</code>
+              <span class="badge text-bg-success-subtle text-success-emphasis badge-status ms-1">encrypted</span>
+              {% else %}<span class="text-secondary">not set</span>{% endif %}</dd>
+          <dt>Confirmations</dt><dd class="small">{{ settings_obj.confirmation_enabled|yesno:"On,Off" }}</dd>
+          <dt>Reminders</dt><dd class="small">{{ settings_obj.reminder_enabled|yesno:"On,Off" }} ({{ settings_obj.reminder_lead_hours }}h before pickup)</dd>
+        </dl>
+        <p class="small text-secondary mb-0">Reminders are sent by a scheduled job on the server (cron); confirmations send the moment a booking is confirmed.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><i class="bi bi-send-check me-2"></i>Send a test text</div>
+      <div class="card-body">
+        <p class="small text-secondary">Verify your Twilio details before a real customer depends on it.</p>
+        <form method="post" class="d-flex gap-2">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="test">
+          <input type="text" name="test_number" class="form-control form-control-sm" placeholder="+15125550142">
+          <button type="submit" class="btn btn-outline-secondary btn-sm text-nowrap">Send test</button>
+        </form>
+        {% if settings_obj.last_test_at %}
+          <hr class="my-3">
+          <div class="small">
+            Last test {{ settings_obj.last_test_at|date:"j M Y, H:i" }} —
+            {% if settings_obj.last_test_ok %}
+              <span class="badge text-bg-success-subtle text-success-emphasis badge-status">Succeeded</span>
+            {% else %}
+              <span class="badge text-bg-danger-subtle text-danger-emphasis badge-status">Failed</span>
+              <div class="text-danger mt-1">{{ settings_obj.last_test_error }}</div>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-pencil-square me-2"></i>Update</div>
+      <div class="card-body">
+        <form method="post" autocomplete="off">
+          {% csrf_token %}
+          <div class="row g-3">
+          {% for field in form %}
+            <div class="{% if field.name == 'reminder_lead_hours' %}col-md-4{% else %}col-md-6{% endif %}">
+              <label for="{{ field.id_for_label }}" class="form-label fw-semibold small">{{ field.label }}</label>
+              {% if field.field.widget.input_type == 'checkbox' %}
+                <div class="form-check">
+                  <input type="checkbox" name="{{ field.html_name }}" id="{{ field.id_for_label }}"
+                         class="form-check-input" {% if field.value %}checked{% endif %}>
+                  <label class="form-check-label small" for="{{ field.id_for_label }}">Enabled</label>
+                </div>
+              {% else %}
+                {{ field|safe }}
+              {% endif %}
+              {% if field.help_text %}<div class="form-text small">{{ field.help_text }}</div>{% endif %}
+              {% for e in field.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
+            </div>
+          {% endfor %}
+          </div>
+          <button type="submit" class="btn btn-brand mt-3"><i class="bi bi-check-lg"></i> Save settings</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-list-check me-2"></i>Recent texts
+        {% if failures %}<span class="badge text-bg-danger ms-2">{{ failures }} failed</span>{% endif %}
+      </div>
+      {% if recent %}
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead><tr><th>When</th><th>Type</th><th>To</th><th>Result</th></tr></thead>
+            <tbody>
+            {% for log in recent %}
+              <tr>
+                <td class="small text-nowrap">{{ log.sent_at|date:"j M, H:i" }}</td>
+                <td class="small">{{ log.get_kind_display }}</td>
+                <td class="small">{{ log.to_number }}</td>
+                <td>
+                  {% if log.succeeded %}
+                    <span class="badge text-bg-success-subtle text-success-emphasis badge-status">Sent</span>
+                  {% else %}
+                    <span class="badge text-bg-danger-subtle text-danger-emphasis badge-status">Failed</span>
+                    <div class="small text-secondary">{{ log.error|truncatechars:44 }}</div>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="card-body small text-secondary">Nothing sent yet.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

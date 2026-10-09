@@ -36,8 +36,8 @@ from bookings.models import Booking, BookingPriceLine, BookingStatusChange, Driv
 from django.conf import settings
 from content.models import SiteSettings
 from enquiries.models import ContactMessage
-from notifications import mailer
-from notifications.models import EmailLog, EmailSettings
+from notifications import mailer, sms
+from notifications.models import EmailLog, EmailSettings, SmsLog, SmsSettings
 from payments import gateway, paypal
 from payments.models import Payment, PaymentSettings, PayPalSettings, SavedCard
 from pricing.models import CityRoute, PricingSettings
@@ -52,6 +52,7 @@ from .forms import (
     PayPalSettingsForm,
     PricingSettingsForm,
     SiteSettingsForm,
+    SmsSettingsForm,
 )
 from .permissions import is_manager, role_names
 
@@ -410,6 +411,14 @@ def booking_create(request):
             except (gateway.PaymentConfigurationError, gateway.PaymentGatewayError) as exc:
                 messages.error(request, f"Card payment failed: {exc}. The booking was not created.")
             else:
+                # Text the customer their confirmation (no-op if SMS is off or the
+                # booking has no phone); never let it block the redirect.
+                if booking.status == Booking.Status.CONFIRMED:
+                    try:
+                        from notifications import sms
+                        sms.send_booking_confirmation(booking)
+                    except Exception:
+                        logger.exception("Confirmation SMS failed for %s", booking.reference)
                 if charged:
                     messages.success(
                         request,
@@ -822,6 +831,51 @@ def email_settings(request):
         "settings_obj": instance,
         "recent": EmailLog.objects.all()[:15],
         "failures": EmailLog.objects.filter(succeeded=False).count(),
+    })
+
+
+@staff_required
+@permission_required("notifications.change_smssettings", raise_exception=True)
+def sms_settings(request):
+    """Twilio credentials, toggles, and a way to prove they work."""
+    if not is_manager(request.user):
+        raise PermissionDenied("Only managers can change SMS settings.")
+
+    instance = SmsSettings.load()
+
+    if request.method == "POST" and request.POST.get("action") == "test":
+        recipient = (request.POST.get("test_number") or "").strip()
+        if not recipient:
+            messages.error(request, "Enter a phone number to send a test to.")
+        else:
+            ok, error = sms.send_test_message(recipient)
+            if ok:
+                messages.success(request, f"Test text sent to {recipient}.")
+            else:
+                messages.error(request, f"Test text failed: {error or 'SMS not configured.'}")
+        return redirect("dashboard:sms_settings")
+
+    if request.method == "POST":
+        form = SmsSettingsForm(request.POST, instance=instance)
+        if form.is_valid():
+            updated = form.save(commit=False)
+            updated.updated_by = request.user
+            updated.save()
+            logger.info(
+                "SMS settings updated by %s (fields: %s)",
+                request.user.email, ", ".join(form.changed_data) or "none",
+            )
+            messages.success(request, "SMS settings saved.")
+            return redirect("dashboard:sms_settings")
+        messages.error(request, "Please correct the errors below.")
+    else:
+        form = SmsSettingsForm(instance=instance)
+
+    return render(request, "dashboard/sms_settings.html", {
+        "form": form,
+        "settings_obj": instance,
+        "recent": SmsLog.objects.all()[:15],
+        "failures": SmsLog.objects.filter(succeeded=False).count(),
     })
 
 

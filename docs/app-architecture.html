@@ -871,6 +871,23 @@ Page ─┬─&lt; Banner                   ContactMessage &gt;─ User (replied
   <p class="muted">What has actually been built, newest first. Per the rule in §11, every change lands here.</p>
 
   <div class="modelcard">
+    <div class="mh"><span>2026-10-09 · SMS: booking confirmations + pickup reminders (Twilio, dashboard-managed)</span><span class="tbl">full-stack</span></div>
+    <table>
+      <tr><td>New SMS channel mirroring the email infrastructure. <b>Settings:</b> <code>SmsSettings</code> singleton with
+      the Twilio <b>Account SID, Auth Token (encrypted at rest), From number</b>, confirmation/reminder toggles, and
+      reminder lead-hours — all editable by the client at <b>Dashboard → SMS</b> (with a "send a test text" button and a
+      recent-sends log). <b>Gateway</b> <code>notifications/sms.py</code> sends via Twilio's HTTP API using
+      <code>requests</code> (no new dependency), normalises phones to E.164 (<code>notifications/phone.py</code>), logs
+      every attempt to <code>SmsLog</code>, and <b>never raises / no-ops when unconfigured</b> so a texting outage can't
+      break a booking. <b>Confirmations</b> fire the moment a booking is confirmed — Stripe webhook, cash, and manual
+      back-office — alongside the existing email. <b>Reminders</b> via a new idempotent
+      <code>send_booking_reminders</code> management command (deduped through <code>SmsLog</code>), run by cron on the
+      server N hours before pickup. Manager role granted the new perms. 14 SMS tests + 535 total green. <b>Owner action:</b>
+      add a Twilio account's SID/token/number in Dashboard → SMS and toggle it on.</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
     <div class="mh"><span>2026-10-09 · Minimum booking lead time + customers can edit their pickup date</span><span class="tbl">full-stack</span></div>
     <table>
       <tr><td><b>Minimum booking notice:</b> new admin setting <code>PricingSettings.min_booking_lead_hours</code>

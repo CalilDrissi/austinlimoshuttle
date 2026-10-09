@@ -1,0 +1,2 @@
+M&M Austin Limo reminder: your ride {{ booking.reference }} is {{ booking.pickup_at|date:"D j M" }} at {{ booking.pickup_at|time:"g:i A" }}.
+Pickup: {{ booking.pickup_address }}. See you soon! Call (512) 555-0100 for changes.

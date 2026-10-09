@@ -40,6 +40,7 @@ urlpatterns = [
     path("settings/payments/", views.payment_settings, name="payment_settings"),
     path("settings/paypal/", views.paypal_settings, name="paypal_settings"),
     path("settings/email/", views.email_settings, name="email_settings"),
+    path("settings/sms/", views.sms_settings, name="sms_settings"),
     path("enquiries/", views.enquiry_inbox, name="enquiries"),
     path("enquiries/<int:pk>/", views.enquiry_detail, name="enquiry_detail"),
 

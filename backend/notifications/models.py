@@ -167,3 +167,117 @@ class EmailLog(models.Model):
     def __str__(self):
         state = "sent" if self.succeeded else "FAILED"
         return f"{self.get_kind_display()} to {self.to_email} ({state})"
+
+
+class SmsSettings(models.Model):
+    """
+    SMS (Twilio) configuration. Singleton, dashboard-managed like EmailSettings.
+
+    The auth token is encrypted at rest -- it can send messages billed to the
+    business, so a leaked one is someone else's text budget on our account.
+    """
+
+    is_enabled = models.BooleanField(
+        default=False,
+        help_text="Turn off to stop all texts without deleting the credentials.",
+    )
+    account_sid = models.CharField(
+        max_length=64, blank=True, help_text="Twilio Account SID (starts with AC).",
+    )
+    _auth_token = models.TextField(
+        "auth token", blank=True, db_column="auth_token_encrypted",
+        help_text="Encrypted at rest.",
+    )
+    from_number = models.CharField(
+        max_length=20, blank=True,
+        help_text="The Twilio number texts are sent from, E.164 e.g. +15125550100.",
+    )
+
+    confirmation_enabled = models.BooleanField(
+        default=True, help_text="Text the customer when a booking is confirmed.",
+    )
+    reminder_enabled = models.BooleanField(
+        default=True, help_text="Text the customer a reminder before pickup.",
+    )
+    reminder_lead_hours = models.PositiveSmallIntegerField(
+        default=24,
+        help_text="How many hours before pickup to send the reminder (24 = a day ahead).",
+    )
+
+    last_test_at = models.DateTimeField(null=True, blank=True)
+    last_test_ok = models.BooleanField(null=True, blank=True)
+    last_test_error = models.TextField(blank=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        django_settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="+",
+    )
+
+    class Meta:
+        verbose_name = "SMS settings"
+        verbose_name_plural = "SMS settings"
+
+    def __str__(self):
+        return f"Twilio {self.from_number or 'not configured'}"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("SMS settings cannot be deleted.")
+
+    @classmethod
+    def load(cls) -> "SmsSettings":
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    @property
+    def auth_token(self) -> str | None:
+        return crypto.decrypt(self._auth_token)
+
+    @auth_token.setter
+    def auth_token(self, value: str | None) -> None:
+        self._auth_token = crypto.encrypt(value)
+
+    @property
+    def auth_token_masked(self) -> str:
+        stored = self.auth_token
+        return f"••••{stored[-4:]}" if stored else ""
+
+    @property
+    def has_auth_token(self) -> bool:
+        return bool(self._auth_token)
+
+    @property
+    def is_configured(self) -> bool:
+        return bool(self.is_enabled and self.account_sid and self.auth_token and self.from_number)
+
+
+class SmsLog(models.Model):
+    """A record of every SMS send attempt. Also the reminder-dedupe source."""
+
+    class Kind(models.TextChoices):
+        CONFIRMATION = "confirmation", "Booking confirmation"
+        REMINDER = "reminder", "Pickup reminder"
+        TEST = "test", "Test"
+        OTHER = "other", "Other"
+
+    kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.OTHER)
+    to_number = models.CharField(max_length=20)
+    body = models.TextField(blank=True)
+    booking = models.ForeignKey(
+        "bookings.Booking", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="sms_logs",
+    )
+    succeeded = models.BooleanField(default=False)
+    provider_sid = models.CharField(max_length=64, blank=True)
+    error = models.TextField(blank=True)
+    sent_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-sent_at"]
+
+    def __str__(self):
+        return f"{self.get_kind_display()} -> {self.to_number} ({'ok' if self.succeeded else 'failed'})"

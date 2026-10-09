@@ -45,6 +45,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "payments.paypalsettings": ["view", "change"],
         "notifications.emailsettings": ["view", "change"],
         "notifications.emaillog": ["view"],
+        "notifications.smssettings": ["view", "change"],
+        "notifications.smslog": ["view"],
         "enquiries.contactmessage": ["view", "change"],
         "accounts.user": ["view", "add", "change"],
         "accounts.billingaddress": ["view", "change"],

@@ -230,6 +230,10 @@
            href="{% url 'dashboard:email_settings' %}">
           <i class="bi bi-send"></i><span>Email</span>
         </a>
+        <a class="nav-link {% if request.resolver_match.url_name == 'sms_settings' %}active{% endif %}"
+           href="{% url 'dashboard:sms_settings' %}">
+          <i class="bi bi-chat-dots"></i><span>SMS</span>
+        </a>
       {% endif %}
 
       {% comment %}

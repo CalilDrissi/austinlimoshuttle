@@ -10,7 +10,7 @@ from django.contrib.auth.password_validation import validate_password
 from bookings.models import Booking, Driver
 from content.models import Banner, GalleryImage, Page, SiteSettings, Testimonial
 from fleet.models import DistanceBand, Vehicle
-from notifications.models import EmailSettings
+from notifications.models import EmailSettings, SmsSettings
 from payments.models import PaymentSettings, PayPalSettings
 from pricing.models import BlackoutDate, CityRoute, CityRoutePrice, PricingSettings, TimeSurcharge
 
@@ -748,3 +748,37 @@ class ChargeCardForm(BootstrapFormMixin, forms.Form):
         card = user.saved_cards.first()
         who = user.get_full_name() or user.email
         return f"{who} — {card.label}" if card else who
+
+
+class SmsSettingsForm(BootstrapFormMixin, forms.ModelForm):
+    """Twilio credentials. The auth token is write-only, like the SMTP password."""
+
+    auth_token = forms.CharField(
+        required=False,
+        widget=forms.PasswordInput(
+            render_value=False,
+            attrs={"autocomplete": "new-password", "placeholder": "Twilio auth token"},
+        ),
+        help_text="Leave blank to keep the current token. Encrypted at rest.",
+    )
+
+    class Meta:
+        model = SmsSettings
+        fields = [
+            "is_enabled", "account_sid", "from_number",
+            "confirmation_enabled", "reminder_enabled", "reminder_lead_hours",
+        ]
+        labels = {
+            "is_enabled": "SMS enabled",
+            "account_sid": "Twilio Account SID",
+            "from_number": "From number (E.164, e.g. +15125550100)",
+            "reminder_lead_hours": "Reminder lead time (hours before pickup)",
+        }
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if token := self.cleaned_data.get("auth_token"):
+            instance.auth_token = token
+        if commit:
+            instance.save()
+        return instance
