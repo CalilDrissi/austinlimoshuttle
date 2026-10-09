@@ -871,6 +871,19 @@ Page ─┬─&lt; Banner                   ContactMessage &gt;─ User (replied
   <p class="muted">What has actually been built, newest first. Per the rule in §11, every change lands here.</p>
 
   <div class="modelcard">
+    <div class="mh"><span>2026-10-09 · Deploy-readiness audit + lock /admin/ to superusers</span><span class="tbl">security</span></div>
+    <table>
+      <tr><td>Full deploy audit (runtime + static): no blockers; prod hardened (DEBUG off, HSTS/CSP/secure cookies,
+      secrets gitignored &amp; not in history, deps pinned, migrations in sync, 516 tests green). One HIGH fixed:
+      Django <code>/admin/</code> used the default <code>has_permission</code> (any <code>is_staff</code> user could open
+      it by URL); now gated to <code>is_superuser</code> in <code>config/urls.py</code> — day-to-day staff use
+      <code>/dashboard/</code>. Added a regression test. <b>Outstanding owner/config actions before taking real card
+      payments:</b> switch Stripe to LIVE keys and configure the Stripe webhook endpoint + signing secret; restrict the
+      Google Maps key; rotate secrets shared out-of-band; delete the inactive "Test Car" vehicle.</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
     <div class="mh"><span>2026-10-09 · Backend test suite repaired — 516 green</span><span class="tbl">tests</span></div>
     <table>
       <tr><td>The suite had been red (28 failures) from drift the session/key-config work introduced, and <code>pytest</code>

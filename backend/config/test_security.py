@@ -196,3 +196,21 @@ class TestAdminExposure:
     def test_dashboard_requires_authentication(self, client):
         response = client.get(reverse("dashboard:home"))
         assert response.status_code == 302
+
+
+@pytest.mark.django_db
+class TestAdminIsSuperuserOnly:
+    """Django's /admin/ is a superuser-only safety net; staff use /dashboard/."""
+
+    def test_non_superuser_staff_cannot_open_admin(self, client):
+        User.objects.create_user(
+            email="disp@example.com", password="StaffLocal!2026", is_staff=True,
+        )
+        client.login(username="disp@example.com", password="StaffLocal!2026")
+        # has_permission is False -> admin bounces to its login, never the index.
+        assert client.get("/admin/").status_code in (302, 403)
+
+    def test_superuser_can_open_admin(self, client):
+        User.objects.create_superuser(email="root@example.com", password="RootLocal!2026")
+        client.login(username="root@example.com", password="RootLocal!2026")
+        assert client.get("/admin/").status_code == 200
