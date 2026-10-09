@@ -27,7 +27,7 @@ export const bookingService = {
     apiPatch<Booking>(`/account/bookings/${reference}/`, { action: "amend", ...changes }),
 };
 
-/** Customer-editable, non-price fields. */
+/** Customer-editable fields within the amendment window. */
 export interface BookingAmendRequest {
   passenger_count?: number;
   luggage_count?: number;
@@ -35,4 +35,6 @@ export interface BookingAmendRequest {
   pickup_sign?: string;
   notes?: string;
   phone?: string;
+  /** Austin wall-clock "YYYY-MM-DDTHH:mm"; a change re-prices the booking. */
+  pickup_at?: string;
 }

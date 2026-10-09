@@ -871,6 +871,22 @@ Page ─┬─&lt; Banner                   ContactMessage &gt;─ User (replied
   <p class="muted">What has actually been built, newest first. Per the rule in §11, every change lands here.</p>
 
   <div class="modelcard">
+    <div class="mh"><span>2026-10-09 · Minimum booking lead time + customers can edit their pickup date</span><span class="tbl">full-stack</span></div>
+    <table>
+      <tr><td><b>Minimum booking notice:</b> new admin setting <code>PricingSettings.min_booking_lead_hours</code>
+      (Settings → Tax &amp; rules; 0 = off). A customer can't quote or book a pickup sooner than that — enforced server-side
+      in <code>QuoteRequestSerializer</code> and re-checked in <code>quotes.redeem()</code> (shared helper
+      <code>pricing.models.booking_lead_error</code>). <b>Staff manual bookings bypass it</b> (last-minute phone calls).
+      <b>Customer self-edit of date:</b> the account amendment now accepts <code>pickup_at</code> in addition to the existing
+      details; changing it <b>re-prices server-side</b> (night/event surcharges are time-based) via the same
+      <code>quote()</code> engine using the stored distance/hours and any fixed route, rewriting the fare lines and writing
+      an audit row. Addresses/vehicle stay office-only (they'd change the distance). The <code>/account</code> edit form
+      gained a date/time picker (Austin wall-clock in, server reads it in the business tz). Tested: lead-time rejection +
+      a date move into a surcharge window re-prices. 521 backend tests green.</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
     <div class="mh"><span>2026-10-09 · Deploy-readiness audit + lock /admin/ to superusers</span><span class="tbl">security</span></div>
     <table>
       <tr><td>Full deploy audit (runtime + static): no blockers; prod hardened (DEBUG off, HSTS/CSP/secure cookies,

@@ -231,6 +231,12 @@ class PricingSettings(models.Model):
     quote_ttl_minutes = models.PositiveSmallIntegerField(
         default=30, help_text="How long a fare quote stays valid.",
     )
+    min_booking_lead_hours = models.PositiveSmallIntegerField(
+        default=0,
+        help_text="How many hours before pickup a customer may still book online. "
+                  "0 = no minimum, 2 = must book 2 hours ahead, 24 = a day ahead. "
+                  "Staff booking by phone in the back office are not limited.",
+    )
 
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -252,3 +258,25 @@ class PricingSettings(models.Model):
     def load(cls) -> "PricingSettings":
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+
+def booking_lead_error(pickup_at) -> str | None:
+    """
+    Message if a pickup is sooner than the office-set minimum lead time, else None.
+
+    Shared by the quote serializer, the quote-token redeem, and the customer
+    amendment so the rule is enforced identically everywhere a customer sets a
+    time. Returns None when no minimum is configured (0) or the time is fine.
+    """
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    hours = PricingSettings.load().min_booking_lead_hours
+    if hours and pickup_at < timezone.now() + timedelta(hours=hours):
+        return (
+            f"Bookings must be made at least {hours} "
+            f"hour{'' if hours == 1 else 's'} before pickup. Please choose a later "
+            "time, or call us to arrange a last-minute ride."
+        )
+    return None

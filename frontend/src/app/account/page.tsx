@@ -24,6 +24,19 @@ function isUpcoming(b: Booking) {
   return b.status !== "cancelled" && b.status !== "completed" && new Date(b.pickup_at) > new Date();
 }
 
+// A stored pickup time (ISO, UTC) as an Austin wall-clock value for a
+// <input type="datetime-local">. We show and send Austin local time; the server
+// interprets a naive value in the business timezone (America/Chicago), matching
+// how the original quote was taken.
+function toAustinLocalInput(iso: string): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+  }).formatToParts(new Date(iso));
+  const g = (t: string) => parts.find((p) => p.type === t)?.value ?? "00";
+  return `${g("year")}-${g("month")}-${g("day")}T${g("hour")}:${g("minute")}`;
+}
+
 function RideCard({ b, onCancel, onAmend, userPhone }: {
   b: Booking;
   onCancel: (ref: string) => void;
@@ -40,6 +53,7 @@ function RideCard({ b, onCancel, onAmend, userPhone }: {
     pickup_sign: b.pickup_sign || "",
     notes: b.notes || "",
     phone: userPhone || "",
+    pickup_at: toAustinLocalInput(b.pickup_at),
   });
 
   const save = async () => {
@@ -52,6 +66,7 @@ function RideCard({ b, onCancel, onAmend, userPhone }: {
         pickup_sign: f.pickup_sign.trim(),
         notes: f.notes.trim(),
         phone: f.phone.trim(),
+        pickup_at: f.pickup_at,  // Austin wall-clock; server reads it in business tz
       });
       setEditing(false);
     } catch (e) {
@@ -73,6 +88,7 @@ function RideCard({ b, onCancel, onAmend, userPhone }: {
 
       {editing && (
         <div className="row" style={{ marginTop: 14 }}>
+          <div className="col-12 mb-15"><label className="text-14 color-grey">Pickup date &amp; time</label><input type="datetime-local" className="form-control" value={f.pickup_at} onChange={(e) => setF({ ...f, pickup_at: e.target.value })} /><span className="text-13 color-grey">Changing the time may change the fare (night/event rates).</span></div>
           <div className="col-6 mb-15"><label className="text-14 color-grey">Passengers</label><input type="number" min={1} className="form-control" value={f.passenger_count} onChange={(e) => setF({ ...f, passenger_count: Math.max(1, Number(e.target.value)) })} /></div>
           <div className="col-6 mb-15"><label className="text-14 color-grey">Luggage</label><input type="number" min={0} className="form-control" value={f.luggage_count} onChange={(e) => setF({ ...f, luggage_count: Math.max(0, Number(e.target.value)) })} /></div>
           <div className="col-6 mb-15"><label className="text-14 color-grey">Flight number</label><input className="form-control" value={f.flight_number} onChange={(e) => setF({ ...f, flight_number: e.target.value })} /></div>

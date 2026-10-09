@@ -45,7 +45,7 @@ from payments import gateway as payments_gateway
 from payments.models import SavedCard
 from pricing.distance import DistanceLookupError
 from pricing.distance import lookup as measure_journey
-from pricing.engine import quote_all
+from pricing.engine import QuoteError, quote, quote_all
 from pricing.models import BlackoutDate, CityRoute, TimeSurcharge
 
 from . import quotes
@@ -585,8 +585,9 @@ def my_booking_detail(request, reference):
             mailer.send_booking_cancelled(booking)
 
         elif action == "amend":
-            # Non-price details only, within the office-set edit window. Nothing
-            # here changes the fare, so no re-quote or payment reconciliation.
+            # Details within the office-set edit window. Changing the pickup time
+            # re-prices (night/event surcharges are time-based); the other fields
+            # don't touch the fare. Addresses/vehicle stay office-only.
             if not booking.is_amendable:
                 raise ValidationError({
                     "detail": "Changes to this booking are no longer allowed "
@@ -597,13 +598,44 @@ def my_booking_detail(request, reference):
             data = amend.validated_data
 
             changed = []
+            recomputed = None
             for field in ("passenger_count", "luggage_count", "flight_number",
                           "pickup_sign", "notes"):
                 if field in data:
                     setattr(booking, field, data[field])
                     changed.append(field)
+
+            if "pickup_at" in data and data["pickup_at"] != booking.pickup_at:
+                booking.pickup_at = data["pickup_at"]
+                changed.append("pickup_at")
+                # Re-price at the new time, reusing the stored distance/hours and
+                # any fixed route. The fare the client sees stays authoritative.
+                try:
+                    recomputed = quote(
+                        booking.vehicle,
+                        pickup_at=booking.pickup_at,
+                        distance_miles=booking.distance_miles
+                        if booking.trip_type == Booking.TripType.TRANSFER else None,
+                        hours=booking.hours
+                        if booking.trip_type == Booking.TripType.HOURLY else None,
+                        meet_and_greet=booking.meet_and_greet,
+                        route=booking.city_route,
+                    )
+                except QuoteError as exc:
+                    raise ValidationError({
+                        "detail": "We couldn't re-price that time. Please contact us."
+                    }) from exc
+                booking.subtotal = recomputed.subtotal
+                booking.surcharge_total = recomputed.surcharge_total
+                booking.tax = recomputed.tax
+                booking.total = recomputed.total
+
             if changed:
                 booking.save()
+            if recomputed is not None:
+                booking.price_lines.all().delete()
+                for line in recomputed.as_price_lines(booking):
+                    line.save()
             if "phone" in data:  # contact number lives on the account
                 request.user.phone = data["phone"].strip()
                 request.user.save(update_fields=["phone"])

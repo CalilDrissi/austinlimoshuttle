@@ -549,3 +549,55 @@ class TestEnquiries:
             content_type="application/json",
         )
         assert response.status_code == 400
+
+
+@pytest.mark.django_db
+class TestMinBookingLeadTime:
+    """Admin-set minimum notice before pickup (storefront only)."""
+
+    def test_quote_rejected_when_sooner_than_lead(self, client, vehicle, future):
+        s = PricingSettings.load(); s.min_booking_lead_hours = 24; s.save()
+        soon = (timezone.now() + timedelta(hours=2)).replace(microsecond=0)
+        resp = get_quote(client, future, pickup_at=soon.isoformat())
+        assert resp.status_code == 400
+        assert "before pickup" in str(resp.json()).lower()
+
+    def test_quote_ok_when_far_enough(self, client, vehicle, future):
+        s = PricingSettings.load(); s.min_booking_lead_hours = 2; s.save()
+        assert get_quote(client, future).status_code == 200  # 3 days out
+
+
+@pytest.mark.django_db
+class TestAmendRepricesOnDateChange:
+    def test_moving_pickup_into_surcharge_window_reprices(self, client, vehicle, future):
+        user = User.objects.create_user(
+            email="amend@example.com", password="ApiLocal!2026", phone="+15125550000",
+        )
+        client.login(username="amend@example.com", password="ApiLocal!2026")
+        token = get_quote(client, future).json()["quotes"][0]["quote_token"]
+        ref = client.post(
+            reverse("api:create_booking"), {"quote_token": token},
+            content_type="application/json",
+        ).json()["reference"]
+        booking = Booking.objects.get(reference=ref)
+        original_total = booking.total
+        assert not booking.price_lines.filter(kind="surcharge").exists()
+
+        TimeSurcharge.objects.create(
+            name="Late night", start_time="21:00", end_time="06:00",
+            percentage=Decimal("20.00"),
+        )
+        austin = ZoneInfo("America/Chicago")
+        night = timezone.localtime(future, austin).replace(
+            hour=23, minute=0, second=0, microsecond=0,
+        )
+        resp = client.patch(
+            reverse("api:my_booking_detail", args=[ref]),
+            {"action": "amend", "pickup_at": night.isoformat()},
+            content_type="application/json",
+        )
+        assert resp.status_code == 200
+        booking.refresh_from_db()
+        assert booking.total > original_total
+        assert booking.price_lines.filter(kind="surcharge").exists()
+        assert booking.status_changes.filter(note__icontains="pickup_at").exists()

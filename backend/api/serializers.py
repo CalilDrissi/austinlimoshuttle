@@ -93,6 +93,10 @@ class QuoteRequestSerializer(serializers.Serializer):
     def validate_pickup_at(self, value):
         if value < timezone.now():
             raise serializers.ValidationError("Pickup time must be in the future.")
+        from pricing.models import booking_lead_error
+        lead = booking_lead_error(value)
+        if lead:
+            raise serializers.ValidationError(lead)
         return value
 
     def validate(self, attrs):
@@ -171,9 +175,13 @@ class BookingSerializer(serializers.ModelSerializer):
 
 class BookingAmendSerializer(serializers.Serializer):
     """
-    Customer-editable, non-price booking details. Everything is optional (a
-    partial update) and nothing here can change the fare — no address, date or
-    vehicle. `phone` updates the account's contact number.
+    Customer-editable booking details within the office-set amendment window.
+
+    All optional (a partial update). Most fields don't touch the fare; changing
+    `pickup_at` does (night/event surcharges are time-based), so the server
+    re-prices on a date change. The pickup/drop-off addresses and vehicle stay
+    office-only — changing them is effectively a new trip. `phone` updates the
+    account's contact number.
     """
 
     passenger_count = serializers.IntegerField(min_value=1, max_value=MAX_PASSENGERS, required=False)
@@ -182,6 +190,16 @@ class BookingAmendSerializer(serializers.Serializer):
     pickup_sign = serializers.CharField(max_length=120, required=False, allow_blank=True)
     notes = serializers.CharField(required=False, allow_blank=True)
     phone = serializers.CharField(max_length=32, required=False, allow_blank=True)
+    pickup_at = serializers.DateTimeField(required=False)
+
+    def validate_pickup_at(self, value):
+        if value < timezone.now():
+            raise serializers.ValidationError("Pickup time must be in the future.")
+        from pricing.models import booking_lead_error
+        lead = booking_lead_error(value)
+        if lead:
+            raise serializers.ValidationError(lead)
+        return value
 
 
 class EnquirySerializer(serializers.ModelSerializer):

@@ -112,6 +112,13 @@ def redeem(token: str) -> tuple[QuoteRequest, Quote]:
     if quote_request.pickup_at < timezone.now():
         raise QuoteTokenError("That pickup time is in the past.")
 
+    # The office-set minimum lead time, re-checked here so a quote obtained just
+    # inside the window can't be redeemed after it closes.
+    from pricing.models import booking_lead_error
+    lead = booking_lead_error(quote_request.pickup_at)
+    if lead:
+        raise QuoteTokenError(lead)
+
     # Re-apply the fixed route price if the quote was issued for one and it is
     # still active. The id is signed, so this trusts only our own token.
     route = None

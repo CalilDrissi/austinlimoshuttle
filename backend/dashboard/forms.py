@@ -565,16 +565,21 @@ class PricingSettingsForm(BootstrapFormMixin, forms.ModelForm):
         model = PricingSettings
         fields = [
             "tax_rate", "currency", "cancellation_window_hours",
-            "amendment_window_hours", "quote_ttl_minutes",
+            "amendment_window_hours", "min_booking_lead_hours", "quote_ttl_minutes",
         ]
         labels = {
             "amendment_window_hours": "Customer edit window (hours before pickup)",
+            "min_booking_lead_hours": "Minimum booking notice (hours before pickup)",
         }
         help_texts = {
             "tax_rate": "Applied to every quote. Changing it changes every future fare.",
             "amendment_window_hours": (
                 "How close to pickup a customer can still change their booking "
                 "online. 72 = 3 days, 24 = 1 day, 6 = 6 hours."
+            ),
+            "min_booking_lead_hours": (
+                "How far ahead a customer must book online. 0 = no minimum, "
+                "2 = at least 2 hours' notice. Staff phone bookings aren't limited."
             ),
         }
 
