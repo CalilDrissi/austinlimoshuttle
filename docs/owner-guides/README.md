@@ -9,6 +9,16 @@ Distinct from `docs/app-architecture.html` (for developers) and
 
 ## Guides
 
-- _Pricing guide_ — how to set prices for the three ways a trip is sold
+- [**Pricing guide**](pricing.html) — how to set prices for the three ways a trip is sold
   (per-mile transfer, hourly hire, city-to-city fixed route), and how each
-  setting reflects on the storefront. _(in progress)_
+  setting reflects on the storefront. Includes worked examples and a video.
+
+## Videos
+
+- [`videos/add-vehicle-and-pricing.mp4`](videos/add-vehicle-and-pricing.mp4) —
+  admin adds a vehicle + rate card + photo, and it appears for the customer.
+- [`videos/city-to-city-pricing.mp4`](videos/city-to-city-pricing.mp4) —
+  admin adds a fixed city route + per-vehicle price; the customer gets the flat
+  price automatically (Austin → Houston, $395 flat vs per-mile).
+- [`videos/hourly-booking.mp4`](videos/hourly-booking.mp4) —
+  a customer books an hourly hire end to end ("By the hour", 4 hours → $340).

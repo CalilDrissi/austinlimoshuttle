@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pricing guide · M&amp;M Austin Limousine</title>
+<style>
+  :root { --brand:#0d5c46; --ink:#14181b; --muted:#5b636d; --line:#e4e8ec; --bg:#f6f8f9; --chip:#eef4f1; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.65 -apple-system,Segoe UI,Roboto,Arial,sans-serif; }
+  .wrap { max-width:900px; margin:0 auto; padding:32px 20px 80px; }
+  header.top { background:var(--brand); color:#fff; padding:40px 20px; }
+  header.top .wrap { padding:0 20px; }
+  header.top h1 { margin:0 0 6px; font-size:30px; }
+  header.top p { margin:0; opacity:.9; }
+  h2 { font-size:23px; margin:40px 0 6px; padding-top:14px; border-top:2px solid var(--line); }
+  h3 { font-size:18px; margin:26px 0 6px; }
+  h4 { font-size:15px; margin:18px 0 4px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+  p, li { color:#23292e; }
+  .muted { color:var(--muted); }
+  code { background:#eceff1; padding:1px 6px; border-radius:5px; font-size:.9em; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin:14px 0; }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:680px){ .two { grid-template-columns:1fr; } }
+  .admin { border-left:4px solid var(--brand); }
+  .shop { border-left:4px solid #0b74c4; }
+  .tag { display:inline-block; font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; padding:3px 9px; border-radius:999px; margin-bottom:8px; }
+  .tag.admin { background:var(--chip); color:var(--brand); border:0; }
+  .tag.shop { background:#e7f1fb; color:#0b74c4; }
+  table { width:100%; border-collapse:collapse; margin:12px 0; font-size:15px; }
+  th, td { text-align:left; padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { background:#f0f3f5; }
+  .steps { counter-reset:step; list-style:none; padding:0; }
+  .steps > li { counter-increment:step; position:relative; padding:14px 0 14px 46px; border-bottom:1px solid var(--line); }
+  .steps > li::before { content:counter(step); position:absolute; left:0; top:12px; width:30px; height:30px; background:var(--brand); color:#fff; border-radius:50%; text-align:center; line-height:30px; font-weight:700; }
+  .ex { background:#fbfdfc; border:1px dashed #bcd3c9; border-radius:10px; padding:12px 16px; margin:10px 0; }
+  .ex table { margin:6px 0; }
+  .callout { background:#fff7e6; border:1px solid #f0d9a8; border-radius:10px; padding:12px 16px; margin:14px 0; }
+  .toc a { color:var(--brand); text-decoration:none; }
+  .toc li { margin:3px 0; }
+  video { width:100%; border-radius:10px; border:1px solid var(--line); margin-top:8px; }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <h1>Pricing guide</h1>
+  <p>How you set your prices in the back office — and exactly where each one shows up for the customer.</p>
+</div></header>
+
+<div class="wrap">
+
+<p class="muted">This is an onboarding walkthrough. Do the steps in order; each one shows what the
+customer sees on the website as a result. You never edit code or prices in two places — everything here
+is set from <strong>Dashboard</strong> and takes effect on the storefront immediately.</p>
+
+<h2 id="overview">1 · How pricing works</h2>
+<p>You sell a ride in one of three ways. Every fare is built in this order:
+<strong>base fare → time surcharge → event-date uplift → meet &amp; greet → minimum fare → tax</strong>.
+(The exception is a city-to-city fixed route, which is an all-in flat price and skips the rest.)</p>
+
+<table>
+  <tr><th>Way to price</th><th>What it is</th><th>Where you set it</th></tr>
+  <tr><td><strong>Point-to-point (per-mile)</strong></td><td>Price grows with distance, using each vehicle's rate card.</td><td>Vehicles &amp; rates → the vehicle's distance bands</td></tr>
+  <tr><td><strong>Hourly hire</strong></td><td>Price = hourly rate × hours booked.</td><td>Vehicles &amp; rates → the vehicle's hourly rate</td></tr>
+  <tr><td><strong>City-to-city (fixed)</strong></td><td>A flat, all-in price per vehicle for a named route (e.g. Austin ↔ San Antonio).</td><td>City routes</td></tr>
+</table>
+
+<div class="card">
+  <h4>Watch: add a vehicle &amp; pricing → how the customer sees it</h4>
+  <video controls preload="metadata" src="videos/add-vehicle-and-pricing.mp4"></video>
+  <p class="muted" style="margin:6px 0 0">If the video doesn't play inline, open <code>videos/add-vehicle-and-pricing.mp4</code>.</p>
+</div>
+
+<h2 id="setup">2 · First-time setup, step by step</h2>
+<p class="muted">Each step: <strong>what you do in the dashboard</strong> → <strong>where it appears for the customer</strong>.</p>
+
+<ol class="steps">
+  <li>
+    <h3>Add your vehicles</h3>
+    <div class="two">
+      <div class="card admin"><span class="tag admin">Dashboard</span><div>Vehicles &amp; rates → <em>Add vehicle</em>: name, description, passenger &amp; luggage capacity, display order, and <strong>upload a photo</strong>.</div></div>
+      <div class="card shop"><span class="tag shop">Customer sees</span><div>The vehicle appears on the <em>Fleet</em> page and as a choice at checkout — with the photo you uploaded.</div></div>
+    </div>
+  </li>
+  <li>
+    <h3>Set the per-mile rate card (distance bands)</h3>
+    <div class="two">
+      <div class="card admin"><span class="tag admin">Dashboard</span><div>On the vehicle, add <em>distance bands</em>. They must start at 0 miles, be continuous (no gaps), and the last band is left open-ended. Example: 0–6 mi @ $15.00/mi, then 6+ mi @ $2.90/mi.</div></div>
+      <div class="card shop"><span class="tag shop">Customer sees</span><div>When they enter a pickup &amp; drop-off, the quote for that vehicle is calculated from these bands.</div></div>
+    </div>
+  </li>
+  <li>
+    <h3>Set the hourly rate</h3>
+    <div class="two">
+      <div class="card admin"><span class="tag admin">Dashboard</span><div>On the vehicle, set <em>Hourly rate</em> (e.g. $85.00/hour).</div></div>
+      <div class="card shop"><span class="tag shop">Customer sees</span><div>When they pick <em>By the hour</em> and a number of hours, the price is rate × hours.</div></div>
+    </div>
+  </li>
+  <li>
+    <h3>Meet &amp; greet fee</h3>
+    <div class="two">
+      <div class="card admin"><span class="tag admin">Dashboard</span><div>On the vehicle, set <em>Meet &amp; greet fee</em> (e.g. $25.00).</div></div>
+      <div class="card shop"><span class="tag shop">Customer sees</span><div>If they tick <em>Meet &amp; Greet</em>, this is added as its own line (except on city-to-city, which is all-in).</div></div>
+    </div>
+  </li>
+  <li>
+    <h3>Minimum fare</h3>
+    <div class="two">
+      <div class="card admin"><span class="tag admin">Dashboard</span><div>On the vehicle, set <em>Minimum fare</em> (e.g. $75.00).</div></div>
+      <div class="card shop"><span class="tag shop">Customer sees</span><div>Very short trips never quote below this floor.</div></div>
+    </div>
+  </li>
+  <li>
+    <h3>Time surcharges</h3>
+    <div class="two">
+      <div class="card admin"><span class="tag admin">Dashboard</span><div>Time surcharges → add a window, e.g. <em>Late night</em> 21:00–06:00, +20%.</div></div>
+      <div class="card shop"><span class="tag shop">Customer sees</span><div>A late-night pickup quote goes up, shown as its own "+20%" line.</div></div>
+    </div>
+  </li>
+  <li>
+    <h3>Event dates</h3>
+    <div class="two">
+      <div class="card admin"><span class="tag admin">Dashboard</span><div>Event dates → add a date with an uplift, e.g. SXSW +40%.</div></div>
+      <div class="card shop"><span class="tag shop">Customer sees</span><div>Pickups on that date are priced higher.</div></div>
+    </div>
+  </li>
+  <li>
+    <h3>Tax</h3>
+    <div class="two">
+      <div class="card admin"><span class="tag admin">Dashboard</span><div>Tax &amp; rules → set the tax rate (0 turns tax off).</div></div>
+      <div class="card shop"><span class="tag shop">Customer sees</span><div>A tax line on the quote and the receipt.</div></div>
+    </div>
+  </li>
+  <li>
+    <h3>City routes (fixed intercity prices)</h3>
+    <div class="two">
+      <div class="card admin"><span class="tag admin">Dashboard</span><div>City routes → add a route (e.g. Austin ↔ San Antonio, both ways) and a <strong>flat price per vehicle</strong>.</div></div>
+      <div class="card shop"><span class="tag shop">Customer sees</span><div>When their pickup &amp; drop-off cities match the route, the flat price replaces the per-mile fare — automatically, nothing extra to pick.</div></div>
+    </div>
+  </li>
+</ol>
+
+<h2 id="offerings">3 · The three offerings, with worked examples</h2>
+
+<h3>Point-to-point transfer (per-mile)</h3>
+<p>Used whenever the customer enters a pickup <em>and</em> a drop-off. The distance is measured by Google; the fare walks the rate card band by band.</p>
+<div class="ex">
+  <strong>Example — Business Class, AUS Airport → The Domain (~18 mi), daytime</strong>
+  <table>
+    <tr><td>First 6 mi × $15.00</td><td style="text-align:right">$90.00</td></tr>
+    <tr><td>Next 12 mi × $2.90</td><td style="text-align:right">$34.79</td></tr>
+    <tr><th>Total</th><th style="text-align:right">$124.79</th></tr>
+  </table>
+  <span class="muted">A 23:00 pickup would add a late-night +20% line; a meet &amp; greet would add its fee; tax (if set) applies last.</span>
+</div>
+
+<h3>Hourly hire</h3>
+<p>Used when the customer picks <em>By the hour</em>. Price is simply the hourly rate × hours, then the same surcharge / meet-&amp;-greet / minimum / tax rules on top.</p>
+<div class="ex">
+  <strong>Example — Business Class at $85.00/hour, 4 hours</strong>
+  <table>
+    <tr><td>4 h × $85.00</td><td style="text-align:right">$340.00</td></tr>
+    <tr><th>Total</th><th style="text-align:right">$340.00</th></tr>
+  </table>
+</div>
+<div class="card"><h4>Watch: a customer books by the hour</h4>
+  <video controls preload="metadata" src="videos/hourly-booking.mp4"></video></div>
+
+<h3>City-to-city (fixed route)</h3>
+<p>An <strong>all-in flat price</strong> per vehicle for a named route. It <em>replaces</em> the per-mile fare and does <strong>not</strong> add surcharges or tax. Set it once in City routes; the website applies it automatically when the pickup &amp; drop-off cities match.</p>
+<div class="ex">
+  <strong>Example — Austin ↔ San Antonio (both directions)</strong>
+  <table>
+    <tr><th>Vehicle</th><th style="text-align:right">Flat price (all-in)</th></tr>
+    <tr><td>Business Class</td><td style="text-align:right">$200.00</td></tr>
+    <tr><td>Business SUV</td><td style="text-align:right">$260.00</td></tr>
+    <tr><td>Chrysler 300 Limousine</td><td style="text-align:right">$400.00</td></tr>
+  </table>
+  <span class="muted">A vehicle you don't price on the route simply falls back to its normal per-mile fare for that trip.</span>
+</div>
+<div class="card"><h4>Watch: add a city route → the customer gets the flat price</h4>
+  <video controls preload="metadata" src="videos/city-to-city-pricing.mp4"></video></div>
+
+<h2 id="wins">4 · Which price wins</h2>
+<ul>
+  <li><strong>City-to-city beats per-mile</strong> when a trip matches a route and that vehicle has a route price. Otherwise the vehicle is priced per-mile as usual.</li>
+  <li><strong>Transfer vs hourly</strong> is chosen by the customer (drop-off address = transfer; <em>By the hour</em> = hourly).</li>
+  <li><strong>Surcharges and tax apply to transfer &amp; hourly, never to city-to-city</strong> (that price is all-in).</li>
+</ul>
+<div class="callout">
+  <strong>City matching note.</strong> City-to-city matches on the <em>city</em> (e.g. Austin ↔ San Antonio). A trip starting in a suburb (say, Round Rock) won't match the Austin route unless you add it as its own route. For specific neighbourhoods, add more routes.
+</div>
+
+<h2 id="preview">5 · Check your prices before you rely on them</h2>
+<ol>
+  <li>Open the website, enter a pickup &amp; drop-off (or <em>By the hour</em>), and run a quote — you see exactly what a customer sees.</li>
+  <li>Change a rate card or a city-route price in the dashboard, re-run the quote, and confirm the number moved.</li>
+  <li>Common gotchas: a gap in the distance bands (those miles price at $0), a vehicle with no bands and no hourly rate (it won't quote online), or a city-route price missing for a vehicle (it falls back to per-mile).</li>
+</ol>
+
+<h2 id="ref">6 · Quick reference</h2>
+<table>
+  <tr><th>I want to change…</th><th>Go to…</th></tr>
+  <tr><td>A vehicle's per-mile price</td><td>Vehicles &amp; rates → the vehicle → distance bands</td></tr>
+  <tr><td>A vehicle's hourly price</td><td>Vehicles &amp; rates → the vehicle → Hourly rate</td></tr>
+  <tr><td>A vehicle's photo / description / capacity</td><td>Vehicles &amp; rates → the vehicle</td></tr>
+  <tr><td>Meet &amp; greet fee / minimum fare</td><td>Vehicles &amp; rates → the vehicle</td></tr>
+  <tr><td>Late-night / time-based uplift</td><td>Time surcharges</td></tr>
+  <tr><td>Holiday / event uplift</td><td>Event dates</td></tr>
+  <tr><td>Tax rate</td><td>Tax &amp; rules</td></tr>
+  <tr><td>A fixed intercity price</td><td>City routes</td></tr>
+</table>
+
+<p class="muted" style="margin-top:36px">M&amp;M Austin Limousine — owner guide. Pricing is computed on the server from these settings; the customer can never change the price.</p>
+
+</div>
+</body>
+</html>
