@@ -24,7 +24,7 @@ export default function OrderSummary({ journey }: { journey?: Journey | null }) 
         <div className="mt-20">
           <ul className="list-routes">
             <li><span className="location-item">A</span><span className="info-location text-14-medium">{search.pickupAddress}</span></li>
-            {search.tripType === "transfer" && (
+            {(search.tripType === "transfer" || search.tripType === "city") && (
               <li><span className="location-item">B</span><span className="info-location text-14-medium">{search.dropoffAddress}</span></li>
             )}
           </ul>

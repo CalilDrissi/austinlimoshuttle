@@ -1,9 +1,11 @@
 import { apiGet } from "./client";
-import type { Vehicle, Page, Availability } from "@/types/api";
+import type { Vehicle, Page, Availability, CityRouteOptions } from "@/types/api";
 
 /** Read-only public catalog & CMS content. */
 export const catalogService = {
   listVehicles: () => apiGet<Vehicle[]>("/vehicles/"),
+  /** Cities + route pairs for the City-to-City booking tab. */
+  cityRoutes: () => apiGet<CityRouteOptions>("/city-routes/"),
   /**
    * A single vehicle class by slug. There's no detail endpoint, so this filters
    * the (small) public list — fine for the fleet detail page.

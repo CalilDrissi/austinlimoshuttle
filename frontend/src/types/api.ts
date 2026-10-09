@@ -68,6 +68,13 @@ export interface QuoteRequest {
   /** Hourly hire only. */
   hours?: string;
   meet_and_greet?: boolean;
+  /** Fixed city-to-city: addresses are cities and the flat route price applies. */
+  city_to_city?: boolean;
+}
+
+export interface CityRouteOptions {
+  cities: string[];
+  routes: { origin: string; destination: string; bidirectional: boolean }[];
 }
 
 export type QuoteLineKind =

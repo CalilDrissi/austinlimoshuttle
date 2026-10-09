@@ -2,9 +2,11 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import DayPicker from "@/components/ui/DayPicker";
 import TimePicker from "@/components/ui/TimePicker";
+import { catalogService } from "@/lib/api/catalog.service";
 import { useBookingStore } from "@/lib/booking/store";
 import {
   fetchPlaceSuggestions,
@@ -124,9 +126,41 @@ function AddressField({ label, value, onChange, placeholder }: {
   );
 }
 
-type TripType = "transfer" | "hourly";
+type TripType = "transfer" | "hourly" | "city";
+
+const TABS: [TripType, string][] = [
+  ["transfer", "Transfer"],
+  ["hourly", "By the hour"],
+  ["city", "City to City"],
+];
 
 const HOUR_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
+/** A city picker backed by the back-office routes. */
+function CityField({ label, value, onChange, cities, placeholder }: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  cities: string[];
+  placeholder: string;
+}) {
+  return (
+    <div className="search-inputs">
+      <label>{label}</label>
+      <select
+        className="search-input"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        style={{ border: "none", background: "transparent", width: "100%", cursor: "pointer" }}
+      >
+        <option value="">{placeholder}</option>
+        {cities.map((c) => (
+          <option key={c} value={c}>{c}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
 
 export default function BookingSearchWidget() {
   const router = useRouter();
@@ -141,7 +175,46 @@ export default function BookingSearchWidget() {
   const [meetGreet, setMeetGreet] = useState(false);
   const [error, setError] = useState("");
 
+  // Cities for the City-to-City tab, loaded once the tab is first opened.
+  const { data: cityData } = useQuery({
+    queryKey: ["city-routes"],
+    queryFn: () => catalogService.cityRoutes(),
+    enabled: tripType === "city",
+    staleTime: 5 * 60 * 1000,
+  });
+  const cities = cityData?.cities ?? [];
+
+  // From/To hold addresses for a transfer but city names for city-to-city;
+  // clear them when crossing that boundary so a stale value can't leak in.
+  const changeTab = (value: TripType) => {
+    setError("");
+    if ((value === "city") !== (tripType === "city")) { setFrom(""); setTo(""); }
+    setTripType(value);
+  };
+
   const handleSearch = () => {
+    if (tripType === "city") {
+      if (!from || !to) {
+        setError("Choose both a pickup and a drop-off city.");
+        return;
+      }
+      if (from === to) {
+        setError("Pickup and drop-off cities must be different.");
+        return;
+      }
+      if (!date || !time) {
+        setError("Please fill in date and time.");
+        return;
+      }
+      setSearch({
+        tripType: "city",
+        pickupAddress: from, dropoffAddress: to,
+        date, time, meetGreet: false,
+      });
+      router.push("/booking/vehicle");
+      return;
+    }
+
     if (!from.trim() || !date || !time) {
       setError("Please fill in date, time and pickup.");
       return;
@@ -166,26 +239,29 @@ export default function BookingSearchWidget() {
     router.push("/booking/vehicle");
   };
 
-  const tab = (value: TripType, label: string) => (
-    <button
-      type="button"
-      onClick={() => setTripType(value)}
-      style={{
-        padding: "8px 18px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer",
-        border: `1px solid ${tripType === value ? "#0E0E0E" : "#e0e4e8"}`,
-        background: tripType === value ? "#0E0E0E" : "#fff",
-        color: tripType === value ? "#fff" : "#0E0E0E",
-      }}
-    >
-      {label}
-    </button>
-  );
-
   return (
     <div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-        {tab("transfer", "Transfer")}
-        {tab("hourly", "By the hour")}
+      {/* Segmented control, left-aligned above the search card. */}
+      <div style={{
+        display: "inline-flex", gap: 4, marginBottom: 14,
+        background: "#f1f3f5", borderRadius: 10, padding: 4,
+      }}>
+        {TABS.map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => changeTab(value)}
+            style={{
+              padding: "8px 18px", borderRadius: 7, fontSize: 14, fontWeight: 600,
+              cursor: "pointer", border: "none", transition: "all .15s",
+              background: tripType === value ? "#0E0E0E" : "transparent",
+              color: tripType === value ? "#fff" : "#4a5568",
+              boxShadow: tripType === value ? "0 1px 3px rgba(0,0,0,.18)" : "none",
+            }}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       <div className="box-search-ride">
@@ -207,15 +283,26 @@ export default function BookingSearchWidget() {
 
         <div className="search-item search-from">
           <div className="search-icon"><span className="item-icon icon-from" /></div>
-          <AddressField label="From" value={from} onChange={setFrom} placeholder="Pickup address" />
+          {tripType === "city" ? (
+            <CityField label="From" value={from} onChange={setFrom} cities={cities} placeholder="Pickup city" />
+          ) : (
+            <AddressField label="From" value={from} onChange={setFrom} placeholder="Pickup address" />
+          )}
         </div>
 
-        {tripType === "transfer" ? (
+        {tripType === "transfer" && (
           <div className="search-item search-to">
             <div className="search-icon"><span className="item-icon icon-to" /></div>
             <AddressField label="To" value={to} onChange={setTo} placeholder="Drop-off address" />
           </div>
-        ) : (
+        )}
+        {tripType === "city" && (
+          <div className="search-item search-to">
+            <div className="search-icon"><span className="item-icon icon-to" /></div>
+            <CityField label="To" value={to} onChange={setTo} cities={cities} placeholder="Drop-off city" />
+          </div>
+        )}
+        {tripType === "hourly" && (
           <div className="search-item search-to">
             <div className="search-icon"><span className="item-icon icon-time" /></div>
             <div className="search-inputs">
@@ -234,13 +321,16 @@ export default function BookingSearchWidget() {
           </div>
         )}
 
-        <div className="search-item search-meet">
-          <label className="mm-check">
-            <input type="checkbox" checked={meetGreet} onChange={(e) => setMeetGreet(e.target.checked)} />
-            <span className="mm-check-box" />
-            <span className="mm-check-label">Meet &amp; Greet</span>
-          </label>
-        </div>
+        {/* Meet & Greet doesn't apply to the flat city-to-city fare. */}
+        {tripType !== "city" && (
+          <div className="search-item search-meet">
+            <label className="mm-check">
+              <input type="checkbox" checked={meetGreet} onChange={(e) => setMeetGreet(e.target.checked)} />
+              <span className="mm-check-box" />
+              <span className="mm-check-label">Meet &amp; Greet</span>
+            </label>
+          </div>
+        )}
 
         <div className="search-item search-button">
           <button className="btn btn-search" type="button" onClick={handleSearch}>

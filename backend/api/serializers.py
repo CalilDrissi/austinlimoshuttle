@@ -89,6 +89,10 @@ class QuoteRequestSerializer(serializers.Serializer):
         help_text="Hourly hire only. Omit for a point-to-point transfer.",
     )
     meet_and_greet = serializers.BooleanField(default=False)
+    # Fixed city-to-city: the two addresses are cities picked from the storefront
+    # dropdown and the fare is the flat route price, so the server does NOT bill a
+    # Google distance lookup -- it looks the route up by its endpoints instead.
+    city_to_city = serializers.BooleanField(default=False)
 
     def validate_pickup_at(self, value):
         if value < timezone.now():
@@ -103,6 +107,18 @@ class QuoteRequestSerializer(serializers.Serializer):
         hours = attrs.get("hours")
         dropoff = (attrs.get("dropoff_address") or "").strip()
 
+        if attrs.get("city_to_city"):
+            if hours is not None:
+                raise serializers.ValidationError(
+                    "City-to-city is a fixed route, not hourly hire."
+                )
+            if not dropoff:
+                raise serializers.ValidationError(
+                    "Choose both a pickup and a drop-off city."
+                )
+            attrs["dropoff_address"] = dropoff
+            return attrs
+
         if hours is None and not dropoff:
             raise serializers.ValidationError(
                 "Provide a destination address for a transfer, or hours for hourly hire."
@@ -114,6 +130,17 @@ class QuoteRequestSerializer(serializers.Serializer):
             )
         attrs["dropoff_address"] = dropoff
         return attrs
+
+
+class CityRouteOptionSerializer(serializers.Serializer):
+    origin = serializers.CharField()
+    destination = serializers.CharField()
+    bidirectional = serializers.BooleanField()
+
+
+class CityRouteOptionsSerializer(serializers.Serializer):
+    cities = serializers.ListField(child=serializers.CharField())
+    routes = CityRouteOptionSerializer(many=True)
 
 
 class PriceLineSerializer(serializers.Serializer):

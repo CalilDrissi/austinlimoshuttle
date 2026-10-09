@@ -7,8 +7,12 @@ import type { QuoteResult } from "@/types/api";
 
 /** Raw search inputs — kept for display and to (re)request a quote. */
 export interface Search {
-  /** "transfer" = point-to-point (needs a drop-off); "hourly" = by-the-hour (needs hours). */
-  tripType: "transfer" | "hourly";
+  /**
+   * "transfer" = point-to-point (needs a drop-off); "hourly" = by-the-hour
+   * (needs hours); "city" = fixed city-to-city (pickup/drop-off are cities and
+   * the flat route price applies).
+   */
+  tripType: "transfer" | "hourly" | "city";
   pickupAddress: string;
   dropoffAddress: string; // empty for an hourly hire
   hours?: number; // set for an hourly hire

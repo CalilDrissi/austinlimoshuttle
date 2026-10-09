@@ -56,6 +56,7 @@ from .serializers import (
     BookingSerializer,
     BookingStatusSerializer,
     CancelBookingSerializer,
+    CityRouteOptionsSerializer,
     DetailSerializer,
     EnquirySerializer,
     LoginRequestSerializer,
@@ -274,12 +275,25 @@ def create_quote(request):
     serializer.is_valid(raise_exception=True)
     data = serializer.validated_data
 
-    # The distance is measured here, from the addresses. It is never accepted
-    # from the client, and there is no fallback if the lookup fails -- a
-    # fallback would simply be the vulnerability behind a retry.
     journey = None
     distance_miles = None
-    if data.get("hours") is None:
+    route = None
+
+    if data.get("city_to_city"):
+        # Explicit fixed-route request: the addresses are cities chosen from the
+        # storefront dropdown. Look the route up by its endpoints -- no billed
+        # Google distance lookup, and the flat price is all-in.
+        route = CityRoute.find_pair(data["pickup_address"], data["dropoff_address"])
+        if route is None:
+            return Response(
+                {"detail": "We don't have a fixed price for that city pair. "
+                           "Please pick another, or switch to Transfer."},
+                status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            )
+    elif data.get("hours") is None:
+        # The distance is measured here, from the addresses. It is never accepted
+        # from the client, and there is no fallback if the lookup fails -- a
+        # fallback would simply be the vulnerability behind a retry.
         try:
             journey = measure_journey(data["pickup_address"], data["dropoff_address"])
         except DistanceLookupError as exc:
@@ -287,11 +301,8 @@ def create_quote(request):
                 {"detail": str(exc)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY,
             )
         distance_miles = journey.distance_miles
-
-    # Fixed city-to-city: if the resolved pickup/drop-off cities match a route,
-    # its flat per-vehicle price replaces the per-mile fare (all-in).
-    route = None
-    if journey is not None:
+        # Fixed city-to-city: if the resolved pickup/drop-off cities match a
+        # route, its flat per-vehicle price replaces the per-mile fare (all-in).
         route = CityRoute.match(journey.resolved_origin, journey.resolved_destination)
 
     results = quote_all(
@@ -303,10 +314,14 @@ def create_quote(request):
     )
 
     if not results:
-        return Response(
-            {"detail": "No vehicle can be priced for that journey."},
-            status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        # In city mode the route was found but no vehicle is priced on it yet.
+        detail = (
+            "We don't have a fixed price for that city pair. "
+            "Please pick another, or switch to Transfer."
+            if data.get("city_to_city")
+            else "No vehicle can be priced for that journey."
         )
+        return Response({"detail": detail}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
     payload = []
     for result in results:
@@ -343,6 +358,32 @@ def create_quote(request):
             "dropoff_address": journey.resolved_destination,
         } if journey else None,
         "quotes": payload,
+    })
+
+
+@extend_schema(
+    tags=["quotes"],
+    summary="City-to-city pickup/drop-off options",
+    description=(
+        "The cities offered in the storefront's City-to-City tab, taken from the "
+        "fixed routes defined in the back office. Both endpoints of every active "
+        "route are listed; whether a particular pair is priced is settled when a "
+        "quote is requested with `city_to_city=true`."
+    ),
+    responses={200: CityRouteOptionsSerializer},
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def city_routes(request):
+    """Cities and route pairs for the storefront City-to-City dropdowns."""
+    routes = list(CityRoute.objects.filter(is_active=True).order_by("origin", "destination"))
+    return Response({
+        "cities": CityRoute.cities(),
+        "routes": [
+            {"origin": r.origin.strip(), "destination": r.destination.strip(),
+             "bidirectional": r.bidirectional}
+            for r in routes
+        ],
     })
 
 

@@ -631,10 +631,15 @@ Page ─┬─&lt; Banner                   ContactMessage &gt;─ User (replied
       <div class="codes"><span class="code ok">200</span></div></div></div>
 
   <h3>Quote &amp; booking</h3>
+  <div class="ep"><div class="ep-h"><span class="m get">GET</span><span class="sig">/api/city-routes/</span><span class="au">public</span></div>
+    <div class="ep-b"><p class="sm">Cities + route pairs for the storefront's City-to-City tab, from the active back-office routes. Both endpoints of every active route are listed.</p>
+      <div class="lab">Response 200 · CityRouteOptions</div>
+      <div class="fieldgrid"><span class="r">cities<span class="ty"> str[]</span></span><span class="r">routes<span class="ty"> {origin, destination, bidirectional}[]</span></span></div>
+      <div class="codes"><span class="code ok">200</span></div></div></div>
   <div class="ep"><div class="ep-h"><span class="m post">POST</span><span class="sig">/api/quotes/</span><span class="au">public</span></div>
-    <div class="ep-b"><p class="sm">Price a journey across <b>every</b> vehicle. Returns a signed <code>quote_token</code> per vehicle (~30&nbsp;min TTL). The one call that decides money.</p>
+    <div class="ep-b"><p class="sm">Price a journey across <b>every</b> vehicle. Returns a signed <code>quote_token</code> per vehicle (~30&nbsp;min TTL). The one call that decides money. Set <code>city_to_city=true</code> with two cities (from <code>/api/city-routes/</code>) for the flat intercity fare — no distance lookup.</p>
       <div class="lab">Request · QuoteRequest</div>
-      <div class="fieldgrid"><span class="r">pickup_address<span class="ty"> str</span></span><span>dropoff_address<span class="ty"> str</span></span><span class="r">pickup_at<span class="ty"> datetime</span></span><span>hours<span class="ty"> decimal</span></span><span>meet_and_greet<span class="ty"> bool</span></span></div>
+      <div class="fieldgrid"><span class="r">pickup_address<span class="ty"> str</span></span><span>dropoff_address<span class="ty"> str</span></span><span class="r">pickup_at<span class="ty"> datetime</span></span><span>hours<span class="ty"> decimal</span></span><span>meet_and_greet<span class="ty"> bool</span></span><span>city_to_city<span class="ty"> bool</span></span></div>
       <div class="lab">Response 200 · QuoteResponse</div>
       <div class="fieldgrid"><span class="r">journey<span class="ty"> obj</span></span><span class="r">quotes<span class="ty"> QuoteResult[]</span></span><span class="ty">QuoteResult: vehicle_id, vehicle_name, subtotal, surcharge_total, tax, total, currency, lines[], quote_token</span></div>
       <div class="codes"><span class="code ok">200</span><span class="code">400</span><span class="code">422</span><span class="code">429</span></div></div></div>
@@ -869,6 +874,27 @@ Page ─┬─&lt; Banner                   ContactMessage &gt;─ User (replied
   <!-- ============================== 13 ============================== -->
   <h2 id="changelog">13 · Changelog</h2>
   <p class="muted">What has actually been built, newest first. Per the rule in §11, every change lands here.</p>
+
+  <div class="modelcard">
+    <div class="mh"><span>2026-10-09 · Storefront City-to-City tab (dropdowns) + redesigned trip-type tabs</span><span class="tbl">full-stack</span></div>
+    <table>
+      <tr><td><b>City-to-City is now a bookable storefront option, not just a silent back-office match.</b>
+      Previously the flat intercity price only applied if a customer happened to type a From/To that matched a
+      defined route; there was no visible way to choose it. Now the booking widget has a third <b>City to City</b> tab
+      whose <b>From/To are dropdowns populated from the back-office routes</b> (new public endpoint
+      <code>GET /api/city-routes/</code> → <code>{cities, routes}</code>). Both dropdowns list every city on an active
+      route; picking an unpriced pair returns a clear error at search. A city quote sends
+      <code>city_to_city:true</code> and the server looks the route up by its endpoints
+      (<code>CityRoute.find_pair</code>, bidirectional) and prices the <b>flat all-in fare with no billed Google
+      distance lookup</b>. The signed quote token already carries <code>route_id</code>, so booking re-applies the flat
+      price unchanged. Verified end-to-end (Playwright): Austin→Houston → Business Class $395 / Business SUV $495.
+      <b>Owner action:</b> none — it reads the routes + prices you already set in <b>Pricing → City routes</b>.</td></tr>
+      <tr><td><b>Trip-type tabs redesigned.</b> The loose "Transfer / By the hour" pills floating over the hero are now a
+      single left-aligned <b>segmented control</b> above the search card (Transfer · By the hour · City to City). Meet &amp;
+      Greet is hidden for City-to-City (the flat fare is all-in). 6 new API tests
+      (<code>api/tests/test_city_routes.py</code>); 548 backend green; frontend typechecks.</td></tr>
+    </table>
+  </div>
 
   <div class="modelcard">
     <div class="mh"><span>2026-10-09 · Fix: driver/dashboard login 403 (scoped CSRF cookie) + vehicle capacity enforced</span><span class="tbl">full-stack</span></div>

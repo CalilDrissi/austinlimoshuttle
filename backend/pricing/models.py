@@ -159,6 +159,40 @@ class CityRoute(models.Model):
         return {part.strip().lower() for part in (address or "").split(",") if part.strip()}
 
     @classmethod
+    def cities(cls) -> list[str]:
+        """Every distinct city named by an active route, for storefront dropdowns.
+
+        Both endpoints of every active route are offered -- which pairs are
+        actually priced is settled when a quote is requested (find_pair).
+        """
+        names: dict[str, str] = {}  # lower -> original-cased, first-seen wins
+        for route in cls.objects.filter(is_active=True):
+            for city in (route.origin.strip(), route.destination.strip()):
+                if city:
+                    names.setdefault(city.lower(), city)
+        return [names[k] for k in sorted(names)]
+
+    @classmethod
+    def find_pair(cls, origin_city: str, destination_city: str):
+        """The active route for an explicit pair of city names, or None.
+
+        Unlike match(), this compares whole city names -- the storefront sends a
+        value picked from the dropdown, not a free-text address. Honours
+        bidirectional routes.
+        """
+        o = (origin_city or "").strip().lower()
+        d = (destination_city or "").strip().lower()
+        if not o or not d:
+            return None
+        for route in cls.objects.filter(is_active=True).prefetch_related("prices"):
+            a, b = route.origin.strip().lower(), route.destination.strip().lower()
+            if a == o and b == d:
+                return route
+            if route.bidirectional and a == d and b == o:
+                return route
+        return None
+
+    @classmethod
     def match(cls, origin_address: str, destination_address: str):
         """
         The active route whose cities match these two (resolved) addresses, or
