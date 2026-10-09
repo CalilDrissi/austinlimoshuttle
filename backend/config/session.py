@@ -191,3 +191,48 @@ class _ScopedEnsureCsrfCookie(ScopedCsrfMiddleware):
 # Drop-in replacement for django.views.decorators.csrf.ensure_csrf_cookie that
 # honours the per-path cookie name. Used by the storefront's /api/auth/csrf/.
 scoped_ensure_csrf_cookie = decorator_from_middleware(_ScopedEnsureCsrfCookie)
+
+
+# ---------------------------------------------------------------------------
+# DRF SessionAuthentication that honours the scoped CSRF cookie
+# ---------------------------------------------------------------------------
+# DRF enforces CSRF on authenticated session requests with its OWN check built
+# on the stock CsrfViewMiddleware (rest_framework.authentication.CSRFCheck),
+# which reads settings.CSRF_COOKIE_NAME directly -- it does not go through our
+# ScopedCsrfMiddleware. So an authenticated storefront write (amend, cancel,
+# save-card, logout) would be validated against the default `csrftoken` cookie
+# instead of the storefront's `mm_store_csrftoken`, and fail. This subclass runs
+# the same check through the scoped middleware so the right cookie is read.
+
+from rest_framework import exceptions as _drf_exceptions  # noqa: E402
+from rest_framework.authentication import (  # noqa: E402
+    SessionAuthentication as _DrfSessionAuthentication,
+)
+
+
+class _ScopedCSRFCheck(ScopedCsrfMiddleware):
+    def _reject(self, request, reason):
+        return reason  # DRF wants the reason string, not an HttpResponse
+
+
+class ScopedSessionAuthentication(_DrfSessionAuthentication):
+    """DRF SessionAuthentication whose CSRF check reads the per-path cookie."""
+
+    def enforce_csrf(self, request):
+        def dummy_get_response(request):  # pragma: no cover
+            return None
+
+        check = _ScopedCSRFCheck(dummy_get_response)
+        check.process_request(request)
+        reason = check.process_view(request, None, (), {})
+        if reason:
+            raise _drf_exceptions.PermissionDenied(f"CSRF Failed: {reason}")
+
+
+# Teach drf-spectacular to document the subclass exactly like the stock
+# SessionAuthentication (cookie-based), so schema generation stays warning-free.
+from drf_spectacular.authentication import SessionScheme as _SessionScheme  # noqa: E402
+
+
+class ScopedSessionScheme(_SessionScheme):
+    target_class = "config.session.ScopedSessionAuthentication"

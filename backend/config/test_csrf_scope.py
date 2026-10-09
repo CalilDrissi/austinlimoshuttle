@@ -71,3 +71,33 @@ def test_storefront_login_does_not_clobber_the_staff_csrf_token():
     # The storefront token rotated; the staff token did not.
     assert client.cookies[STOREFRONT_CSRF_COOKIE_NAME].value != store_token
     assert client.cookies["csrftoken"].value == staff_token
+
+
+@pytest.mark.django_db
+def test_authenticated_storefront_write_uses_the_scoped_csrf_cookie():
+    """DRF's SessionAuthentication runs its own CSRF check; it must read the
+    storefront's scoped cookie, or every authenticated storefront write 403s."""
+    User = get_user_model()
+    User.objects.create_user(email="rider2@example.com", password="RiderPass!2026")
+    client = Client(enforce_csrf_checks=True)
+
+    client.get(reverse("api:csrf"))
+    token = client.cookies[STOREFRONT_CSRF_COOKIE_NAME].value
+    login = client.post(
+        reverse("api:login"),
+        data={"email": "rider2@example.com", "password": "RiderPass!2026"},
+        content_type="application/json",
+        HTTP_X_CSRFTOKEN=token,
+    )
+    assert login.status_code == 200
+
+    # Still authenticated: a write WITHOUT the token is genuinely rejected (the
+    # PermissionDenied is raised in auth, so the session survives for the next
+    # assertion).
+    bad = client.post(reverse("api:logout"))
+    assert bad.status_code == 403
+
+    # The same write WITH the scoped token passes -- the whole point of the fix.
+    token = client.cookies[STOREFRONT_CSRF_COOKIE_NAME].value  # rotated on login
+    ok = client.post(reverse("api:logout"), HTTP_X_CSRFTOKEN=token)
+    assert ok.status_code != 403, ok.content
