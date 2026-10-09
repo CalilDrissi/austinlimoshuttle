@@ -175,14 +175,15 @@ export default function BookingSearchWidget() {
   const [meetGreet, setMeetGreet] = useState(false);
   const [error, setError] = useState("");
 
-  // Cities for the City-to-City tab, loaded once the tab is first opened.
+  // Cities for the City-to-City tab. Loaded up front (cheap, cached) so the tab
+  // only appears once the back office has at least one route to offer.
   const { data: cityData } = useQuery({
     queryKey: ["city-routes"],
     queryFn: () => catalogService.cityRoutes(),
-    enabled: tripType === "city",
     staleTime: 5 * 60 * 1000,
   });
   const cities = cityData?.cities ?? [];
+  const tabs = cities.length ? TABS : TABS.filter(([v]) => v !== "city");
 
   // From/To hold addresses for a transfer but city names for city-to-city;
   // clear them when crossing that boundary so a stale value can't leak in.
@@ -246,7 +247,7 @@ export default function BookingSearchWidget() {
         display: "inline-flex", gap: 4, marginBottom: 14,
         background: "#f1f3f5", borderRadius: 10, padding: 4,
       }}>
-        {TABS.map(([value, label]) => (
+        {tabs.map(([value, label]) => (
           <button
             key={value}
             type="button"
