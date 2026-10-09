@@ -60,6 +60,7 @@ class VehicleSerializer(serializers.ModelSerializer):
             "passenger_capacity", "luggage_capacity", "minimum_fare", "photo",
         ]
 
+    @extend_schema_field(serializers.URLField(allow_null=True))
     def get_photo(self, obj):
         """Absolute URL of the uploaded photo, or null to fall back to a placeholder."""
         if not obj.photo:

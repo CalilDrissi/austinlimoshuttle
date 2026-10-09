@@ -16,6 +16,10 @@ from django.core.cache import cache
 
 from pricing.distance import DistanceLookupError, lookup
 
+# lookup() reads the Maps key from SiteSettings (DB-backed, admin-configurable),
+# so these tests need database access even though they stub the network call.
+pytestmark = pytest.mark.django_db
+
 OK_PAYLOAD = {
     "status": "OK",
     "origin_addresses": ["3600 Presidential Blvd, Austin, TX 78719, USA"],

@@ -871,6 +871,22 @@ Page ─┬─&lt; Banner                   ContactMessage &gt;─ User (replied
   <p class="muted">What has actually been built, newest first. Per the rule in §11, every change lands here.</p>
 
   <div class="modelcard">
+    <div class="mh"><span>2026-10-09 · Backend test suite repaired — 516 green</span><span class="tbl">tests</span></div>
+    <table>
+      <tr><td>The suite had been red (28 failures) from drift the session/key-config work introduced, and <code>pytest</code>
+      was silently running under the container's <code>config.settings.dev</code> env var instead of the test settings.
+      Fixed so a plain <code>pytest</code> runs all <b>516 green</b>: (1) <code>pytest.ini</code> pins
+      <code>--ds=config.settings.test</code> and adds the <code>notifications</code> path; (2) new <code>conftest.py</code>
+      ships a <code>ScopedClient</code> whose <code>login()</code> also sets the <code>mm_store_sessionid</code> cookie, so
+      API auth tests work with <code>ScopedSessionMiddleware</code>; (3) <code>test_distance</code> marked
+      <code>django_db</code> (the lookup now reads the Maps key from <code>SiteSettings</code>); (4) two quote-integrity
+      tests updated to send the now-required <code>guest_phone</code>; (5) a flaky timezone test fixed to build the
+      pickup at local noon. Also annotated the new <code>VehicleSerializer.photo</code> method field
+      (<code>@extend_schema_field</code>) so the OpenAPI schema generates warning-free.</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
     <div class="mh"><span>2026-10-09 · Vehicle photos now flow from the back office to the storefront</span><span class="tbl">full-stack</span></div>
     <table>
       <tr><td>The dashboard let staff upload a photo per vehicle, but it never reached the storefront — the public

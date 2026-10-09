@@ -174,6 +174,7 @@ class TestQuoteTokenIntegrity:
             {
                 "quote_token": token,
                 "guest_email": "guest@example.com",
+                "guest_phone": "+15125550000",
                 "total": "1.00",       # attempted override
                 "subtotal": "1.00",
             },
@@ -238,7 +239,8 @@ class TestQuoteTokenIntegrity:
 
         response = client.post(
             reverse("api:create_booking"),
-            {"quote_token": token, "guest_email": "g@example.com"},
+            {"quote_token": token, "guest_email": "g@example.com",
+             "guest_phone": "+15125550000"},
             content_type="application/json",
         )
         assert response.status_code == 201

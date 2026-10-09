@@ -5,7 +5,7 @@ The permission matrix is the point: the legacy system had one shared admin
 login, so every staff member could do everything and no action was attributable.
 """
 
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 from decimal import Decimal
 
 import pytest
@@ -528,14 +528,17 @@ class TestQuickFiltersAndCalendar:
 
     def test_today_filter_shows_only_todays_pickups(self, client, roles, vehicle):
         today = timezone.localdate()
-        now = timezone.now()
+        # Noon today in the business timezone -- using now.replace(hour=12) sets
+        # noon UTC, whose *local* date can be a different day near midnight, which
+        # made this test flaky depending on the hour it ran.
+        local_noon = timezone.make_aware(datetime.combine(today, time(12, 0)))
         todays = Booking.objects.create(
             vehicle=vehicle, pickup_address="today", total=Decimal("50"),
-            pickup_at=now.replace(hour=12, minute=0),
+            pickup_at=local_noon,
         )
         next_week = Booking.objects.create(
             vehicle=vehicle, pickup_address="later", total=Decimal("50"),
-            pickup_at=now + timedelta(days=7),
+            pickup_at=local_noon + timedelta(days=7),
         )
         self._staff(client, roles)
 
