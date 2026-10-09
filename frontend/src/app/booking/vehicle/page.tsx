@@ -5,32 +5,25 @@ import { useRouter } from "next/navigation";
 import { quoteService } from "@/lib/api/quote.service";
 import { catalogService } from "@/lib/api/catalog.service";
 import { useBookingStore, pickupIso } from "@/lib/booking/store";
+import { VEHICLE_PLACEHOLDER } from "@/lib/fleet/images";
 import OrderSummary from "@/components/booking/OrderSummary";
 import type { QuoteResult, Vehicle } from "@/types/api";
-
-const CAR_IMAGES = [
-  "/assets/imgs/page/booking/img-vehicle.png",
-  "/assets/imgs/page/booking/img-vehicle-2.png",
-  "/assets/imgs/page/booking/img-vehicle-3.png",
-  "/assets/imgs/page/booking/img-vehicle-4.png",
-];
 
 function money(amount: string, currency: string) {
   const symbol = currency === "USD" ? "$" : `${currency} `;
   return `${symbol}${Number(amount).toFixed(2)}`;
 }
 
-function VehicleCard({ quote, vehicle, image, meetGreet, onSelect }: {
+function VehicleCard({ quote, vehicle, meetGreet, onSelect }: {
   quote: QuoteResult;
   vehicle?: Vehicle;
-  image: string;
   meetGreet: boolean;
   onSelect: (q: QuoteResult) => void;
 }) {
   return (
     <div className="item-vehicle">
       <div className="vehicle-left">
-        <div className="vehicle-image"><img src={vehicle?.photo || image} alt={quote.vehicle_name} /></div>
+        <div className="vehicle-image"><img src={vehicle?.photo || VEHICLE_PLACEHOLDER} alt={quote.vehicle_name} /></div>
         <div className="vehicle-facilities">
           {meetGreet && <div className="text-fact meet-greeting">Meet &amp; Greet included</div>}
           <div className="text-fact free-cancel">Free cancellation</div>
@@ -84,6 +77,9 @@ export default function BookingVehiclePage() {
   const { data: vehicles } = useQuery({
     queryKey: ["vehicles"],
     queryFn: () => catalogService.listVehicles(),
+    // Catalog is cheap and must reflect a back-office photo/capacity change
+    // promptly, so always revalidate rather than serving the 60s global cache.
+    staleTime: 0,
   });
   const byId = new Map((vehicles ?? []).map((v) => [v.id, v]));
 
@@ -111,12 +107,11 @@ export default function BookingVehiclePage() {
               )}
 
               <div className="list-vehicles">
-                {data?.quotes.map((q, i) => (
+                {data?.quotes.map((q) => (
                   <VehicleCard
                     key={q.vehicle_id}
                     quote={q}
                     vehicle={byId.get(q.vehicle_id)}
-                    image={CAR_IMAGES[i % CAR_IMAGES.length]}
                     meetGreet={!!search?.meetGreet}
                     onSelect={handleSelect}
                   />

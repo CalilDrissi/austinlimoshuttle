@@ -17,6 +17,7 @@ export default function BookingExtraPage() {
   const { data: vehicles } = useQuery({
     queryKey: ["vehicles"],
     queryFn: () => catalogService.listVehicles(),
+    staleTime: 0, // reflect back-office capacity changes promptly
   });
 
   useEffect(() => {

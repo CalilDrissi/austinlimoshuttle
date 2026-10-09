@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { catalogService } from "@/lib/api/catalog.service";
-import { vehicleImage } from "@/lib/fleet/images";
+import { VEHICLE_PLACEHOLDER } from "@/lib/fleet/images";
 import type { Vehicle } from "@/types/api";
 
 /** Marketing copy from the DB is newline-separated; render it as a tick list. */
@@ -95,7 +95,7 @@ export default function FleetDetailPage() {
         <div className="container-sub">
           <div className="row align-items-center">
             <div className="col-lg-6 mb-30">
-              <img className="w-100" style={{ borderRadius: 16 }} src={vehicle.photo || vehicleImage(vehicle.slug)} alt={vehicle.name} />
+              <img className="w-100" style={{ borderRadius: 16 }} src={vehicle.photo || VEHICLE_PLACEHOLDER} alt={vehicle.name} />
             </div>
             <div className="col-lg-6 mb-30">
               <div className="content-single">

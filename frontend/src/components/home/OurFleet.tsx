@@ -6,7 +6,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 import "swiper/css/navigation";
 import { catalogService } from "@/lib/api/catalog.service";
-import { vehicleImage } from "@/lib/fleet/images";
+import { VEHICLE_PLACEHOLDER } from "@/lib/fleet/images";
 import type { Vehicle } from "@/types/api";
 
 export default function OurFleet() {
@@ -78,7 +78,7 @@ export default function OurFleet() {
                   </div>
                   <div className="cardImage mb-30">
                     <Link href={`/fleet/${v.slug}`}>
-                      <img src={v.photo || vehicleImage(v.slug)} alt={v.name} />
+                      <img src={v.photo || VEHICLE_PLACEHOLDER} alt={v.name} />
                     </Link>
                   </div>
                   <div className="cardInfoBottom">

@@ -62,7 +62,15 @@ class VehicleSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(serializers.URLField(allow_null=True))
     def get_photo(self, obj):
-        """Absolute URL of the uploaded photo, or null to fall back to a placeholder."""
+        """Absolute URL of the uploaded photo, or null to fall back to a placeholder.
+
+        The host comes from the incoming request (build_absolute_uri). The
+        storefront fetches /api/vehicles/ from the BROWSER (all vehicle fetches
+        are in "use client" components), so that host is the public site and the
+        URL is correct. If a vehicle list were ever fetched server-side from
+        Next (e.g. SSR against an internal container host), this would need a
+        configured absolute MEDIA base instead.
+        """
         if not obj.photo:
             return None
         url = obj.photo.url
