@@ -63,12 +63,21 @@ export default function BookingVehiclePage() {
     enabled: !!search,
     retry: false,
     queryFn: () =>
-      quoteService.create({
-        pickup_address: search!.pickupAddress,
-        dropoff_address: search!.dropoffAddress,
-        pickup_at: pickupIso(search!),
-        meet_and_greet: search!.meetGreet,
-      }),
+      quoteService.create(
+        search!.tripType === "hourly"
+          ? {
+              pickup_address: search!.pickupAddress,
+              hours: String(search!.hours ?? ""),
+              pickup_at: pickupIso(search!),
+              meet_and_greet: search!.meetGreet,
+            }
+          : {
+              pickup_address: search!.pickupAddress,
+              dropoff_address: search!.dropoffAddress,
+              pickup_at: pickupIso(search!),
+              meet_and_greet: search!.meetGreet,
+            },
+      ),
   });
 
   const { data: vehicles } = useQuery({

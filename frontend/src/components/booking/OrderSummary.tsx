@@ -24,11 +24,16 @@ export default function OrderSummary({ journey }: { journey?: Journey | null }) 
         <div className="mt-20">
           <ul className="list-routes">
             <li><span className="location-item">A</span><span className="info-location text-14-medium">{search.pickupAddress}</span></li>
-            <li><span className="location-item">B</span><span className="info-location text-14-medium">{search.dropoffAddress}</span></li>
+            {search.tripType === "transfer" && (
+              <li><span className="location-item">B</span><span className="info-location text-14-medium">{search.dropoffAddress}</span></li>
+            )}
           </ul>
         </div>
         <div className="mt-20">
           <ul className="list-icons">
+            {search.tripType === "hourly" && (
+              <li><span className="icon-item icon-time" /><span className="info-location text-14-medium">By the hour · {search.hours} hour{search.hours === 1 ? "" : "s"}</span></li>
+            )}
             <li><span className="icon-item icon-plan" /><span className="info-location text-14-medium">{search.date}</span></li>
             <li><span className="icon-item icon-time" /><span className="info-location text-14-medium">{search.time}</span></li>
             {search.meetGreet && (

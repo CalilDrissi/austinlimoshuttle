@@ -124,76 +124,133 @@ function AddressField({ label, value, onChange, placeholder }: {
   );
 }
 
+type TripType = "transfer" | "hourly";
+
+const HOUR_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
 export default function BookingSearchWidget() {
   const router = useRouter();
   const setSearch = useBookingStore((s) => s.setSearch);
 
+  const [tripType, setTripType] = useState<TripType>("transfer");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [hours, setHours] = useState("3");
   const [meetGreet, setMeetGreet] = useState(false);
   const [error, setError] = useState("");
 
   const handleSearch = () => {
-    if (!from.trim() || !to.trim() || !date || !time) {
-      setError("Please fill in date, time, pickup and drop-off.");
+    if (!from.trim() || !date || !time) {
+      setError("Please fill in date, time and pickup.");
       return;
     }
-    setSearch({
-      pickupAddress: from.trim(),
-      dropoffAddress: to.trim(),
-      date,
-      time,
-      meetGreet,
-    });
+    if (tripType === "transfer") {
+      if (!to.trim()) {
+        setError("Please enter a drop-off address, or switch to “By the hour”.");
+        return;
+      }
+      setSearch({
+        tripType: "transfer",
+        pickupAddress: from.trim(), dropoffAddress: to.trim(),
+        date, time, meetGreet,
+      });
+    } else {
+      setSearch({
+        tripType: "hourly",
+        pickupAddress: from.trim(), dropoffAddress: "", hours: Number(hours),
+        date, time, meetGreet,
+      });
+    }
     router.push("/booking/vehicle");
   };
 
+  const tab = (value: TripType, label: string) => (
+    <button
+      type="button"
+      onClick={() => setTripType(value)}
+      style={{
+        padding: "8px 18px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer",
+        border: `1px solid ${tripType === value ? "#0E0E0E" : "#e0e4e8"}`,
+        background: tripType === value ? "#0E0E0E" : "#fff",
+        color: tripType === value ? "#fff" : "#0E0E0E",
+      }}
+    >
+      {label}
+    </button>
+  );
+
   return (
-    <div className="box-search-ride">
-      <div className="search-item search-date">
-        <div className="search-icon"><span className="item-icon icon-date" /></div>
-        <div className="search-inputs">
-          <label>Date</label>
-          <DayPicker value={date} onChange={setDate} placeholder="Select date" />
+    <div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+        {tab("transfer", "Transfer")}
+        {tab("hourly", "By the hour")}
+      </div>
+
+      <div className="box-search-ride">
+        <div className="search-item search-date">
+          <div className="search-icon"><span className="item-icon icon-date" /></div>
+          <div className="search-inputs">
+            <label>Date</label>
+            <DayPicker value={date} onChange={setDate} placeholder="Select date" />
+          </div>
         </div>
-      </div>
 
-      <div className="search-item search-time">
-        <div className="search-icon"><span className="item-icon icon-time" /></div>
-        <div className="search-inputs">
-          <label>Time</label>
-          <TimePicker value={time} onChange={setTime} />
+        <div className="search-item search-time">
+          <div className="search-icon"><span className="item-icon icon-time" /></div>
+          <div className="search-inputs">
+            <label>Time</label>
+            <TimePicker value={time} onChange={setTime} />
+          </div>
         </div>
-      </div>
 
-      <div className="search-item search-from">
-        <div className="search-icon"><span className="item-icon icon-from" /></div>
-        <AddressField label="From" value={from} onChange={setFrom} placeholder="Pickup address" />
-      </div>
+        <div className="search-item search-from">
+          <div className="search-icon"><span className="item-icon icon-from" /></div>
+          <AddressField label="From" value={from} onChange={setFrom} placeholder="Pickup address" />
+        </div>
 
-      <div className="search-item search-to">
-        <div className="search-icon"><span className="item-icon icon-to" /></div>
-        <AddressField label="To" value={to} onChange={setTo} placeholder="Drop-off address" />
-      </div>
+        {tripType === "transfer" ? (
+          <div className="search-item search-to">
+            <div className="search-icon"><span className="item-icon icon-to" /></div>
+            <AddressField label="To" value={to} onChange={setTo} placeholder="Drop-off address" />
+          </div>
+        ) : (
+          <div className="search-item search-to">
+            <div className="search-icon"><span className="item-icon icon-time" /></div>
+            <div className="search-inputs">
+              <label>Hours</label>
+              <select
+                className="search-input"
+                value={hours}
+                onChange={(e) => setHours(e.target.value)}
+                style={{ border: "none", background: "transparent", width: "100%", cursor: "pointer" }}
+              >
+                {HOUR_OPTIONS.map((h) => (
+                  <option key={h} value={h}>{h} hour{h > 1 ? "s" : ""}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
 
-      <div className="search-item search-meet">
-        <label className="mm-check">
-          <input type="checkbox" checked={meetGreet} onChange={(e) => setMeetGreet(e.target.checked)} />
-          <span className="mm-check-box" />
-          <span className="mm-check-label">Meet &amp; Greet</span>
-        </label>
-      </div>
+        <div className="search-item search-meet">
+          <label className="mm-check">
+            <input type="checkbox" checked={meetGreet} onChange={(e) => setMeetGreet(e.target.checked)} />
+            <span className="mm-check-box" />
+            <span className="mm-check-label">Meet &amp; Greet</span>
+          </label>
+        </div>
 
-      <div className="search-item search-button">
-        <button className="btn btn-search" type="button" onClick={handleSearch}>
-          <Image src="/assets/imgs/template/icons/search.svg" alt="" width={16} height={16} />
-          Search
-        </button>
-      </div>
+        <div className="search-item search-button">
+          <button className="btn btn-search" type="button" onClick={handleSearch}>
+            <Image src="/assets/imgs/template/icons/search.svg" alt="" width={16} height={16} />
+            Search
+          </button>
+        </div>
 
-      {error && <div className="mm-search-error">{error}</div>}
+        {error && <div className="mm-search-error">{error}</div>}
+      </div>
     </div>
   );
 }

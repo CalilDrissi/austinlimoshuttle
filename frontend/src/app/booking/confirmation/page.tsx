@@ -82,7 +82,11 @@ export default function BookingConfirmationPage() {
               <h6 className="heading-20-medium color-text">Reservation Information</h6>
               <ul className="list-prices">
                 <li><span className="text-top">Pick Up Address</span><span className="text-bottom">{snap.search.pickupAddress}</span></li>
-                <li><span className="text-top">Drop Off Address</span><span className="text-bottom">{snap.search.dropoffAddress}</span></li>
+                {snap.search.tripType === "hourly" ? (
+                  <li><span className="text-top">Booking type</span><span className="text-bottom">By the hour · {snap.search.hours} hour{snap.search.hours === 1 ? "" : "s"}</span></li>
+                ) : (
+                  <li><span className="text-top">Drop Off Address</span><span className="text-bottom">{snap.search.dropoffAddress}</span></li>
+                )}
                 <li><span className="text-top">Pick Up Date</span><span className="text-bottom">{snap.search.date}</span></li>
                 <li><span className="text-top">Pick Up Time</span><span className="text-bottom">{snap.search.time}</span></li>
                 {snap.search.meetGreet && <li><span className="text-top">Meet &amp; Greet</span><span className="text-bottom">Included</span></li>}

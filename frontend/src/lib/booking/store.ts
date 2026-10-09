@@ -7,8 +7,11 @@ import type { QuoteResult } from "@/types/api";
 
 /** Raw search inputs — kept for display and to (re)request a quote. */
 export interface Search {
+  /** "transfer" = point-to-point (needs a drop-off); "hourly" = by-the-hour (needs hours). */
+  tripType: "transfer" | "hourly";
   pickupAddress: string;
-  dropoffAddress: string;
+  dropoffAddress: string; // empty for an hourly hire
+  hours?: number; // set for an hourly hire
   date: string; // YYYY-MM-DD
   time: string; // HH:MM
   meetGreet: boolean;
@@ -64,7 +67,9 @@ export const useBookingStore = create<BookingState>()(
   persist(
     (set) => ({
       ...initial,
-      setSearch: (search) => set({ search }),
+      // A new search invalidates any vehicle chosen for the previous one --
+      // otherwise the Ride Summary shows a stale price until a vehicle is picked.
+      setSearch: (search) => set({ search, quote: null }),
       setQuote: (quote) => set({ quote }),
       setTrip: (trip) => set((s) => ({ trip: { ...s.trip, ...trip } })),
       setContact: (contact) => set({ contact }),

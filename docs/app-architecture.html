@@ -871,6 +871,22 @@ Page ─┬─&lt; Banner                   ContactMessage &gt;─ User (replied
   <p class="muted">What has actually been built, newest first. Per the rule in §11, every change lands here.</p>
 
   <div class="modelcard">
+    <div class="mh"><span>2026-10-09 · Storefront hourly hire (closing an advertised-but-unbookable gap)</span><span class="tbl">frontend</span></div>
+    <table>
+      <tr><td>The site advertised hourly hire ("…or the number of hours you wish to book a car and driver for") and the
+      API fully supported it, but <b>there was no way to actually book it on the storefront</b> — the search widget only
+      took pickup/drop-off addresses, so every online booking was a transfer. Fixed: the home search widget gained a
+      <b>Transfer / By the hour</b> toggle; choosing <i>By the hour</i> swaps the drop-off field for an <b>Hours</b>
+      selector (1–12). <code>Search</code> now carries <code>tripType</code> + <code>hours</code>; the vehicle page sends
+      <code>hours</code> (no drop-off) to <code>/api/quotes/</code> for hourly; the Ride Summary and confirmation show
+      "By the hour · N hours" instead of a drop-off. Verified E2E: 4-hour hire → Business Class $340 (4h×$85), SUV/Sprinter
+      $500; booking saved as <code>trip_type=hourly, hours=4, dropoff=""</code>, line "4.00 h × $85.00/h".
+      <b>Also fixed (found during QA):</b> starting a new search didn't clear the previously chosen vehicle, so the Ride
+      Summary showed a stale price — <code>setSearch</code> now resets the quote.</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
     <div class="mh"><span>2026-10-09 · City-to-city fixed pricing (back office + automatic on the website)</span><span class="tbl">full-stack</span></div>
     <table>
       <tr><td>Fixed intercity routes with an <b>all-in flat price per vehicle class</b>, replacing the per-mile fare
