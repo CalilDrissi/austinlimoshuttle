@@ -876,6 +876,26 @@ Page ─┬─&lt; Banner                   ContactMessage &gt;─ User (replied
   <p class="muted">What has actually been built, newest first. Per the rule in §11, every change lands here.</p>
 
   <div class="modelcard">
+    <div class="mh"><span>2026-10-09 · Vehicle photos: audit + real photos uploaded + neutral placeholder</span><span class="tbl">full-stack</span></div>
+    <table>
+      <tr><td><b>Audit result:</b> the photo flow (back office upload → <code>Vehicle.photo</code> in the
+      <code>media_data</code> volume → <code>VehicleSerializer.get_photo</code> absolute URL → storefront
+      <code>&lt;img src={vehicle.photo || placeholder}&gt;</code>) works end-to-end; proven with a live UI upload. The
+      gap was that <b>no photos were uploaded on prod</b>, and vehicles without a photo fell back to <b>mismatched stock
+      cars</b> keyed off the slug (the booking page even keyed off card position), so the storefront misrepresented the
+      fleet. <b>Fixes:</b> (1) real photos uploaded for all prod vehicles via the dashboard UI; (2) the slug→stock-image
+      map and positional <code>CAR_IMAGES</code> are replaced by a single neutral placeholder
+      (<code>lib/fleet/images.ts</code> <code>VEHICLE_PLACEHOLDER</code>) — a photoless vehicle never shows the wrong car;
+      (3) booking vehicle/extra catalog queries use <code>staleTime:0</code> so a back-office photo/capacity change shows
+      promptly (fleet list, fleet detail, home OurFleet already fetch fresh via useEffect). The
+      <code>build_absolute_uri</code> host is correct because all vehicle fetches are client-side (documented in
+      <code>get_photo</code>); it would only need a configured media base under SSR. <b>Note:</b> vehicle media lives on
+      the <code>media_data</code> named volume, so it survives container rebuilds; the storefront CSS override file is
+      <code>public/assets/css/custom.css</code>, not <code>src/styles/luxride.css</code>.</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
     <div class="mh"><span>2026-10-09 · Storefront City-to-City tab (dropdowns) + redesigned trip-type tabs</span><span class="tbl">full-stack</span></div>
     <table>
       <tr><td><b>City-to-City is now a bookable storefront option, not just a silent back-office match.</b>
