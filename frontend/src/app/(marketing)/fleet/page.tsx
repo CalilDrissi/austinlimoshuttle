@@ -56,7 +56,7 @@ export default function FleetPage() {
                     <p className="text-14 color-text mb-30">{v.description || "Professional chauffeur service across Central Texas."}</p>
                   </div>
                   <div className="cardImage mb-30">
-                    <Link href={`/fleet/${v.slug}`}><img src={vehicleImage(v.slug)} alt={v.name} /></Link>
+                    <Link href={`/fleet/${v.slug}`}><img src={v.photo || vehicleImage(v.slug)} alt={v.name} /></Link>
                   </div>
                   <div className="cardInfoBottom">
                     <div className="passenger"><span className="icon-circle icon-passenger"></span><span className="text-14">Passengers<span>{v.passenger_capacity}</span></span></div>

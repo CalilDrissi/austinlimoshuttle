@@ -14,6 +14,8 @@ export interface Vehicle {
   luggage_capacity: number;
   /** "From" price for display only — the real fare comes from a quote. */
   minimum_fare: string;
+  /** Absolute URL of the uploaded photo, or null (use a placeholder). */
+  photo: string | null;
 }
 
 export interface Page {

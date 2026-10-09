@@ -78,7 +78,7 @@ export default function OurFleet() {
                   </div>
                   <div className="cardImage mb-30">
                     <Link href={`/fleet/${v.slug}`}>
-                      <img src={vehicleImage(v.slug)} alt={v.name} />
+                      <img src={v.photo || vehicleImage(v.slug)} alt={v.name} />
                     </Link>
                   </div>
                   <div className="cardInfoBottom">

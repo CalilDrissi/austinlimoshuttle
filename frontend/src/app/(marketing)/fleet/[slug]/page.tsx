@@ -95,7 +95,7 @@ export default function FleetDetailPage() {
         <div className="container-sub">
           <div className="row align-items-center">
             <div className="col-lg-6 mb-30">
-              <img className="w-100" style={{ borderRadius: 16 }} src={vehicleImage(vehicle.slug)} alt={vehicle.name} />
+              <img className="w-100" style={{ borderRadius: 16 }} src={vehicle.photo || vehicleImage(vehicle.slug)} alt={vehicle.name} />
             </div>
             <div className="col-lg-6 mb-30">
               <div className="content-single">

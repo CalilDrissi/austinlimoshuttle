@@ -871,6 +871,20 @@ Page ─┬─&lt; Banner                   ContactMessage &gt;─ User (replied
   <p class="muted">What has actually been built, newest first. Per the rule in §11, every change lands here.</p>
 
   <div class="modelcard">
+    <div class="mh"><span>2026-10-09 · Vehicle photos now flow from the back office to the storefront</span><span class="tbl">full-stack</span></div>
+    <table>
+      <tr><td>The dashboard let staff upload a photo per vehicle, but it never reached the storefront — the public
+      <code>VehicleSerializer</code> didn't expose <code>photo</code> and the frontend used hardcoded placeholder images.
+      Fixed end to end: the serializer now returns an absolute <code>photo</code> URL (via request context);
+      <code>/media/</code> is served by Django (new URL, routed through nginx in prod, with a <code>media_data</code>
+      volume already in place); the booking vehicle list, fleet list, fleet detail and home "Our Fleet" now show
+      <code>vehicle.photo</code> with the old placeholder as fallback. Verified: upload a photo → it appears on the
+      storefront. <b>Owner guide:</b> recorded a screen video of an admin adding a vehicle + rate card + photo and it
+      appearing for the customer — <code>docs/owner-guides/videos/add-vehicle-and-pricing.mp4</code>.</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
     <div class="mh"><span>2026-10-09 · Storefront hourly hire (closing an advertised-but-unbookable gap)</span><span class="tbl">frontend</span></div>
     <table>
       <tr><td>The site advertised hourly hire ("…or the number of hours you wish to book a car and driver for") and the

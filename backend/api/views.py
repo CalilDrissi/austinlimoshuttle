@@ -158,7 +158,7 @@ def site_settings(request):
 @permission_classes([AllowAny])
 def vehicle_list(request):
     vehicles = Vehicle.objects.filter(is_active=True).prefetch_related("bands")
-    return Response(VehicleSerializer(vehicles, many=True).data)
+    return Response(VehicleSerializer(vehicles, many=True, context={"request": request}).data)
 
 
 @extend_schema(

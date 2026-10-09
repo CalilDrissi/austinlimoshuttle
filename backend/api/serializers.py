@@ -51,12 +51,22 @@ class SiteSettingsSerializer(serializers.ModelSerializer):
 
 
 class VehicleSerializer(serializers.ModelSerializer):
+    photo = serializers.SerializerMethodField()
+
     class Meta:
         model = Vehicle
         fields = [
             "id", "name", "slug", "description", "features",
-            "passenger_capacity", "luggage_capacity", "minimum_fare",
+            "passenger_capacity", "luggage_capacity", "minimum_fare", "photo",
         ]
+
+    def get_photo(self, obj):
+        """Absolute URL of the uploaded photo, or null to fall back to a placeholder."""
+        if not obj.photo:
+            return None
+        url = obj.photo.url
+        request = self.context.get("request")
+        return request.build_absolute_uri(url) if request else url
 
 
 class QuoteRequestSerializer(serializers.Serializer):

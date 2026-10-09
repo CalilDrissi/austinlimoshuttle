@@ -30,7 +30,7 @@ function VehicleCard({ quote, vehicle, image, meetGreet, onSelect }: {
   return (
     <div className="item-vehicle">
       <div className="vehicle-left">
-        <div className="vehicle-image"><img src={image} alt={quote.vehicle_name} /></div>
+        <div className="vehicle-image"><img src={vehicle?.photo || image} alt={quote.vehicle_name} /></div>
         <div className="vehicle-facilities">
           {meetGreet && <div className="text-fact meet-greeting">Meet &amp; Greet included</div>}
           <div className="text-fact free-cancel">Free cancellation</div>

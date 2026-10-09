@@ -6,8 +6,10 @@ The dashboard lives under /dashboard/ (Phase 5) and the API under /api/
 warrant a bespoke screen.
 """
 
+from django.conf import settings
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
+from django.views.static import serve as static_serve
 
 from dashboard.views import admin_login_redirect
 
@@ -25,4 +27,8 @@ urlpatterns = [
     path("driver/", include("driver.urls")),
     path("api/", include("api.urls")),
     path("api/", include(("api.docs_urls", "api-docs"), namespace="api-docs")),
+    # User-uploaded media (vehicle photos). Served by Django through gunicorn --
+    # the volume is small (a handful of fleet images) so this is fine, and nginx
+    # routes /media/ here in prod. (STATIC is handled separately by WhiteNoise.)
+    re_path(r"^media/(?P<path>.*)$", static_serve, {"document_root": settings.MEDIA_ROOT}),
 ]
