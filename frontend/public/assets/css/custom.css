@@ -226,3 +226,23 @@ img {
 .mm-badge.completed { background: #eef0f3; color: #555; }
 .mm-ride-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
 @media (max-width: 820px){ .mm-acct { grid-template-columns: 1fr; } }
+
+/* Trip-type tabs docked directly above the hero search card. The dock takes over
+   the card's own absolute position and the card flows inside it, so the tabs sit
+   in the gap above the card with no hardcoded offset. */
+.mm-search-dock { position: relative; }
+@media (min-width: 1200px) {
+  .mm-search-dock {
+    position: absolute; bottom: 50px; left: 0; right: 0;
+    margin: auto; max-width: 1170px; z-index: 3;
+  }
+  .mm-search-dock .box-search-ride {
+    position: static; bottom: auto; left: auto; right: auto;
+    margin: 0; max-width: none; width: 100%;
+  }
+}
+.mm-trip-tabs {
+  display: inline-flex; gap: 4px; margin-bottom: 12px;
+  background: #ffffff; border-radius: 10px; padding: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+}

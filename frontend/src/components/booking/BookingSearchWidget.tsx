@@ -241,12 +241,9 @@ export default function BookingSearchWidget() {
   };
 
   return (
-    <div>
-      {/* Segmented control, left-aligned above the search card. */}
-      <div style={{
-        display: "inline-flex", gap: 4, marginBottom: 14,
-        background: "#f1f3f5", borderRadius: 10, padding: 4,
-      }}>
+    <div className="mm-search-dock">
+      {/* Segmented control, docked directly above the search card. */}
+      <div className="mm-trip-tabs">
         {tabs.map(([value, label]) => (
           <button
             key={value}
