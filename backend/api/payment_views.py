@@ -215,12 +215,9 @@ def pay_cash(request, reference):
             )
             booking.status = Booking.Status.CONFIRMED
             booking.save(update_fields=["status", "updated_at"])
-            # Confirmation text. Never let a texting outage fail the booking.
-            try:
-                from notifications import sms
-                sms.send_booking_confirmation(booking)
-            except Exception:
-                logger.exception("Confirmation SMS failed for %s", booking.reference)
+            # Same confirmation as the card path: email + SMS + ops alert.
+            from notifications.events import booking_confirmed
+            booking_confirmed(booking)
 
     return Response(BookingStatusSerializer(booking).data)
 

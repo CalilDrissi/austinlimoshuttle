@@ -540,14 +540,9 @@ def apply_intent_to_payment(intent) -> Payment | None:
         # moved, and losing the booking to save an email is the wrong trade.
         # mailer never raises, but the import is local so a broken notifications
         # app cannot take the payment path down with it.
-        try:
-            from notifications import mailer, sms
+        from notifications.events import booking_confirmed
 
-            mailer.send_booking_confirmation(booking)
-            mailer.send_ops_new_booking(booking)
-            sms.send_booking_confirmation(booking)
-        except Exception:
-            logger.exception("Confirmation notification failed for %s", booking.reference)
+        booking_confirmed(booking)  # email + SMS + ops alert; each is self-safe
 
     return payment
 

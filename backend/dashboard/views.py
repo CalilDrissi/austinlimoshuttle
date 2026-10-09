@@ -411,14 +411,11 @@ def booking_create(request):
             except (gateway.PaymentConfigurationError, gateway.PaymentGatewayError) as exc:
                 messages.error(request, f"Card payment failed: {exc}. The booking was not created.")
             else:
-                # Text the customer their confirmation (no-op if SMS is off or the
-                # booking has no phone); never let it block the redirect.
+                # Email + SMS the customer their confirmation (each no-ops if its
+                # channel is off). notify_ops=False: staff just made this booking.
                 if booking.status == Booking.Status.CONFIRMED:
-                    try:
-                        from notifications import sms
-                        sms.send_booking_confirmation(booking)
-                    except Exception:
-                        logger.exception("Confirmation SMS failed for %s", booking.reference)
+                    from notifications.events import booking_confirmed
+                    booking_confirmed(booking, notify_ops=False)
                 if charged:
                     messages.success(
                         request,

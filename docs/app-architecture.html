@@ -883,7 +883,10 @@ Page ─┬─&lt; Banner                   ContactMessage &gt;─ User (replied
       back-office — alongside the existing email. <b>Reminders</b> via a new idempotent
       <code>send_booking_reminders</code> management command (deduped through <code>SmsLog</code>), run by cron on the
       server N hours before pickup. Manager role granted the new perms. 14 SMS tests + 535 total green. <b>Owner action:</b>
-      add a Twilio account's SID/token/number in Dashboard → SMS and toggle it on.</td></tr>
+      add a Twilio account's SID/token/number in Dashboard → SMS and toggle it on.
+      <br><b>Unified notifications:</b> a single <code>notifications.events.booking_confirmed()</code> now fires at every
+      confirm point (Stripe webhook, cash, manual), so <b>email AND SMS stay in lock-step</b> — previously only the Stripe
+      path emailed; cash/manual now send the confirmation email too (ops alert skipped for staff-made manual bookings).</td></tr>
     </table>
   </div>
 
