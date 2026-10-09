@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import calendar
 import csv
+import json
 import logging
 from collections import defaultdict
 from datetime import date, timedelta
@@ -39,7 +40,7 @@ from notifications import mailer
 from notifications.models import EmailLog, EmailSettings
 from payments import gateway, paypal
 from payments.models import Payment, PaymentSettings, PayPalSettings, SavedCard
-from pricing.models import PricingSettings
+from pricing.models import CityRoute, PricingSettings
 
 from . import crud, managed
 from .forms import (
@@ -324,10 +325,41 @@ def booking_create(request):
     """
     maps_key = SiteSettings.load().google_maps_api_key or getattr(settings, "GOOGLE_MAPS_API_KEY", "")
     stripe_pk = gateway.publishable_key()
+    city_routes = (
+        CityRoute.objects.filter(is_active=True)
+        .prefetch_related("prices")
+    )
+    pricing_mode = "custom"
 
     if request.method == "POST":
-        form = ManualBookingForm(request.POST)
-        if form.is_valid():
+        post = request.POST
+        pricing_mode = post.get("pricing_mode", "custom")
+        route = None
+        route_error = ""
+
+        # City-to-city: the fare is the route's flat price for the chosen vehicle,
+        # computed server-side (never the posted total) so it can't be fiddled.
+        if pricing_mode == "city_route":
+            route = city_routes.filter(pk=post.get("city_route") or 0).first()
+            rp = (
+                route.prices.filter(vehicle_id=post.get("vehicle") or 0).first()
+                if route else None
+            )
+            if route is None:
+                route_error = "Choose a city-to-city route."
+            elif rp is None:
+                route_error = (
+                    "That route has no price for the chosen vehicle. Add one under "
+                    "City routes, or use the Custom tab."
+                )
+            else:
+                post = post.copy()
+                post["total"] = f"{rp.price}"
+
+        form = ManualBookingForm(post)
+        if route_error:
+            messages.error(request, route_error)
+        if form.is_valid() and not route_error:
             pay_method = request.POST.get("payment_method", "cash")
             pm_id = (request.POST.get("stripe_payment_method_id") or "").strip()
             charged = False
@@ -336,6 +368,8 @@ def booking_create(request):
                     booking = form.save(commit=False)
                     booking.trip_type = Booking.TripType.TRANSFER
                     booking.currency = "USD"
+                    if route is not None:
+                        booking.city_route = route
                     booking.subtotal = booking.total
                     booking.surcharge_total = Decimal("0.00")
                     booking.tax = Decimal("0.00")
@@ -343,7 +377,7 @@ def booking_create(request):
                     BookingPriceLine.objects.create(
                         booking=booking,
                         kind=BookingPriceLine.Kind.BASE,
-                        label="Fare (manual booking)",
+                        label=f"City-to-city: {route.label}" if route else "Fare (manual booking)",
                         amount=booking.total,
                         ordering=0,
                     )
@@ -386,8 +420,18 @@ def booking_create(request):
                 return redirect("dashboard:booking_detail", reference=booking.reference)
     else:
         form = ManualBookingForm()
-    return render(request, "dashboard/booking_form.html",
-                  {"form": form, "maps_key": maps_key, "stripe_pk": stripe_pk})
+
+    # {route_id: {vehicle_id: "price"}} -- the JS auto-fills the fare from this.
+    route_prices = {
+        str(r.pk): {str(p.vehicle_id): f"{p.price}" for p in r.prices.all()}
+        for r in city_routes
+    }
+    return render(request, "dashboard/booking_form.html", {
+        "form": form, "maps_key": maps_key, "stripe_pk": stripe_pk,
+        "city_routes": city_routes,
+        "route_prices_json": json.dumps(route_prices),
+        "pricing_mode": pricing_mode,
+    })
 
 
 @login_required(login_url="dashboard:login")

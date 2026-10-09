@@ -46,7 +46,7 @@ from payments.models import SavedCard
 from pricing.distance import DistanceLookupError
 from pricing.distance import lookup as measure_journey
 from pricing.engine import quote_all
-from pricing.models import BlackoutDate, TimeSurcharge
+from pricing.models import BlackoutDate, CityRoute, TimeSurcharge
 
 from . import quotes
 from .serializers import (
@@ -264,11 +264,18 @@ def create_quote(request):
             )
         distance_miles = journey.distance_miles
 
+    # Fixed city-to-city: if the resolved pickup/drop-off cities match a route,
+    # its flat per-vehicle price replaces the per-mile fare (all-in).
+    route = None
+    if journey is not None:
+        route = CityRoute.match(journey.resolved_origin, journey.resolved_destination)
+
     results = quote_all(
         data["pickup_at"],
         distance_miles=distance_miles,
         hours=data.get("hours"),
         meet_and_greet=data["meet_and_greet"],
+        route=route,
     )
 
     if not results:
@@ -287,6 +294,7 @@ def create_quote(request):
             meet_and_greet=data["meet_and_greet"],
             pickup_address=data["pickup_address"],
             dropoff_address=data.get("dropoff_address", ""),
+            route_id=route.pk if route else None,
         ))
         payload.append({
             "vehicle_id": result.vehicle_id,
@@ -357,6 +365,14 @@ def create_booking(request):
 
     vehicle = Vehicle.objects.get(pk=quote_request.vehicle_id)
 
+    # Stamp the route only if it's still active (mirrors what redeem() priced).
+    city_route_id = (
+        quote_request.route_id
+        if quote_request.route_id
+        and CityRoute.objects.filter(pk=quote_request.route_id, is_active=True).exists()
+        else None
+    )
+
     with transaction.atomic():
         booking = Booking.objects.create(
             customer=customer,
@@ -367,6 +383,7 @@ def create_booking(request):
                 else Booking.TripType.TRANSFER
             ),
             status=Booking.Status.PENDING,
+            city_route_id=city_route_id,
             pickup_address=quote_request.pickup_address,
             dropoff_address=quote_request.dropoff_address,
             pickup_at=quote_request.pickup_at,

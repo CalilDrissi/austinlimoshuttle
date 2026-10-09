@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from bookings.models import Driver
 from fleet.models import Vehicle
-from pricing.models import BlackoutDate, TimeSurcharge
+from pricing.models import BlackoutDate, CityRoute, TimeSurcharge
 
 from . import forms
 from .crud import Column, Managed, register
@@ -81,6 +81,35 @@ register(Managed(
         Column("Hourly", _money("hourly_rate"), align_end=True),
         Column("Minimum fare", _money("minimum_fare"), align_end=True),
         Column("Bands", lambda v: v.bands.count()),
+        Column("Active", "is_active", boolean=True),
+    ],
+))
+
+register(Managed(
+    slug="city-routes",
+    model=CityRoute,
+    form_class=forms.CityRouteForm,
+    label="City route",
+    label_plural="City routes",
+    permission="pricing.change_cityroute",
+    icon="bi-signpost-split",
+    lede="Fixed intercity routes with an all-in flat price per vehicle class.",
+    form_note=(
+        "The flat price REPLACES the per-mile fare for this route and is all-in — "
+        "no time surcharge, event uplift or tax is added on top. Leave a vehicle "
+        "out to fall back to normal distance pricing for that class."
+    ),
+    search_fields=["origin", "destination"],
+    ordering=["origin", "destination"],
+    prefetch_related=["prices"],
+    inline_formset=forms.CityRoutePriceFormSet,
+    inline_label="Price per vehicle",
+    inline_note="All-in fare for each vehicle class on this route.",
+    columns=[
+        Column("Origin", "origin"),
+        Column("Destination", "destination"),
+        Column("Both ways", "bidirectional", boolean=True),
+        Column("Priced vehicles", lambda r: r.prices.count(), align_end=True),
         Column("Active", "is_active", boolean=True),
     ],
 ))

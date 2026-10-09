@@ -104,6 +104,104 @@ class BlackoutDate(models.Model):
         return f"{self.name} — {self.date} (+{self.percentage}%)"
 
 
+class CityRoute(models.Model):
+    """
+    A fixed-price intercity route, e.g. Austin -> San Antonio.
+
+    When a trip runs this route the fare is a flat, all-in price per vehicle
+    class (see CityRoutePrice) that REPLACES the per-mile distance bands --
+    surcharges and tax are not added on top. This is the marketable "Austin to
+    Houston, $395" pricing operators advertise for long runs.
+
+    Phase 1 is back-office only: staff pick a route on the manual booking form.
+    The lat/lng + radius fields are reserved for phase 2, where the public site
+    will auto-match a typed pickup/drop-off to a route.
+    """
+
+    origin = models.CharField(max_length=120, help_text="e.g. Austin")
+    destination = models.CharField(max_length=120, help_text="e.g. San Antonio")
+    bidirectional = models.BooleanField(
+        default=True, help_text="Also price the reverse direction at the same rate.",
+    )
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["origin", "destination"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["origin", "destination"], name="unique_city_route",
+            ),
+        ]
+
+    def __str__(self):
+        arrow = "⇄" if self.bidirectional else "→"
+        return f"{self.origin} {arrow} {self.destination}"
+
+    @property
+    def label(self) -> str:
+        return str(self)
+
+    def price_for(self, vehicle):
+        """The flat price for a vehicle on this route, or None if not set."""
+        match = self.prices.filter(vehicle=vehicle).first()
+        return match.price if match else None
+
+    @staticmethod
+    def _cities(address: str) -> set[str]:
+        """The comma-separated parts of an address, lowercased for matching.
+
+        Matching on whole components (not substrings) keeps '123 San Antonio St,
+        Austin' from matching a 'San Antonio' route -- the street is one
+        component, the city 'Austin' is another.
+        """
+        return {part.strip().lower() for part in (address or "").split(",") if part.strip()}
+
+    @classmethod
+    def match(cls, origin_address: str, destination_address: str):
+        """
+        The active route whose cities match these two (resolved) addresses, or
+        None. Honours bidirectional routes. First match wins.
+        """
+        origin = cls._cities(origin_address)
+        destination = cls._cities(destination_address)
+        for route in cls.objects.filter(is_active=True).prefetch_related("prices"):
+            a, b = route.origin.strip().lower(), route.destination.strip().lower()
+            if a in origin and b in destination:
+                return route
+            if route.bidirectional and b in origin and a in destination:
+                return route
+        return None
+
+
+class CityRoutePrice(models.Model):
+    """The flat, all-in fare for one vehicle class on one city route."""
+
+    route = models.ForeignKey(
+        CityRoute, on_delete=models.CASCADE, related_name="prices",
+    )
+    vehicle = models.ForeignKey(
+        "fleet.Vehicle", on_delete=models.CASCADE, related_name="city_route_prices",
+    )
+    price = models.DecimalField(
+        max_digits=10, decimal_places=2,
+        validators=[MinValueValidator(Decimal("0.00"))],
+        help_text="All-in fare — no surcharges or tax are added on top.",
+    )
+
+    class Meta:
+        ordering = ["vehicle__display_order", "vehicle__name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["route", "vehicle"], name="unique_route_vehicle_price",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.route}: {self.vehicle} ${self.price}"
+
+
 class PricingSettings(models.Model):
     """
     Site-wide pricing configuration. Singleton.

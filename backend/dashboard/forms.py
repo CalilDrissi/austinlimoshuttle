@@ -12,7 +12,7 @@ from content.models import Banner, GalleryImage, Page, SiteSettings, Testimonial
 from fleet.models import DistanceBand, Vehicle
 from notifications.models import EmailSettings
 from payments.models import PaymentSettings, PayPalSettings
-from pricing.models import BlackoutDate, PricingSettings, TimeSurcharge
+from pricing.models import BlackoutDate, CityRoute, CityRoutePrice, PricingSettings, TimeSurcharge
 
 User = get_user_model()
 
@@ -490,6 +490,53 @@ class BaseDistanceBandFormSet(forms.BaseInlineFormSet):
 DistanceBandFormSet = forms.inlineformset_factory(
     Vehicle, DistanceBand, form=DistanceBandForm, formset=BaseDistanceBandFormSet,
     extra=2, can_delete=True,
+)
+
+
+class CityRouteForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = CityRoute
+        fields = ["origin", "destination", "bidirectional", "is_active"]
+        help_texts = {
+            "bidirectional": "Price the reverse direction (B → A) at the same rate.",
+        }
+
+
+class CityRoutePriceForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = CityRoutePrice
+        fields = ["vehicle", "price"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Only active vehicles can be priced; a retired class shouldn't appear.
+        self.fields["vehicle"].queryset = Vehicle.objects.filter(
+            is_active=True
+        ).order_by("display_order", "name")
+
+
+class BaseCityRoutePriceFormSet(forms.BaseInlineFormSet):
+    """A route's price list. Each vehicle may appear at most once."""
+
+    def clean(self):
+        super().clean()
+        if any(self.errors):
+            return
+        seen = set()
+        for form in self.forms:
+            if not form.cleaned_data or form.cleaned_data.get("DELETE"):
+                continue
+            vehicle = form.cleaned_data.get("vehicle")
+            if vehicle in seen:
+                raise forms.ValidationError(
+                    f"{vehicle} is priced twice — one price per vehicle on a route."
+                )
+            seen.add(vehicle)
+
+
+CityRoutePriceFormSet = forms.inlineformset_factory(
+    CityRoute, CityRoutePrice, form=CityRoutePriceForm,
+    formset=BaseCityRoutePriceFormSet, extra=3, can_delete=True,
 )
 
 

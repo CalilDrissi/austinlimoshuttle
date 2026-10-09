@@ -53,6 +53,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "fleet.distanceband": ["view", "add", "change", "delete"],
         "pricing.timesurcharge": ["view", "add", "change"],
         "pricing.blackoutdate": ["view", "add", "change", "delete"],
+        "pricing.cityroute": ["view", "add", "change", "delete"],
+        "pricing.cityrouteprice": ["view", "add", "change", "delete"],
         "pricing.pricingsettings": ["view", "change"],
         # The whole of website content. A Manager is the client's own account,
         # and the point of the dashboard is that they never need Django's admin

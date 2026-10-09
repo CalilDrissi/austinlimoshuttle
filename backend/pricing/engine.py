@@ -130,6 +130,7 @@ def quote(
     surcharges: list[TimeSurcharge] | None = None,
     blackouts: dict | None = None,
     bands: list | None = None,
+    route=None,
 ) -> Quote:
     """
     Price one vehicle for one journey.
@@ -138,7 +139,27 @@ def quote(
     optional `surcharges`/`blackouts`/`bands` arguments let callers preload
     reference data once when pricing many journeys (the historical replay does
     this); omitted, they are read from the database.
+
+    When `route` is a matched CityRoute and this vehicle is priced on it, the
+    fare is that flat, all-in price -- no distance bands, surcharge, meet&greet
+    or tax. A vehicle the route doesn't price falls through to distance pricing.
     """
+    if route is not None:
+        flat = route.price_for(vehicle)
+        if flat is not None:
+            flat = money(flat)
+            currency = (settings or PricingSettings.load()).currency
+            return Quote(
+                vehicle_id=vehicle.pk,
+                vehicle_name=vehicle.name,
+                lines=[Line(
+                    BookingPriceLine.Kind.BASE, f"City-to-city: {route.label}", flat,
+                )],
+                subtotal=flat,
+                total=flat,
+                currency=currency,
+            )
+
     if distance_miles is None and hours is None:
         raise QuoteError("Either distance_miles or hours is required.")
     if distance_miles is not None and hours is not None:
@@ -240,6 +261,7 @@ def quote_all(
     distance_miles: Decimal | None = None,
     hours: Decimal | None = None,
     meet_and_greet: bool = False,
+    route=None,
 ) -> list[Quote]:
     """Price every bookable vehicle. Vehicles that cannot be priced are omitted."""
     settings = PricingSettings.load()
@@ -259,6 +281,7 @@ def quote_all(
                 surcharges=surcharges,
                 blackouts=blackouts,
                 bands=list(vehicle.bands.all()),
+                route=route,
             ))
         except QuoteError:
             continue

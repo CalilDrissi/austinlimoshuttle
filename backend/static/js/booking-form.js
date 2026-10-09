@@ -127,3 +127,54 @@
     });
   });
 })();
+
+/* --- City-to-city flat-rate fare (manual booking) ---
+ * Independent of Stripe. The route tab fills the fare from a prices map; the
+ * server recomputes it authoritatively, so this is only live feedback.
+ */
+(function () {
+  "use strict";
+  var form = document.getElementById("booking-form");
+  if (!form) return;
+  var routeSelect = document.getElementById("city_route_select");
+  var modeInput = document.getElementById("pricing_mode");
+  if (!routeSelect || !modeInput) return; // not the new-booking form, or no routes
+
+  var prices = {};
+  try { prices = JSON.parse(form.dataset.routePrices || "{}"); } catch (e) { prices = {}; }
+  var vehicleSelect = document.getElementById("id_vehicle");
+  var totalInput = document.getElementById("id_total");
+  var info = document.getElementById("route-fare-info");
+
+  function recalc() {
+    var r = routeSelect.value;
+    var v = vehicleSelect ? vehicleSelect.value : "";
+    if (!r) { if (info) { info.textContent = ""; info.className = "small fw-semibold mt-2"; } return; }
+    var price = prices[r] && prices[r][v];
+    if (price != null) {
+      if (totalInput) totalInput.value = price;
+      if (info) {
+        info.textContent = "Flat fare: $" + Number(price).toFixed(2) + " (all-in)";
+        info.className = "small fw-semibold mt-2 text-success";
+      }
+    } else if (info) {
+      info.textContent = "No price set for the selected vehicle on this route. Add one under City routes, or use Custom.";
+      info.className = "small fw-semibold mt-2 text-danger";
+    }
+  }
+
+  // Bootstrap tab change -> record which pricing mode is active.
+  document.querySelectorAll('[data-bs-toggle="tab"][data-mode]').forEach(function (btn) {
+    btn.addEventListener("shown.bs.tab", function (e) {
+      modeInput.value = e.target.getAttribute("data-mode");
+      if (modeInput.value === "city_route") recalc();
+    });
+  });
+  routeSelect.addEventListener("change", recalc);
+  if (vehicleSelect) {
+    vehicleSelect.addEventListener("change", function () {
+      if (modeInput.value === "city_route") recalc();
+    });
+  }
+  if (modeInput.value === "city_route") recalc(); // after an error re-render
+})();

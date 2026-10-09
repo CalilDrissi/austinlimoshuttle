@@ -45,6 +45,9 @@ class QuoteRequest:
     meet_and_greet: bool
     pickup_address: str
     dropoff_address: str
+    # Set when the journey matched a fixed city-to-city route. Signed into the
+    # token so the flat price is re-applied at booking time, not spoofable.
+    route_id: int | None = None
 
 
 def issue(request: QuoteRequest) -> str:
@@ -57,6 +60,7 @@ def issue(request: QuoteRequest) -> str:
         "mg": request.meet_and_greet,
         "from": request.pickup_address,
         "to": request.dropoff_address,
+        "rt": request.route_id,
     }
     return TimestampSigner(salt=SIGNER_SALT).sign(json.dumps(payload, separators=(",", ":")))
 
@@ -96,6 +100,7 @@ def redeem(token: str) -> tuple[QuoteRequest, Quote]:
             meet_and_greet=bool(payload.get("mg")),
             pickup_address=payload.get("from", ""),
             dropoff_address=payload.get("to", ""),
+            route_id=int(payload["rt"]) if payload.get("rt") else None,
         )
     except (KeyError, TypeError, ValueError, ArithmeticError) as exc:
         raise QuoteTokenError("This quote is not valid.") from exc
@@ -107,6 +112,13 @@ def redeem(token: str) -> tuple[QuoteRequest, Quote]:
     if quote_request.pickup_at < timezone.now():
         raise QuoteTokenError("That pickup time is in the past.")
 
+    # Re-apply the fixed route price if the quote was issued for one and it is
+    # still active. The id is signed, so this trusts only our own token.
+    route = None
+    if quote_request.route_id:
+        from pricing.models import CityRoute
+        route = CityRoute.objects.filter(pk=quote_request.route_id, is_active=True).first()
+
     try:
         recomputed = quote(
             vehicle,
@@ -114,6 +126,7 @@ def redeem(token: str) -> tuple[QuoteRequest, Quote]:
             distance_miles=quote_request.distance_miles,
             hours=quote_request.hours,
             meet_and_greet=quote_request.meet_and_greet,
+            route=route,
         )
     except QuoteError as exc:
         raise QuoteTokenError(str(exc)) from exc

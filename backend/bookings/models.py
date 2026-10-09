@@ -108,6 +108,11 @@ class Booking(models.Model):
     trip_type = models.CharField(
         max_length=10, choices=TripType.choices, default=TripType.TRANSFER,
     )
+    city_route = models.ForeignKey(
+        "pricing.CityRoute", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="bookings",
+        help_text="Set when the fare came from a fixed city-to-city route.",
+    )
     status = models.CharField(
         max_length=12, choices=Status.choices, default=Status.PENDING, db_index=True,
     )

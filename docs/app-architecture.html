@@ -871,6 +871,32 @@ Page ─┬─&lt; Banner                   ContactMessage &gt;─ User (replied
   <p class="muted">What has actually been built, newest first. Per the rule in §11, every change lands here.</p>
 
   <div class="modelcard">
+    <div class="mh"><span>2026-10-09 · City-to-city fixed pricing (back office + automatic on the website)</span><span class="tbl">full-stack</span></div>
+    <table>
+      <tr><td>Fixed intercity routes with an <b>all-in flat price per vehicle class</b>, replacing the per-mile fare
+      when a trip runs the route. New <code>CityRoute</code> (origin/destination city, bidirectional) +
+      <code>CityRoutePrice</code> (one price per vehicle) in the pricing app; <code>Booking.city_route</code> stamps
+      which route priced a booking.
+      <b>Admin:</b> a <b>City routes</b> screen (Fleet &amp; pricing) — list the city pairs and set a price per vehicle
+      (inline, like a vehicle's rate card). <b>Back office:</b> the New-booking form gained a
+      <b>Custom / City-to-City</b> tab set; on the City-to-City tab staff pick a route and the flat fare fills in from
+      the chosen vehicle (computed server-side, never the posted total, so it can't be fiddled).
+      <b>Website (automatic, simplest approach chosen):</b> no maps or zones — when the customer's resolved pickup and
+      drop-off <i>cities</i> match a route (<code>CityRoute.match</code> on the addresses Google already resolves, matched
+      on whole comma-components so "123 San Antonio St, Austin" can't false-match), the flat per-vehicle price replaces
+      the distance bands (all-in: no surcharge/tax). A vehicle the route doesn't price falls back to normal distance
+      pricing. The matched <code>route_id</code> is signed into the quote token, so <code>quotes.redeem()</code> re-applies
+      the fixed price at booking time — server-authoritative. Known limitation of "simplest": matches on city, so a
+      suburb (e.g. Round Rock) needs its own route; upgrade path is radius/zones later.
+      Verified E2E on localhost: admin screen + per-vehicle prices; back-office tab ($260 SUV booking, route stamped,
+      anti-tamper); website quote Austin↔San Antonio returns flat $200/$260/$400 with Sprinter falling back to distance;
+      reverse direction matches; a local Austin→Austin trip prices normally; and a full web quote→booking carries the
+      flat $260 + route. 53 pricing-engine tests pass (pre-existing distance/auth test failures are an unrelated
+      DatabaseCache/session env issue).</td></tr>
+    </table>
+  </div>
+
+  <div class="modelcard">
     <div class="mh"><span>2026-10-06 · Driver app (mobile-first) at /driver/</span><span class="tbl">back office</span></div>
     <table>
       <tr><td>A new server-rendered, mobile-first portal where a chauffeur sees their own runs and reports the
